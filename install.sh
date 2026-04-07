@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-REPO="https://github.com/CAPSTONEID/sins-claude/raw/main"
+REPO="https://github.com/CAPSTONEID/sins-claude/raw/main/skill"
 SKILL_DIR="$HOME/.claude/skills"
 
 SKILLS=(

@@ -59,27 +59,27 @@ echo "✅ 설치 완료"
 mkdir -p ~/.claude/skills
 
 # 하네스 설치 스킬
-curl -L https://github.com/CAPSTONEID/sins-claude/raw/main/sins-harness.skill \
+curl -L https://github.com/CAPSTONEID/sins-claude/raw/main/skill/sins-harness.skill \
   -o ~/.claude/skills/sins-harness.skill
 
 # 카드뉴스 제작
-curl -L https://github.com/CAPSTONEID/sins-claude/raw/main/sins-card-news-creator.skill \
+curl -L https://github.com/CAPSTONEID/sins-claude/raw/main/skill/sins-card-news-creator.skill \
   -o ~/.claude/skills/sins-card-news-creator.skill
 
 # 이미지/영상 프롬프트
-curl -L https://github.com/CAPSTONEID/sins-claude/raw/main/sins-imgvideo-prompt.skill \
+curl -L https://github.com/CAPSTONEID/sins-claude/raw/main/skill/sins-imgvideo-prompt.skill \
   -o ~/.claude/skills/sins-imgvideo-prompt.skill
 
 # 마케팅 팀
-curl -L https://github.com/CAPSTONEID/sins-claude/raw/main/sins-marketing-team.skill \
+curl -L https://github.com/CAPSTONEID/sins-claude/raw/main/skill/sins-marketing-team.skill \
   -o ~/.claude/skills/sins-marketing-team.skill
 
 # 리서치 팀
-curl -L https://github.com/CAPSTONEID/sins-claude/raw/main/sins-research-team.skill \
+curl -L https://github.com/CAPSTONEID/sins-claude/raw/main/skill/sins-research-team.skill \
   -o ~/.claude/skills/sins-research-team.skill
 
 # 웹 프레젠테이션
-curl -L https://github.com/CAPSTONEID/sins-claude/raw/main/sins-web-pt.skill \
+curl -L https://github.com/CAPSTONEID/sins-claude/raw/main/skill/sins-web-pt.skill \
   -o ~/.claude/skills/sins-web-pt.skill
 ```
 
