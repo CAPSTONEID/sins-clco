@@ -66,7 +66,7 @@ mkdir -p ~/.claude/skills
 
 **① sins-harness-code** — 멀티 에이전트 하네스 파일 일괄 생성
 ```bash
-curl -L https://github.com/CAPSTONEID/sins-claude/raw/main/skill/sins-harness-code.skill \
+curl -L https://github.com/CAPSTONEID/sins-claude/raw/main/skill-list/sins-harness-code.skill \
   -o ~/.claude/skills/sins-harness-code.skill
 ```
 
@@ -74,7 +74,7 @@ curl -L https://github.com/CAPSTONEID/sins-claude/raw/main/skill/sins-harness-co
 
 **② sins-card-news-creator** — 인스타그램 카드뉴스 자동 제작
 ```bash
-curl -L https://github.com/CAPSTONEID/sins-claude/raw/main/skill/sins-card-news-creator.skill \
+curl -L https://github.com/CAPSTONEID/sins-claude/raw/main/skill-list/sins-card-news-creator.skill \
   -o ~/.claude/skills/sins-card-news-creator.skill
 ```
 
@@ -82,7 +82,7 @@ curl -L https://github.com/CAPSTONEID/sins-claude/raw/main/skill/sins-card-news-
 
 **③ sins-imgvideo-prompt** — AI 이미지·영상 프롬프트 생성
 ```bash
-curl -L https://github.com/CAPSTONEID/sins-claude/raw/main/skill/sins-imgvideo-prompt.skill \
+curl -L https://github.com/CAPSTONEID/sins-claude/raw/main/skill-list/sins-imgvideo-prompt.skill \
   -o ~/.claude/skills/sins-imgvideo-prompt.skill
 ```
 
@@ -90,7 +90,7 @@ curl -L https://github.com/CAPSTONEID/sins-claude/raw/main/skill/sins-imgvideo-p
 
 **④ sins-marketing-team** — 마케팅 전략 팀 구성 및 실행
 ```bash
-curl -L https://github.com/CAPSTONEID/sins-claude/raw/main/skill/sins-marketing-team.skill \
+curl -L https://github.com/CAPSTONEID/sins-claude/raw/main/skill-list/sins-marketing-team.skill \
   -o ~/.claude/skills/sins-marketing-team.skill
 ```
 
@@ -98,7 +98,7 @@ curl -L https://github.com/CAPSTONEID/sins-claude/raw/main/skill/sins-marketing-
 
 **⑤ sins-research-team** — 리서치·분석 팀 구성 및 실행
 ```bash
-curl -L https://github.com/CAPSTONEID/sins-claude/raw/main/skill/sins-research-team.skill \
+curl -L https://github.com/CAPSTONEID/sins-claude/raw/main/skill-list/sins-research-team.skill \
   -o ~/.claude/skills/sins-research-team.skill
 ```
 
@@ -106,7 +106,7 @@ curl -L https://github.com/CAPSTONEID/sins-claude/raw/main/skill/sins-research-t
 
 **⑥ sins-web-pt** — 스크립트 기반 웹 발표자료 제작
 ```bash
-curl -L https://github.com/CAPSTONEID/sins-claude/raw/main/skill/sins-web-pt.skill \
+curl -L https://github.com/CAPSTONEID/sins-claude/raw/main/skill-list/sins-web-pt.skill \
   -o ~/.claude/skills/sins-web-pt.skill
 ```
 
