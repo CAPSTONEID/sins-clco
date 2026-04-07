@@ -55,30 +55,57 @@ echo "✅ 설치 완료"
 
 ### 방법 3 — 개별 스킬 설치
 
+원하는 스킬만 골라서 설치하세요. 모든 스킬은 아래 준비 명령어를 먼저 실행해야 합니다.
+
+**준비 (공통)**
 ```bash
 mkdir -p ~/.claude/skills
+```
 
-# 하네스 설치 스킬
+---
+
+**① sins-harness-code** — 멀티 에이전트 하네스 파일 일괄 생성
+```bash
 curl -L https://github.com/CAPSTONEID/sins-claude/raw/main/skill/sins-harness-code.skill \
   -o ~/.claude/skills/sins-harness-code.skill
+```
 
-# 카드뉴스 제작
+---
+
+**② sins-card-news-creator** — 인스타그램 카드뉴스 자동 제작
+```bash
 curl -L https://github.com/CAPSTONEID/sins-claude/raw/main/skill/sins-card-news-creator.skill \
   -o ~/.claude/skills/sins-card-news-creator.skill
+```
 
-# 이미지/영상 프롬프트
+---
+
+**③ sins-imgvideo-prompt** — AI 이미지·영상 프롬프트 생성
+```bash
 curl -L https://github.com/CAPSTONEID/sins-claude/raw/main/skill/sins-imgvideo-prompt.skill \
   -o ~/.claude/skills/sins-imgvideo-prompt.skill
+```
 
-# 마케팅 팀
+---
+
+**④ sins-marketing-team** — 마케팅 전략 팀 구성 및 실행
+```bash
 curl -L https://github.com/CAPSTONEID/sins-claude/raw/main/skill/sins-marketing-team.skill \
   -o ~/.claude/skills/sins-marketing-team.skill
+```
 
-# 리서치 팀
+---
+
+**⑤ sins-research-team** — 리서치·분석 팀 구성 및 실행
+```bash
 curl -L https://github.com/CAPSTONEID/sins-claude/raw/main/skill/sins-research-team.skill \
   -o ~/.claude/skills/sins-research-team.skill
+```
 
-# 웹 프레젠테이션
+---
+
+**⑥ sins-web-pt** — 스크립트 기반 웹 발표자료 제작
+```bash
 curl -L https://github.com/CAPSTONEID/sins-claude/raw/main/skill/sins-web-pt.skill \
   -o ~/.claude/skills/sins-web-pt.skill
 ```
