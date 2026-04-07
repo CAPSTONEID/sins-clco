@@ -5,6 +5,7 @@ REPO="https://github.com/CAPSTONEID/sins-claude/raw/main"
 SKILL_DIR="$HOME/.claude/skills"
 
 SKILLS=(
+  "sins-harness.skill"
   "sins-card-news-creator.skill"
   "sins-imgvideo-prompt.skill"
   "sins-marketing-team.skill"

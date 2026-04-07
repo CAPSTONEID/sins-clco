@@ -18,6 +18,7 @@ SINS 프로젝트용 Claude Code 스킬 모음과 멀티 에이전트 하네스(
 
 | 파일 | 스킬 이름 | 설명 |
 |------|-----------|------|
+| `sins-harness.skill` | 하네스 설치 | 멀티 에이전트 하네스 파일 일괄 생성 |
 | `sins-card-news-creator.skill` | 카드뉴스 제작 | 인스타그램 카드뉴스 자동 제작 |
 | `sins-imgvideo-prompt.skill` | 이미지/영상 프롬프트 | AI 이미지·영상 서비스용 프롬프트 생성 |
 | `sins-marketing-team.skill` | 마케팅 팀 | 마케팅 전략 팀 구성 및 실행 |
