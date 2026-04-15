@@ -11,6 +11,7 @@ SKILLS=(
   "sins-marketing-team.skill"
   "sins-research-team.skill"
   "sins-web-pt.skill"
+  "sins-press-release.skill"
 )
 
 echo "📦 SINS Claude 스킬 설치 중..."
@@ -24,3 +25,4 @@ done
 echo ""
 echo "✅ 설치 완료! 총 ${#SKILLS[@]}개 스킬이 $SKILL_DIR 에 설치되었습니다."
 echo "   Claude Code를 재시작하면 스킬을 사용할 수 있습니다."
+
