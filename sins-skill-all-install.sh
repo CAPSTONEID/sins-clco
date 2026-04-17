@@ -12,6 +12,7 @@ SKILLS=(
   "sins-research-team.skill"
   "sins-web-pt.skill"
   "sins-press-release.skill"
+  "sins-muti-creator.skill"
 )
 
 echo "📦 SINS Claude 스킬 설치 중..."
