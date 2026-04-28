@@ -394,7 +394,7 @@ index 93fca82..f81abdf 100644
              None
          } else {
 diff --git a/codex-rs/tui/src/chatwidget.rs b/codex-rs/tui/src/chatwidget.rs
-index 8fbb2fe..3a56f73 100644
+index 8fbb2fe..38e1406 100644
 --- a/codex-rs/tui/src/chatwidget.rs
 +++ b/codex-rs/tui/src/chatwidget.rs
 @@ -8329,10 +8329,26 @@ impl ChatWidget {
@@ -422,7 +422,7 @@ index 8fbb2fe..3a56f73 100644
 +        let reset = reset_text
 +            .map(|resets_at| format!(" 리셋 {resets_at}"))
 +            .unwrap_or_default();
-+        Some(format!("{label} 사용 {bar} {percent}%{reset}"))
++        Some(format!("{label} {bar} {percent}%{reset}"))
      }
  
      fn status_line_reasoning_effort_label(effort: Option<ReasoningEffortConfig>) -> &'static str {
