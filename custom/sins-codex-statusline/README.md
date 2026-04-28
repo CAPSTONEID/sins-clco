@@ -33,10 +33,10 @@ curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/custom/si
 Then run:
 
 ```bash
-sins-codex
+sins-codex-statusline
 ```
 
-If your shell cannot find `sins-codex`, restart the terminal or run:
+If your shell cannot find `sins-codex-statusline`, restart the terminal or run:
 
 ```bash
 source ~/.zshrc
@@ -72,7 +72,7 @@ status_line = ["model-with-reasoning", "five-hour-limit", "weekly-limit", "conte
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/custom/sins-codex-statusline/install.sh \
-  | CODEX_REPO_REF=main INSTALL_BIN_NAME=sins-codex bash
+  | CODEX_REPO_REF=main INSTALL_BIN_NAME=sins-codex-statusline bash
 ```
 
 - `CODEX_REPO_REF`: OpenAI Codex git ref to build from. Default: `main`.
