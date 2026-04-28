@@ -1,4 +1,4 @@
-# SINS Claude — 스킬 & 하네스 패키지
+# SINS Claude & codex — 스킬 & 하네스 & 커스컴 패키지
 
 SINS 프로젝트용 Claude Code 스킬 모음과 멀티 에이전트 하네스를 제공합니다.
 
