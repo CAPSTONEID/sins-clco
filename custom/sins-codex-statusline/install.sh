@@ -6,7 +6,7 @@ SINS_REPO_REF="${SINS_REPO_REF:-main}"
 CODEX_REPO_URL="${CODEX_REPO_URL:-https://github.com/openai/codex.git}"
 CODEX_REPO_REF="${CODEX_REPO_REF:-main}"
 INSTALL_BIN_DIR="${INSTALL_BIN_DIR:-$HOME/.codex/bin}"
-INSTALL_BIN_NAME="${INSTALL_BIN_NAME:-sins-codex}"
+INSTALL_BIN_NAME="${INSTALL_BIN_NAME:-sins-codex-statusline}"
 CODEX_CONFIG_FILE="${CODEX_CONFIG_FILE:-$HOME/.codex/config.toml}"
 PATCH_REL_PATH="custom/sins-codex-statusline/sins-codex-statusline.patch"
 

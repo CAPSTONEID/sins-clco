@@ -282,11 +282,11 @@ curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/custom/si
 설치 후 실행:
 
 ```bash
-sins-codex
+sins-codex-statusline
 ```
 
 설치 스크립트는 OpenAI Codex 소스를 임시 폴더에 클론하고 패치를 적용한 뒤
-`~/.codex/bin/sins-codex`로 설치합니다. 기존 전역 `codex` 명령은 덮어쓰지 않습니다.
+`~/.codex/bin/sins-codex-statusline`로 설치합니다. 기존 전역 `codex` 명령은 덮어쓰지 않습니다.
 
 ---
 
