@@ -10,7 +10,7 @@ INSTALL_BIN_NAME="${INSTALL_BIN_NAME:-sins-codex-statusline}"
 CODEX_CONFIG_FILE="${CODEX_CONFIG_FILE:-$HOME/.codex/config.toml}"
 PATCH_REL_PATH="custom/sins-codex-statusline/sins-codex-statusline.patch"
 
-STATUS_LINE='status_line = ["model-with-reasoning", "five-hour-limit", "weekly-limit", "context-remaining", "context-used", "current-dir", "git-branch"]'
+STATUS_LINE='status_line = ["model-with-reasoning", "five-hour-limit", "weekly-limit", "context-remaining", "context-used", "current-dir", "project-name"]'
 
 log() {
   printf '%s\n' "$*"

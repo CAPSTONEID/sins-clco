@@ -1,611 +1,546 @@
-diff --git a/codex-rs/tui/src/bottom_pane/chat_composer.rs b/codex-rs/tui/src/bottom_pane/chat_composer.rs
-index 1a0e39d..fdf3105 100644
---- a/codex-rs/tui/src/bottom_pane/chat_composer.rs
-+++ b/codex-rs/tui/src/bottom_pane/chat_composer.rs
-@@ -164,6 +164,8 @@ use super::footer::context_window_line;
- use super::footer::esc_hint_mode;
- use super::footer::footer_height;
- use super::footer::footer_hint_items_width;
-+use super::footer::footer_line_display_height;
-+use super::footer::footer_line_display_width;
- use super::footer::footer_line_width;
- use super::footer::inset_footer_hint_area;
- use super::footer::max_left_width_for_right;
-@@ -3955,9 +3957,19 @@ impl ChatComposer {
-                     } else {
-                         None
-                     };
-+                    let status_line_multiline = combined_status_line
-+                        .as_ref()
-+                        .is_some_and(|line| footer_line_display_height(line) > 1);
-                     let mut truncated_status_line = if status_line_active {
-                         combined_status_line.as_ref().map(|line| {
--                            truncate_line_with_ellipsis_if_overflow(line.clone(), available_width)
-+                            if status_line_multiline {
-+                                line.clone()
-+                            } else {
-+                                truncate_line_with_ellipsis_if_overflow(
-+                                    line.clone(),
-+                                    available_width,
-+                                )
-+                            }
-                         })
-                     } else {
-                         None
-@@ -3978,7 +3990,7 @@ impl ChatComposer {
-                     } else if status_line_active {
-                         truncated_status_line
-                             .as_ref()
--                            .map(|line| line.width() as u16)
-+                            .map(|line| footer_line_display_width(line) as u16)
-                             .unwrap_or(0)
-                     } else {
-                         footer_line_width(
-@@ -3994,7 +4006,7 @@ impl ChatComposer {
-                             Some(side_conversation_context_line(label))
-                         } else if let Some(line) = self.shell_mode_footer_line() {
-                             Some(line)
--                        } else if status_line_active {
-+                        } else if status_line_active && !status_line_multiline {
-                             let full = status_line_right_indicator(
-                                 self.collaboration_mode_indicator,
-                                 self.goal_status_indicator.as_ref(),
-@@ -4011,21 +4023,24 @@ impl ChatComposer {
-                             } else {
-                                 compact
-                             }
--                        } else {
-+                        } else if !status_line_active {
-                             Some(context_window_line(
-                                 footer_props.context_window_percent,
-                                 footer_props.context_window_used_tokens,
-                             ))
-+                        } else {
-+                            None
-                         };
-                     let right_width = right_line.as_ref().map(|l| l.width() as u16).unwrap_or(0);
-                     if status_line_active
-                         && let Some(max_left) = max_left_width_for_right(hint_rect, right_width)
-                         && left_width > max_left
-+                        && !status_line_multiline
-                         && let Some(line) = combined_status_line.as_ref().map(|line| {
-                             truncate_line_with_ellipsis_if_overflow(line.clone(), max_left as usize)
-                         })
-                     {
--                        left_width = line.width() as u16;
-+                        left_width = footer_line_display_width(&line) as u16;
-                         truncated_status_line = Some(line);
-                     }
-                     let can_show_left_and_context =
-diff --git a/codex-rs/tui/src/bottom_pane/footer.rs b/codex-rs/tui/src/bottom_pane/footer.rs
-index 4f4f1d9..44845c3 100644
---- a/codex-rs/tui/src/bottom_pane/footer.rs
-+++ b/codex-rs/tui/src/bottom_pane/footer.rs
-@@ -225,13 +225,69 @@ pub(crate) fn footer_height(props: &FooterProps) -> u16 {
- /// Render a single precomputed footer line.
- pub(crate) fn render_footer_line(area: Rect, buf: &mut Buffer, line: Line<'static>) {
-     Paragraph::new(prefix_lines(
--        vec![line],
-+        split_footer_line(line),
-         " ".repeat(FOOTER_INDENT_COLS).into(),
-         " ".repeat(FOOTER_INDENT_COLS).into(),
-     ))
-     .render(area, buf);
- }
- 
-+pub(crate) fn footer_line_display_width(line: &Line<'static>) -> usize {
-+    split_footer_line(line.clone())
-+        .iter()
-+        .map(Line::width)
-+        .max()
-+        .unwrap_or(0)
-+}
-+
-+pub(crate) fn footer_line_display_height(line: &Line<'static>) -> usize {
-+    split_footer_line(line.clone()).len()
-+}
-+
-+fn split_footer_line(line: Line<'static>) -> Vec<Line<'static>> {
-+    let Line {
-+        style,
-+        alignment,
-+        spans,
-+    } = line;
-+    let mut split_spans: Vec<Vec<Span<'static>>> = vec![Vec::new()];
-+    for span in spans {
-+        let span_style = span.style;
-+        let mut segment = String::new();
-+        for ch in span.content.chars() {
-+            if ch == '\n' || ch == '\u{E000}' {
-+                if !segment.is_empty() {
-+                    split_spans
-+                        .last_mut()
-+                        .expect("split line has current row")
-+                        .push(Span::styled(std::mem::take(&mut segment), span_style));
-+                }
-+                split_spans.push(Vec::new());
-+            } else {
-+                segment.push(ch);
-+            }
-+        }
-+        if !segment.is_empty() {
-+            split_spans
-+                .last_mut()
-+                .expect("split line has current row")
-+                .push(Span::styled(segment, span_style));
-+        }
-+    }
-+    if split_spans.is_empty() {
-+        vec![Line::from(String::new())]
-+    } else {
-+        split_spans
-+            .into_iter()
-+            .map(|spans| Line {
-+                style,
-+                alignment,
-+                spans,
-+            })
-+            .collect()
-+    }
-+}
-+
- /// Render footer content directly from `FooterProps`.
- ///
- /// This is intentionally not part of the width-based collapse/fallback logic.
-@@ -640,7 +696,7 @@ fn footer_from_props_lines(
-     // Passive footer context can come from the configurable status line, the
-     // active agent label, or both combined.
-     if let Some(status_line) = passive_footer_status_line(props) {
--        return vec![status_line.dim()];
-+        return split_footer_line(status_line.dim());
-     }
-     match props.mode {
-         FooterMode::QuitShortcutReminder => {
-@@ -1199,6 +1255,9 @@ mod tests {
-                 } else {
-                     None
-                 };
-+                let status_line_multiline = passive_status_line
-+                    .as_ref()
-+                    .is_some_and(|line| footer_line_display_height(line) > 1);
-                 let left_mode_indicator = if status_line_active {
-                     None
-                 } else {
-@@ -1213,14 +1272,20 @@ mod tests {
-                     passive_status_line
-                         .as_ref()
-                         .map(|line| line.clone().dim())
--                        .map(|line| truncate_line_with_ellipsis_if_overflow(line, available_width))
-+                        .map(|line| {
-+                            if status_line_multiline {
-+                                line
-+                            } else {
-+                                truncate_line_with_ellipsis_if_overflow(line, available_width)
-+                            }
-+                        })
-                 } else {
-                     None
-                 };
-                 let mut left_width = if status_line_active {
-                     truncated_status_line
-                         .as_ref()
--                        .map(|line| line.width() as u16)
-+                        .map(|line| footer_line_display_width(line) as u16)
-                         .unwrap_or(0)
-                 } else {
-                     footer_line_width(
-@@ -1231,7 +1296,7 @@ mod tests {
-                         show_queue_hint,
-                     )
-                 };
--                let right_line = if status_line_active {
-+                let right_line = if status_line_active && !status_line_multiline {
-                     let full = mode_indicator_line(collaboration_mode_indicator, show_cycle_hint);
-                     let compact = mode_indicator_line(
-                         collaboration_mode_indicator,
-@@ -1243,11 +1308,13 @@ mod tests {
-                     } else {
-                         compact
-                     }
--                } else {
-+                } else if !status_line_active {
-                     Some(context_window_line(
-                         props.context_window_percent,
-                         props.context_window_used_tokens,
-                     ))
-+                } else {
-+                    None
-                 };
-                 let right_width = right_line
-                     .as_ref()
-@@ -1256,6 +1323,7 @@ mod tests {
-                 if status_line_active
-                     && let Some(max_left) = max_left_width_for_right(area, right_width)
-                     && left_width > max_left
-+                    && !status_line_multiline
-                     && let Some(line) = passive_status_line
-                         .as_ref()
-                         .map(|line| line.clone().dim())
-@@ -1263,7 +1331,7 @@ mod tests {
-                             truncate_line_with_ellipsis_if_overflow(line, max_left as usize)
-                         })
-                 {
--                    left_width = line.width() as u16;
-+                    left_width = footer_line_display_width(&line) as u16;
-                     truncated_status_line = Some(line);
-                 }
-                 let can_show_left_and_context =
-diff --git a/codex-rs/tui/src/bottom_pane/status_surface_preview.rs b/codex-rs/tui/src/bottom_pane/status_surface_preview.rs
-index 93fca82..dd4a9be 100644
---- a/codex-rs/tui/src/bottom_pane/status_surface_preview.rs
-+++ b/codex-rs/tui/src/bottom_pane/status_surface_preview.rs
-@@ -32,25 +32,25 @@ impl StatusSurfacePreviewItem {
-         match self {
-             StatusSurfacePreviewItem::AppName => "codex",
-             StatusSurfacePreviewItem::ProjectName => "my-project",
--            StatusSurfacePreviewItem::ProjectRoot => "my-project",
--            StatusSurfacePreviewItem::CurrentDir => "~/my-project/subdir",
--            StatusSurfacePreviewItem::Status => "Working",
--            StatusSurfacePreviewItem::ThreadTitle => "thread title",
--            StatusSurfacePreviewItem::GitBranch => "feat/awesome-feature",
--            StatusSurfacePreviewItem::ContextRemaining => "Context 0% left",
--            StatusSurfacePreviewItem::ContextUsed => "Context 0% used",
--            StatusSurfacePreviewItem::FiveHourLimit => "5h 0%",
--            StatusSurfacePreviewItem::WeeklyLimit => "weekly 0%",
--            StatusSurfacePreviewItem::CodexVersion => "0.0.0",
--            StatusSurfacePreviewItem::ContextWindowSize => "0 window",
--            StatusSurfacePreviewItem::UsedTokens => "0 used",
--            StatusSurfacePreviewItem::TotalInputTokens => "0 in",
--            StatusSurfacePreviewItem::TotalOutputTokens => "0 out",
--            StatusSurfacePreviewItem::SessionId => "550e8400-e29b-41d4",
--            StatusSurfacePreviewItem::FastMode => "Fast on",
--            StatusSurfacePreviewItem::Model => "gpt-5.2-codex",
--            StatusSurfacePreviewItem::ModelWithReasoning => "gpt-5.2-codex medium",
--            StatusSurfacePreviewItem::TaskProgress => "Tasks 0/0",
-+            StatusSurfacePreviewItem::ProjectRoot => "프로젝트 my-project",
-+            StatusSurfacePreviewItem::CurrentDir => "📁 폴더 ~/my-project/subdir",
-+            StatusSurfacePreviewItem::Status => "상태 Working",
-+            StatusSurfacePreviewItem::ThreadTitle => "스레드 thread title",
-+            StatusSurfacePreviewItem::GitBranch => "🌿 브랜치 feat/awesome-feature",
-+            StatusSurfacePreviewItem::ContextRemaining => "남은맥락 ░░░░░░░░░░ 0%",
-+            StatusSurfacePreviewItem::ContextUsed => "맥락사용 ░░░░░░░░░░ 0%",
-+            StatusSurfacePreviewItem::FiveHourLimit => "5시간 한도 남음 ░░░░░░░░░░ 0%",
-+            StatusSurfacePreviewItem::WeeklyLimit => "7일 한도 남음 ░░░░░░░░░░ 0%",
-+            StatusSurfacePreviewItem::CodexVersion => "버전 0.0.0",
-+            StatusSurfacePreviewItem::ContextWindowSize => "창 0",
-+            StatusSurfacePreviewItem::UsedTokens => "토큰 0",
-+            StatusSurfacePreviewItem::TotalInputTokens => "입력 0",
-+            StatusSurfacePreviewItem::TotalOutputTokens => "출력 0",
-+            StatusSurfacePreviewItem::SessionId => "세션 550e8400-e29b-41d4",
-+            StatusSurfacePreviewItem::FastMode => "빠른모드 켬",
-+            StatusSurfacePreviewItem::Model => "◆ 모델 gpt-5.2-codex",
-+            StatusSurfacePreviewItem::ModelWithReasoning => "◆ 모델 gpt-5.2-codex medium",
-+            StatusSurfacePreviewItem::TaskProgress => "진행 Tasks 0/0",
-         }
-     }
- 
-@@ -163,7 +163,7 @@ impl StatusSurfacePreviewData {
-             .into_iter()
-             .filter_map(|item| self.value_for(item))
-             .collect::<Vec<_>>()
--            .join(" · ");
-+            .join("  │  ");
-         if preview.is_empty() {
-             None
-         } else {
-diff --git a/codex-rs/tui/src/chatwidget.rs b/codex-rs/tui/src/chatwidget.rs
-index 8fbb2fe..b06f354 100644
---- a/codex-rs/tui/src/chatwidget.rs
-+++ b/codex-rs/tui/src/chatwidget.rs
-@@ -8329,10 +8329,26 @@ impl ChatWidget {
-         &self,
-         window: Option<&RateLimitWindowDisplay>,
-         label: &str,
-+        include_reset_date: bool,
-     ) -> Option<String> {
-         let window = window?;
-         let remaining = (100.0f64 - window.used_percent).clamp(0.0f64, 100.0f64);
--        Some(format!("{label} {remaining:.0}%"))
-+        let percent = remaining.round() as i64;
-+        let filled = ((percent + 5) / 10) as usize;
-+        let empty = 10usize.saturating_sub(filled);
-+        let bar = format!("{}{}", "█".repeat(filled), "░".repeat(empty));
-+        let reset_text = if include_reset_date {
-+            window
-+                .resets_at_with_date
-+                .as_ref()
-+                .or(window.resets_at.as_ref())
-+        } else {
-+            window.resets_at.as_ref()
-+        };
-+        let reset = reset_text
-+            .map(|resets_at| format!(" 리셋 {resets_at}"))
-+            .unwrap_or_default();
-+        Some(format!("{label} 남음 {bar} {percent}%{reset}"))
-     }
- 
-     fn status_line_reasoning_effort_label(effort: Option<ReasoningEffortConfig>) -> &'static str {
-diff --git a/codex-rs/tui/src/chatwidget/status_surfaces.rs b/codex-rs/tui/src/chatwidget/status_surfaces.rs
-index 6b590d7..9d41ee4 100644
---- a/codex-rs/tui/src/chatwidget/status_surfaces.rs
-+++ b/codex-rs/tui/src/chatwidget/status_surfaces.rs
-@@ -5,6 +5,7 @@
- 
- use super::*;
- use crate::status::format_tokens_compact;
-+use ratatui::text::Span;
- 
- /// Items shown in the terminal title when the user has not configured a
- /// custom selection. Intentionally minimal: activity indicator + project name.
-@@ -150,17 +151,31 @@ impl ChatWidget {
-             return;
-         }
- 
--        let mut parts = Vec::new();
-+        let mut top_parts = Vec::new();
-+        let mut bottom_parts = Vec::new();
-         for item in &selections.status_line_items {
-             if let Some(value) = self.status_line_value_for_item(item) {
--                parts.push(value);
-+                match item {
-+                    StatusLineItem::ContextRemaining
-+                    | StatusLineItem::ContextUsed
-+                    | StatusLineItem::CurrentDir
-+                    | StatusLineItem::GitBranch => bottom_parts.push(value),
-+                    _ => top_parts.push(value),
-+                }
-             }
-         }
- 
--        let line = if parts.is_empty() {
-+        let line = if top_parts.is_empty() && bottom_parts.is_empty() {
-             None
-+        } else if !top_parts.is_empty() && !bottom_parts.is_empty() {
-+            Some(Line::from(status_line_spans(&top_parts, &bottom_parts)))
-         } else {
--            Some(Line::from(parts.join(" · ")))
-+            let parts = if top_parts.is_empty() {
-+                bottom_parts
-+            } else {
-+                top_parts
-+            };
-+            Some(Line::from(status_line_spans(&parts, &[])))
-         };
-         self.set_status_line(line);
-     }
-@@ -498,79 +513,87 @@ impl ChatWidget {
-     /// git metadata.
-     pub(super) fn status_line_value_for_item(&mut self, item: &StatusLineItem) -> Option<String> {
-         match item {
--            StatusLineItem::ModelName => Some(self.model_display_name().to_string()),
--            StatusLineItem::ModelWithReasoning => Some(self.model_with_reasoning_display_name()),
--            StatusLineItem::CurrentDir => {
--                Some(format_directory_display(
--                    self.status_line_cwd(),
--                    /*max_width*/ None,
--                ))
--            }
--            StatusLineItem::ProjectRoot => self.status_line_project_root_name(),
--            StatusLineItem::GitBranch => self.status_line_branch.clone(),
--            StatusLineItem::Status => Some(self.run_state_status_text()),
-+            StatusLineItem::ModelName => Some(format!("◆ 모델 {}", self.model_display_name())),
-+            StatusLineItem::ModelWithReasoning => Some(format!(
-+                "◆ 모델 {}",
-+                self.model_with_reasoning_display_name()
-+            )),
-+            StatusLineItem::CurrentDir => Some(format!(
-+                "📁 폴더 {}",
-+                format_directory_display(self.status_line_cwd(), /*max_width*/ None,)
-+            )),
-+            StatusLineItem::ProjectRoot => self
-+                .status_line_project_root_name()
-+                .map(|project| format!("프로젝트 {project}")),
-+            StatusLineItem::GitBranch => self
-+                .status_line_branch
-+                .clone()
-+                .map(|branch| format!("🌿 브랜치 {branch}")),
-+            StatusLineItem::Status => Some(format!("상태 {}", self.run_state_status_text())),
-             StatusLineItem::UsedTokens => {
-                 let usage = self.status_line_total_usage();
-                 let total = usage.tokens_in_context_window();
-                 if total <= 0 {
-                     None
-                 } else {
--                    Some(format!("{} used", format_tokens_compact(total)))
-+                    Some(format!("토큰 {}", format_tokens_compact(total)))
-                 }
-             }
-             StatusLineItem::ContextRemaining => self
-                 .status_line_context_remaining_percent()
--                .map(|remaining| format!("Context {remaining}% left")),
-+                .map(|remaining| format!("남은맥락 {}", percent_bar(remaining))),
-             StatusLineItem::ContextUsed => self
-                 .status_line_context_used_percent()
--                .map(|used| format!("Context {used}% used")),
-+                .map(|used| format!("맥락사용 {}", percent_bar(used))),
-             StatusLineItem::FiveHourLimit => {
-                 let window = self
-                     .rate_limit_snapshots_by_limit_id
-                     .get("codex")
-                     .and_then(|s| s.primary.as_ref());
--                let label = window
--                    .and_then(|window| window.window_minutes)
--                    .map(get_limits_duration)
--                    .unwrap_or_else(|| "5h".to_string());
--                self.status_line_limit_display(window, &label)
-+                let label = window
-+                    .and_then(|window| window.window_minutes)
-+                    .map(korean_limit_duration)
-+                    .unwrap_or_else(|| "5시간 한도".to_string());
-+                self.status_line_limit_display(window, &label, /*include_reset_date*/ false)
-             }
-             StatusLineItem::WeeklyLimit => {
-                 let window = self
-                     .rate_limit_snapshots_by_limit_id
-                     .get("codex")
-                     .and_then(|s| s.secondary.as_ref());
--                let label = window
--                    .and_then(|window| window.window_minutes)
--                    .map(get_limits_duration)
--                    .unwrap_or_else(|| "weekly".to_string());
--                self.status_line_limit_display(window, &label)
-+                let label = window
-+                    .and_then(|window| window.window_minutes)
-+                    .map(korean_limit_duration)
-+                    .unwrap_or_else(|| "7일 한도".to_string());
-+                self.status_line_limit_display(window, &label, /*include_reset_date*/ true)
-             }
--            StatusLineItem::CodexVersion => Some(CODEX_CLI_VERSION.to_string()),
-+            StatusLineItem::CodexVersion => Some(format!("버전 {CODEX_CLI_VERSION}")),
-             StatusLineItem::ContextWindowSize => self
-                 .status_line_context_window_size()
--                .map(|cws| format!("{} window", format_tokens_compact(cws))),
-+                .map(|cws| format!("창 {}", format_tokens_compact(cws))),
-             StatusLineItem::TotalInputTokens => Some(format!(
--                "{} in",
-+                "입력 {}",
-                 format_tokens_compact(self.status_line_total_usage().input_tokens)
-             )),
-             StatusLineItem::TotalOutputTokens => Some(format!(
--                "{} out",
-+                "출력 {}",
-                 format_tokens_compact(self.status_line_total_usage().output_tokens)
-             )),
--            StatusLineItem::SessionId => self.thread_id.map(|id| id.to_string()),
-+            StatusLineItem::SessionId => self.thread_id.map(|id| format!("세션 {id}")),
-             StatusLineItem::FastMode => Some(
-                 if matches!(self.current_service_tier(), Some(ServiceTier::Fast)) {
--                    "Fast on".to_string()
-+                    "빠른모드 켬".to_string()
-                 } else {
--                    "Fast off".to_string()
-+                    "빠른모드 끔".to_string()
-                 },
-             ),
-             StatusLineItem::ThreadTitle => self.thread_name.as_ref().and_then(|name| {
-                 let trimmed = name.trim();
--                (!trimmed.is_empty()).then(|| trimmed.to_string())
-+                (!trimmed.is_empty()).then(|| format!("스레드 {trimmed}"))
-             }),
--            StatusLineItem::TaskProgress => self.terminal_title_task_progress(),
-+            StatusLineItem::TaskProgress => self
-+                .terminal_title_task_progress()
-+                .map(|progress| format!("진행 {progress}")),
-         }
-     }
- 
-@@ -801,6 +816,65 @@ impl ChatWidget {
-     }
- }
- 
-+fn percent_bar(percent: i64) -> String {
-+    let percent = percent.clamp(0, 100);
-+    let filled = ((percent + 5) / 10) as usize;
-+    let empty = 10usize.saturating_sub(filled);
-+    format!("{}{} {percent}%", "█".repeat(filled), "░".repeat(empty))
-+}
-+
-+fn korean_limit_duration(minutes: i64) -> String {
-+    if minutes >= 1440 && minutes % 1440 == 0 {
-+        format!("{}일 한도", minutes / 1440)
-+    } else if minutes >= 60 && minutes % 60 == 0 {
-+        format!("{}시간 한도", minutes / 60)
-+    } else {
-+        format!("{minutes}분 한도")
-+    }
-+}
-+
-+fn status_line_spans(top_parts: &[String], bottom_parts: &[String]) -> Vec<Span<'static>> {
-+    let mut spans = Vec::new();
-+    push_status_parts(&mut spans, top_parts);
-+    if !bottom_parts.is_empty() {
-+        spans.push(Span::raw("\u{E000}"));
-+        push_status_parts(&mut spans, bottom_parts);
-+    }
-+    spans
-+}
-+
-+fn push_status_parts(spans: &mut Vec<Span<'static>>, parts: &[String]) {
-+    for (index, part) in parts.iter().enumerate() {
-+        if index > 0 {
-+            spans.push(Span::styled("  │  ", Style::default().fg(Color::DarkGray)));
-+        }
-+        spans.push(Span::styled(part.clone(), status_item_style(part)));
-+    }
-+}
-+
-+fn status_item_style(part: &str) -> Style {
-+    let color = if part.starts_with("◆ 모델") {
-+        Color::Cyan
-+    } else if part.starts_with("상태") {
-+        Color::Yellow
-+    } else if part.starts_with("남은맥락") {
-+        Color::LightGreen
-+    } else if part.starts_with("맥락사용") {
-+        Color::LightMagenta
-+    } else if part.contains("시간 한도") || part.contains("분 한도") {
-+        Color::LightYellow
-+    } else if part.contains("일 한도") {
-+        Color::Green
-+    } else if part.starts_with("📁 폴더") {
-+        Color::LightBlue
-+    } else if part.starts_with("🌿 브랜치") {
-+        Color::LightGreen
-+    } else {
-+        Color::Gray
-+    };
-+    Style::default().fg(color)
-+}
-+
- fn parse_items_with_invalids<T>(ids: impl IntoIterator<Item = String>) -> (Vec<T>, Vec<String>)
- where
-     T: std::str::FromStr,
-diff --git a/codex-rs/tui/src/status/rate_limits.rs b/codex-rs/tui/src/status/rate_limits.rs
-index 559da21..c4dd66f 100644
---- a/codex-rs/tui/src/status/rate_limits.rs
-+++ b/codex-rs/tui/src/status/rate_limits.rs
-@@ -66,6 +66,8 @@ pub(crate) struct RateLimitWindowDisplay {
-     pub used_percent: f64,
-     /// Human-readable local reset time.
-     pub resets_at: Option<String>,
-+    /// Compact local reset time with ISO-like date for weekly display.
-+    pub resets_at_with_date: Option<String>,
-     /// Window length in minutes when provided by the server.
-     pub window_minutes: Option<i64>,
- }
-@@ -77,10 +79,13 @@ impl RateLimitWindowDisplay {
-             .and_then(|seconds| DateTime::<Utc>::from_timestamp(seconds, 0))
-             .map(|dt| dt.with_timezone(&Local));
-         let resets_at = resets_at_utc.map(|dt| format_reset_timestamp(dt, captured_at));
-+        let resets_at_with_date =
-+            resets_at_utc.map(|dt| dt.format("%H:%M on %y-%m-%d %a").to_string());
- 
-         Self {
-             used_percent: window.used_percent,
-             resets_at,
-+            resets_at_with_date,
-             window_minutes: window.window_minutes,
-         }
-     }
-@@ -358,6 +363,7 @@ mod tests {
-         RateLimitWindowDisplay {
-             used_percent,
-             resets_at: Some("soon".to_string()),
-+            resets_at_with_date: Some("soon".to_string()),
-             window_minutes: Some(300),
-         }
-     }
-@@ -415,11 +421,13 @@ mod tests {
-             primary: Some(RateLimitWindowDisplay {
-                 used_percent: 20.0,
-                 resets_at: Some("soon".to_string()),
-+                resets_at_with_date: Some("soon".to_string()),
-                 window_minutes: Some(60),
-             }),
-             secondary: Some(RateLimitWindowDisplay {
-                 used_percent: 40.0,
-                 resets_at: Some("later".to_string()),
-+                resets_at_with_date: Some("later".to_string()),
-                 window_minutes: None,
-             }),
-             credits: None,
+codex-rs/tui/src/app/background_requests.rs        |  15 ++
+ codex-rs/tui/src/app/event_dispatch.rs             |  16 +-
+ codex-rs/tui/src/app/tests.rs                      |   5 +-
+ codex-rs/tui/src/app_event.rs                      |   6 +-
+ codex-rs/tui/src/bottom_pane/chat_composer.rs      |  25 +++-
+ codex-rs/tui/src/bottom_pane/footer.rs             |  82 ++++++++++-
+ .../tui/src/bottom_pane/status_surface_preview.rs  |  40 ++---
+ codex-rs/tui/src/chatwidget.rs                     |  20 ++-
+ ...idget__tests__status_line_fast_mode_footer.snap |   2 +-
+ ...el_with_reasoning_context_remaining_footer.snap |   2 +-
+ ...atus_line_model_with_reasoning_fast_footer.snap |   2 +-
+ ...ts__status_line_setup_popup_hardcoded_only.snap |   2 +-
+ ...__tests__status_line_setup_popup_live_only.snap |   2 +-
+ ...dget__tests__status_line_setup_popup_mixed.snap |   2 +-
+ ...ts__status_surface_previews_hardcoded_only.snap |   2 +-
+ ...__tests__status_surface_previews_live_only.snap |   2 +-
+ ...dget__tests__status_surface_previews_mixed.snap |   2 +-
+ codex-rs/tui/src/chatwidget/status_surfaces.rs     | 162 ++++++++++++++++-----
+ .../tui/src/chatwidget/tests/status_and_layout.rs  |  21 ++-
+ .../chatwidget/tests/status_surface_previews.rs    |   2 +-
+ codex-rs/tui/src/status/rate_limits.rs             |   8 +
+ 21 files changed, 324 insertions(+), 96 deletions(-)
+
+--- Changes ---
+
+codex-rs/tui/src/app/background_requests.rs
+  @@ -44,6 +44,21 @@ impl App {
+  +    /// Schedules a `RefreshRateLimits` event to fire after 5 minutes so the
+  +    /// status line stays current during long sessions without the user running
+  +    /// `/status`. The spawned task holds only a lightweight sender clone and a
+  +    /// timer; it does not keep an `AppServerSession` open.
+  +    pub(super) fn schedule_auto_rate_limit_refresh(&self) {
+  +        const AUTO_REFRESH_INTERVAL: Duration = Duration::from_secs(300);
+  +        let tx = self.app_event_tx.clone();
+  +        tokio::spawn(async move {
+  +            tokio::time::sleep(AUTO_REFRESH_INTERVAL).await;
+  +            tx.send(AppEvent::RefreshRateLimits {
+  +                origin: RateLimitRefreshOrigin::AutoRefresh,
+  +            });
+  +        });
+  +    }
+  +
+       pub(super) fn send_add_credits_nudge_email(
+           &mut self,
+           app_server: &AppServerSession,
+  +15 -0
+
+codex-rs/tui/src/app/event_dispatch.rs
+  @@ -576,6 +576,10 @@ impl App {
+  +                            self.schedule_auto_rate_limit_refresh();
+  +                        }
+  +                        RateLimitRefreshOrigin::AutoRefresh => {
+  +                            self.schedule_auto_rate_limit_refresh();
+                           }
+                           RateLimitRefreshOrigin::StatusCommand { request_id } => {
+                               self.chat_widget
+  @@ -585,9 +589,15 @@ impl App {
+  -                    if let RateLimitRefreshOrigin::StatusCommand { request_id } = origin {
+  -                        self.chat_widget
+  -                            .finish_status_rate_limit_refresh(request_id);
+  +                    match origin {
+  +                        RateLimitRefreshOrigin::AutoRefresh
+  +                        | RateLimitRefreshOrigin::StartupPrefetch => {
+  +                            self.schedule_auto_rate_limit_refresh();
+  +                        }
+  +                        RateLimitRefreshOrigin::StatusCommand { request_id } => {
+  +                            self.chat_widget
+  +                                .finish_status_rate_limit_refresh(request_id);
+  +                        }
+                       }
+                   }
+               },
+  +13 -3
+
+codex-rs/tui/src/app/tests.rs
+  @@ -1219,10 +1219,7 @@ async fn token_usage_update_refreshes_status_line_with_runtime_context_window()
+  -    assert_eq!(
+  -        app.chat_widget.status_line_text(),
+  -        Some("950K window".into())
+  -    );
+  +    assert_eq!(app.chat_widget.status_line_text(), Some("창 950K".into()));
+   }
+   
+   #[tokio::test]
+  +1 -4
+
+codex-rs/tui/src/app_event.rs
+  @@ -97,7 +97,8 @@ pub(crate) struct ConnectorsSnapshot {
+  -/// "refreshing" state.
+  +/// "refreshing" state. An `AutoRefresh` fires periodically to keep the status
+  +/// line current without user interaction.
+   #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+   pub(crate) enum RateLimitRefreshOrigin {
+       /// Eagerly fetched after bootstrap so the first `/status` already has data.
+  @@ -105,6 +106,9 @@ pub(crate) enum RateLimitRefreshOrigin {
+  +    /// Periodic background refresh so the status bar stays current during long
+  +    /// sessions without any user-initiated `/status` invocation.
+  +    AutoRefresh,
+   }
+   
+   #[allow(clippy::large_enum_variant)]
+  +5 -1
+
+codex-rs/tui/src/bottom_pane/chat_composer.rs
+  @@ -164,6 +164,8 @@ use super::footer::context_window_line;
+  +use super::footer::footer_line_display_height;
+  +use super::footer::footer_line_display_width;
+   use super::footer::footer_line_width;
+   use super::footer::inset_footer_hint_area;
+   use super::footer::max_left_width_for_right;
+  @@ -3955,9 +3957,19 @@ impl ChatComposer {
+  +                    let status_line_multiline = combined_status_line
+  +                        .as_ref()
+  +                        .is_some_and(|line| footer_line_display_height(line) > 1);
+                       let mut truncated_status_line = if status_line_active {
+                           combined_status_line.as_ref().map(|line| {
+  -                            truncate_line_with_ellipsis_if_overflow(line.clone(), available_width)
+  +                            if status_line_multiline {
+  +                                line.clone()
+  +                            } else {
+  +                                truncate_line_with_ellipsis_if_overflow(
+  +                                    line.clone(),
+  +                                    available_width,
+  +                                )
+  +                            }
+                           })
+                       } else {
+                           None
+  @@ -3978,7 +3990,7 @@ impl ChatComposer {
+  -                            .map(|line| line.width() as u16)
+  +                            .map(|line| footer_line_display_width(line) as u16)
+                               .unwrap_or(0)
+                       } else {
+                           footer_line_width(
+  @@ -3994,7 +4006,7 @@ impl ChatComposer {
+  -                        } else if status_line_active {
+  +                        } else if status_line_active && !status_line_multiline {
+                               let full = status_line_right_indicator(
+                                   self.collaboration_mode_indicator,
+                                   self.goal_status_indicator.as_ref(),
+  @@ -4011,21 +4023,24 @@ impl ChatComposer {
+  -                        } else {
+  +                        } else if !status_line_active {
+                               Some(context_window_line(
+                                   footer_props.context_window_percent,
+                                   footer_props.context_window_used_tokens,
+                               ))
+  +                        } else {
+  +                            None
+                           };
+                       let right_width = right_line.as_ref().map(|l| l.width() as u16).unwrap_or(0);
+                       if status_line_active
+                           && let Some(max_left) = max_left_width_for_right(hint_rect, right_width)
+                           && left_width > max_left
+  +                        && !status_line_multiline
+                           && let Some(line) = combined_status_line.as_ref().map(|line| {
+                               truncate_line_with_ellipsis_if_overflow(line.clone(), max_left as usize)
+                           })
+                       {
+  -                        left_width = line.width() as u16;
+  +                        left_width = footer_line_display_width(&line) as u16;
+                           truncated_status_line = Some(line);
+                       }
+                       let can_show_left_and_context =
+  +20 -5
+
+codex-rs/tui/src/bottom_pane/footer.rs
+  @@ -225,13 +225,69 @@ pub(crate) fn footer_height(props: &FooterProps) -> u16 {
+  -        vec![line],
+  +        split_footer_line(line),
+           " ".repeat(FOOTER_INDENT_COLS).into(),
+           " ".repeat(FOOTER_INDENT_COLS).into(),
+       ))
+       .render(area, buf);
+   }
+   
+  +pub(crate) fn footer_line_display_width(line: &Line<'static>) -> usize {
+  +    split_footer_line(line.clone())
+  +        .iter()
+  +        .map(Line::width)
+  +        .max()
+  +        .unwrap_or(0)
+  +}
+  +
+  +pub(crate) fn footer_line_display_height(line: &Line<'static>) -> usize {
+  +    split_footer_line(line.clone()).len()
+  +}
+  +
+  +fn split_footer_line(line: Line<'static>) -> Vec<Line<'static>> {
+  +    let Line {
+  +        style,
+  +        alignment,
+  +        spans,
+  +    } = line;
+  +    let mut split_spans: Vec<Vec<Span<'static>>> = vec![Vec::new()];
+  +    for span in spans {
+  +        let span_style = span.style;
+  +        let mut segment = String::new();
+  +        for ch in span.content.chars() {
+  +            if ch == '\n' || ch == '\u{E000}' {
+  +                if !segment.is_empty() {
+  +                    split_spans
+  +                        .last_mut()
+  +                        .expect("split line has current row")
+  +                        .push(Span::styled(std::mem::take(&mut segment), span_style));
+  +                }
+  +                split_spans.push(Vec::new());
+  +            } else {
+  +                segment.push(ch);
+  +            }
+  +        }
+  +        if !segment.is_empty() {
+  +            split_spans
+  +                .last_mut()
+  +                .expect("split line has current row")
+  +                .push(Span::styled(segment, span_style));
+  +        }
+  +    }
+  +    if split_spans.is_empty() {
+  +        vec![Line::from(String::new())]
+  +    } else {
+  +        split_spans
+  +            .into_iter()
+  +            .map(|spans| Line {
+  +                style,
+  +                alignment,
+  +                spans,
+  +            })
+  +            .collect()
+  +    }
+  +}
+  +
+   /// Render footer content directly from `FooterProps`.
+   ///
+   /// This is intentionally not part of the width-based collapse/fallback logic.
+  @@ -640,7 +696,7 @@ fn footer_from_props_lines(
+  -        return vec![status_line.dim()];
+  +        return split_footer_line(status_line.dim());
+       }
+       match props.mode {
+           FooterMode::QuitShortcutReminder => {
+  @@ -1199,6 +1255,9 @@ mod tests {
+  +                let status_line_multiline = passive_status_line
+  +                    .as_ref()
+  +                    .is_some_and(|line| footer_line_display_height(line) > 1);
+                   let left_mode_indicator = if status_line_active {
+                       None
+                   } else {
+  @@ -1213,14 +1272,20 @@ mod tests {
+  -                        .map(|line| truncate_line_with_ellipsis_if_overflow(line, available_width))
+  +                        .map(|line| {
+  +                            if status_line_multiline {
+  +                                line
+  +                            } else {
+  +                                truncate_line_with_ellipsis_if_overflow(line, available_width)
+  +                            }
+  +                        })
+                   } else {
+                       None
+                   };
+                   let mut left_width = if status_line_active {
+                       truncated_status_line
+                           .as_ref()
+  -                        .map(|line| line.width() as u16)
+  +                        .map(|line| footer_line_display_width(line) as u16)
+                           .unwrap_or(0)
+                   } else {
+                       footer_line_width(
+  @@ -1231,7 +1296,7 @@ mod tests {
+  -                let right_line = if status_line_active {
+  +                let right_line = if status_line_active && !status_line_multiline {
+                       let full = mode_indicator_line(collaboration_mode_indicator, show_cycle_hint);
+                       let compact = mode_indicator_line(
+                           collaboration_mode_indicator,
+  @@ -1243,11 +1308,13 @@ mod tests {
+  -                } else {
+  +                } else if !status_line_active {
+                       Some(context_window_line(
+                           props.context_window_percent,
+                           props.context_window_used_tokens,
+                       ))
+  +                } else {
+  +                    None
+                   };
+                   let right_width = right_line
+                       .as_ref()
+  @@ -1256,6 +1323,7 @@ mod tests {
+  +                    && !status_line_multiline
+                       && let Some(line) = passive_status_line
+                           .as_ref()
+                           .map(|line| line.clone().dim())
+  @@ -1263,7 +1331,7 @@ mod tests {
+  -                    left_width = line.width() as u16;
+  +                    left_width = footer_line_display_width(&line) as u16;
+                       truncated_status_line = Some(line);
+                   }
+                   let can_show_left_and_context =
+  +75 -7
+
+codex-rs/tui/src/bottom_pane/status_surface_preview.rs
+  @@ -32,25 +32,25 @@ impl StatusSurfacePreviewItem {
+  -            StatusSurfacePreviewItem::ProjectRoot => "my-project",
+  -            StatusSurfacePreviewItem::CurrentDir => "~/my-project/subdir",
+  -            StatusSurfacePreviewItem::Status => "Working",
+  -            StatusSurfacePreviewItem::ThreadTitle => "thread title",
+  -            StatusSurfacePreviewItem::GitBranch => "feat/awesome-feature",
+  -            StatusSurfacePreviewItem::ContextRemaining => "Context 0% left",
+  -            StatusSurfacePreviewItem::ContextUsed => "Context 0% used",
+  -            StatusSurfacePreviewItem::FiveHourLimit => "5h 0%",
+  -            StatusSurfacePreviewItem::WeeklyLimit => "weekly 0%",
+  -            StatusSurfacePreviewItem::CodexVersion => "0.0.0",
+  -            StatusSurfacePreviewItem::ContextWindowSize => "0 window",
+  -            StatusSurfacePreviewItem::UsedTokens => "0 used",
+  -            StatusSurfacePreviewItem::TotalInputTokens => "0 in",
+  -            StatusSurfacePreviewItem::TotalOutputTokens => "0 out",
+  -            StatusSurfacePreviewItem::SessionId => "550e8400-e29b-41d4",
+  -            StatusSurfacePreviewItem::FastMode => "Fast on",
+  -            StatusSurfacePreviewItem::Model => "gpt-5.2-codex",
+  -            StatusSurfacePreviewItem::ModelWithReasoning => "gpt-5.2-codex medium",
+  -            StatusSurfacePreviewItem::TaskProgress => "Tasks 0/0",
+  +            StatusSurfacePreviewItem::ProjectRoot => "프로젝트 my-project",
+  +            StatusSurfacePreviewItem::CurrentDir => "📁 폴더 ~/my-project/subdir",
+  +            StatusSurfacePreviewItem::Status => "상태 Working",
+  +            StatusSurfacePreviewItem::ThreadTitle => "스레드 thread title",
+  +            StatusSurfacePreviewItem::GitBranch => "🌿 브랜치 feat/awesome-feature",
+  +            StatusSurfacePreviewItem::ContextRemaining => "남은맥락 ░░░░░░░░░░ 0%",
+  +            StatusSurfacePreviewItem::ContextUsed => "맥락사용 ░░░░░░░░░░ 0%",
+  +            StatusSurfacePreviewItem::FiveHourLimit => "5시간 한도 남음 ░░░░░░░░░░ 0%",
+  +            StatusSurfacePreviewItem::WeeklyLimit => "7일 한도 남음 ░░░░░░░░░░ 0%",
+  +            StatusSurfacePreviewItem::CodexVersion => "버전 0.0.0",
+  +            StatusSurfacePreviewItem::ContextWindowSize => "창 0",
+  +            StatusSurfacePreviewItem::UsedTokens => "토큰 0",
+  +            StatusSurfacePreviewItem::TotalInputTokens => "입력 0",
+  +            StatusSurfacePreviewItem::TotalOutputTokens => "출력 0",
+  +            StatusSurfacePreviewItem::SessionId => "세션 550e8400-e29b-41d4",
+  +            StatusSurfacePreviewItem::FastMode => "빠른모드 켬",
+  +            StatusSurfacePreviewItem::Model => "◆ 모델 gpt-5.2-codex",
+  +            StatusSurfacePreviewItem::ModelWithReasoning => "◆ 모델 gpt-5.2-codex medium",
+  +            StatusSurfacePreviewItem::TaskProgress => "진행 Tasks 0/0",
+           }
+       }
+   
+  @@ -163,7 +163,7 @@ impl StatusSurfacePreviewData {
+  -            .join(" · ");
+  +            .join("  │  ");
+           if preview.is_empty() {
+               None
+           } else {
+  +20 -20
+
+codex-rs/tui/src/chatwidget.rs
+  @@ -8329,10 +8329,26 @@ impl ChatWidget {
+  +        include_reset_date: bool,
+       ) -> Option<String> {
+           let window = window?;
+  -        let remaining = (100.0f64 - window.used_percent).clamp(0.0f64, 100.0f64);
+  -        Some(format!("{label} {remaining:.0}%"))
+  +        let used = window.used_percent.clamp(0.0f64, 100.0f64);
+  +        let percent = used.round() as i64;
+  +        let filled = ((percent + 5) / 10) as usize;
+  +        let empty = 10usize.saturating_sub(filled);
+  +        let bar = format!("{}{}", "█".repeat(filled), "░".repeat(empty));
+  +        let reset_text = if include_reset_date {
+  +            window
+  +                .resets_at_with_date
+  +                .as_ref()
+  +                .or(window.resets_at.as_ref())
+  +        } else {
+  +            window.resets_at.as_ref()
+  +        };
+  +        let reset = reset_text
+  +            .map(|resets_at| format!(" 리셋 {resets_at}"))
+  +            .unwrap_or_default();
+  +        Some(format!("{label} 사용 {bar} {percent}%{reset}"))
+       }
+   
+       fn status_line_reasoning_effort_label(effort: Option<ReasoningEffortConfig>) -> &'static str {
+  +18 -2
+
+codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_fast_mode_footer.snap
+  @@ -6,4 +6,4 @@ expression: terminal.backend()
+  -"  Fast on                                                                       "
+  +"  빠른모드 켬                                                                        "
+  +1 -1
+
+codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_model_with_reasoning_context_remaining_footer.snap
+  @@ -6,4 +6,4 @@ expression: normalized_backend_snapshot(terminal.backend())
+  -"  gpt-5.4 xhigh fast · Context 100% left · /tmp/project                         "
+  +"  ◆ 모델 gpt-5.4 xhigh fast  │  남은맥락 100%  │  📁 폴더 /tmp/project                   "
+  +1 -1
+
+codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_model_with_reasoning_fast_footer.snap
+  @@ -6,4 +6,4 @@ expression: normalized_backend_snapshot(terminal.backend())
+  -"  gpt-5.4 xhigh fast · Context 0% used · /tmp/project                           "
+  +"  ◆ 모델 gpt-5.4 xhigh fast  │  맥락사용 0%  │  📁 폴더 /tmp/project                     "
+  +1 -1
+
+codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_setup_popup_hardcoded_only.snap
+  @@ -16,5 +16,5 @@ expression: status_line_popup_snapshot(&mut chat)
+  -  my-project · feat/awesome-feature · thread title
+  +  프로젝트 my-project  │  🌿 브랜치 feat/awesome-feature  │  스레드 thread title
+     Use ↑↓ to navigate, ←→ to move, space to select, enter to confirm, esc to cancel.
+  +1 -1
+
+codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_setup_popup_live_only.snap
+  @@ -16,5 +16,5 @@ expression: status_line_popup_snapshot(&mut chat)
+  -  preview-live-root · feature/live-preview-branch · Live preview thread
+  +  프로젝트 preview-live-root  │  🌿 브랜치 feature/live-preview-branch  │  스레드 Live preview thread
+     Use ↑↓ to navigate, ←→ to move, space to select, enter to confirm, esc to cancel.
+  +1 -1
+
+codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_setup_popup_mixed.snap
+  @@ -16,5 +16,5 @@ expression: status_line_popup_snapshot(&mut chat)
+  -  my-project · feature/mixed-preview · Mixed preview thread
+  +  프로젝트 my-project  │  🌿 브랜치 feature/mixed-preview  │  스레드 Mixed preview thread
+     Use ↑↓ to navigate, ←→ to move, space to select, enter to confirm, esc to cancel.
+  +1 -1
+
+codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_surface_previews_hardcoded_only.snap
+  @@ -2,5 +2,5 @@
+  -status line: my-project · feat/awesome-feature · thread title
+  +status line: 프로젝트 my-project  │  🌿 브랜치 feat/awesome-feature  │  스레드 thread title
+   terminal title: thread title | feat/awesome-feature | Tasks 0/0
+  +1 -1
+
+codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_surface_previews_live_only.snap
+  @@ -2,5 +2,5 @@
+  -status line: preview-live-root · feature/live-preview-branch · Live preview thread
+  +status line: 프로젝트 preview-live-root  │  🌿 브랜치 feature/live-preview-branch  │  스레드 Live preview thread
+   terminal title: preview-live-root | Live preview thread | feature/live-preview-branch | Tasks 2/5
+  +1 -1
+
+codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_surface_previews_mixed.snap
+  @@ -2,5 +2,5 @@
+  -status line: my-project · feature/mixed-preview · Mixed preview thread
+  +status line: 프로젝트 my-project  │  🌿 브랜치 feature/mixed-preview  │  스레드 Mixed preview thread
+   terminal title: project | Mixed preview thread | Tasks 0/0
+  +1 -1
+
+codex-rs/tui/src/chatwidget/status_surfaces.rs
+  @@ -5,6 +5,7 @@
+  +use ratatui::text::Span;
+   
+   /// Items shown in the terminal title when the user has not configured a
+   /// custom selection. Intentionally minimal: activity indicator + project name.
+  @@ -150,17 +151,32 @@ impl ChatWidget {
+  -        let mut parts = Vec::new();
+  +        let mut top_parts = Vec::new();
+  +        let mut bottom_parts = Vec::new();
+           for item in &selections.status_line_items {
+               if let Some(value) = self.status_line_value_for_item(item) {
+  -                parts.push(value);
+  +                match item {
+  +                    StatusLineItem::ContextRemaining
+  +                    | StatusLineItem::ContextUsed
+  +                    | StatusLineItem::CurrentDir
+  +                    | StatusLineItem::ProjectRoot
+  +                    | StatusLineItem::GitBranch => bottom_parts.push(value),
+  +                    _ => top_parts.push(value),
+  +                }
+               }
+           }
+   
+  -        let line = if parts.is_empty() {
+  +        let line = if top_parts.is_empty() && bottom_parts.is_empty() {
+               None
+  +        } else if !top_parts.is_empty() && !bottom_parts.is_empty() {
+  +            Some(Line::from(status_line_spans(&top_parts, &bottom_parts)))
+           } else {
+  -            Some(Line::from(parts.join(" · ")))
+  +            let parts = if top_parts.is_empty() {
+  +                bottom_parts
+  +            } else {
+  +                top_parts
+  +            };
+  +            Some(Line::from(status_line_spans(&parts, &[])))
+           };
+           self.set_status_line(line);
+       }
+  @@ -498,32 +514,38 @@ impl ChatWidget {
+  -            StatusLineItem::ModelName => Some(self.model_display_name().to_string()),
+  -            StatusLineItem::ModelWithReasoning => Some(self.model_with_reasoning_display_name()),
+  -            StatusLineItem::CurrentDir => {
+  -                Some(format_directory_display(
+  -                    self.status_line_cwd(),
+  -                    /*max_width*/ None,
+  -                ))
+  -            }
+  -            StatusLineItem::ProjectRoot => self.status_line_project_root_name(),
+  -            StatusLineItem::GitBranch => self.status_line_branch.clone(),
+  -            StatusLineItem::Status => Some(self.run_state_status_text()),
+  +            StatusLineItem::ModelName => Some(format!("◆ 모델 {}", self.model_display_name())),
+  +            StatusLineItem::ModelWithReasoning => Some(format!(
+  +                "◆ 모델 {}",
+  +                self.model_with_reasoning_display_name()
+  +            )),
+  +            StatusLineItem::CurrentDir => Some(format!(
+  +                "📁 폴더 {}",
+  +                format_directory_display(self.status_line_cwd(), /*max_width*/ None,)
+  +            )),
+  +            StatusLineItem::ProjectRoot => self
+  +                .status_line_project_root_name()
+  +                .map(|project| format!("프로젝트 {project}")),
+  +            StatusLineItem::GitBranch => self
+  +                .status_line_branch
+  +                .clone()
+  +                .map(|branch| format!("🌿 브랜치 {branch}")),
+  +            StatusLineItem::Status => Some(format!("상태 {}", self.run_state_status_text())),
+               StatusLineItem::UsedTokens => {
+                   let usage = self.status_line_total_usage();
+                   let total = usage.tokens_in_context_window();
+                   if total <= 0 {
+                       None
+                   } else {
+  -                    Some(format!("{} used", format_tokens_compact(total)))
+  +                    Some(format!("토큰 {}", format_tokens_compact(total)))
+                   }
+               }
+               StatusLineItem::ContextRemaining => self
+                   .status_line_context_remaining_percent()
+  -                .map(|remaining| format!("Context {remaining}% left")),
+  +                .map(|remaining| format!("남은맥락 {}", percent_bar(remaining))),
+               StatusLineItem::ContextUsed => self
+                   .status_line_context_used_percent()
+  -                .map(|used| format!("Context {used}% used")),
+  +                .map(|used| format!("맥락사용 {}", percent_bar(used))),
+               StatusLineItem::FiveHourLimit => {
+                   let window = self
+                       .rate_limit_snapshots_by_limit_id
+  @@ -531,9 +553,9 @@ impl ChatWidget {
+  -                    .map(get_limits_duration)
+  -                    .unwrap_or_else(|| "5h".to_string());
+  -                self.status_line_limit_display(window, &label)
+  +                    .map(korean_limit_duration)
+  +                    .unwrap_or_else(|| "5시간 한도".to_string());
+  +                self.status_line_limit_display(window, &label, /*include_reset_date*/ false)
+               }
+               StatusLineItem::WeeklyLimit => {
+                   let window = self
+  @@ -542,35 +564,37 @@ impl ChatWidget {
+  -                    .map(get_limits_duration)
+  -                    .unwrap_or_else(|| "weekly".to_string());
+
+... (more changes truncated)
+  +43 -23
+[full diff: rtk git diff --no-compact]
