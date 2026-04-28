@@ -336,7 +336,7 @@ index 4f4f1d9..44845c3 100644
                  }
                  let can_show_left_and_context =
 diff --git a/codex-rs/tui/src/bottom_pane/status_surface_preview.rs b/codex-rs/tui/src/bottom_pane/status_surface_preview.rs
-index 93fca82..f81abdf 100644
+index 93fca82..d1ed753 100644
 --- a/codex-rs/tui/src/bottom_pane/status_surface_preview.rs
 +++ b/codex-rs/tui/src/bottom_pane/status_surface_preview.rs
 @@ -32,25 +32,25 @@ impl StatusSurfacePreviewItem {
@@ -362,8 +362,8 @@ index 93fca82..f81abdf 100644
 -            StatusSurfacePreviewItem::Model => "gpt-5.2-codex",
 -            StatusSurfacePreviewItem::ModelWithReasoning => "gpt-5.2-codex medium",
 -            StatusSurfacePreviewItem::TaskProgress => "Tasks 0/0",
-+            StatusSurfacePreviewItem::ProjectRoot => "프로젝트 my-project",
-+            StatusSurfacePreviewItem::CurrentDir => "📁 폴더 ~/my-project/subdir",
++            StatusSurfacePreviewItem::ProjectRoot => "프로젝트명 my-project",
++            StatusSurfacePreviewItem::CurrentDir => "폴더 ~/my-project/subdir",
 +            StatusSurfacePreviewItem::Status => "상태 Working",
 +            StatusSurfacePreviewItem::ThreadTitle => "스레드 thread title",
 +            StatusSurfacePreviewItem::GitBranch => "🌿 브랜치 feat/awesome-feature",
@@ -378,8 +378,8 @@ index 93fca82..f81abdf 100644
 +            StatusSurfacePreviewItem::TotalOutputTokens => "출력 0",
 +            StatusSurfacePreviewItem::SessionId => "세션 550e8400-e29b-41d4",
 +            StatusSurfacePreviewItem::FastMode => "빠른모드 켬",
-+            StatusSurfacePreviewItem::Model => "◆ 모델 gpt-5.2-codex",
-+            StatusSurfacePreviewItem::ModelWithReasoning => "◆ 모델 gpt-5.2-codex medium",
++            StatusSurfacePreviewItem::Model => "모델명 gpt-5.2-codex",
++            StatusSurfacePreviewItem::ModelWithReasoning => "모델명 gpt-5.2-codex medium",
 +            StatusSurfacePreviewItem::TaskProgress => "진행 Tasks 0/0",
          }
      }
@@ -523,7 +523,7 @@ index ab50a69..983ce3e 100644
 +status line: 프로젝트 my-project  │  🌿 브랜치 feature/mixed-preview  │  스레드 Mixed preview thread
  terminal title: project | Mixed preview thread | Tasks 0/0
 diff --git a/codex-rs/tui/src/chatwidget/status_surfaces.rs b/codex-rs/tui/src/chatwidget/status_surfaces.rs
-index 6b590d7..03e54c4 100644
+index 6b590d7..f62dbaf 100644
 --- a/codex-rs/tui/src/chatwidget/status_surfaces.rs
 +++ b/codex-rs/tui/src/chatwidget/status_surfaces.rs
 @@ -5,6 +5,7 @@
@@ -586,18 +586,18 @@ index 6b590d7..03e54c4 100644
 -            StatusLineItem::ProjectRoot => self.status_line_project_root_name(),
 -            StatusLineItem::GitBranch => self.status_line_branch.clone(),
 -            StatusLineItem::Status => Some(self.run_state_status_text()),
-+            StatusLineItem::ModelName => Some(format!("◆ 모델 {}", self.model_display_name())),
++            StatusLineItem::ModelName => Some(format!("모델명 {}", self.model_display_name())),
 +            StatusLineItem::ModelWithReasoning => Some(format!(
-+                "◆ 모델 {}",
++                "모델명 {}",
 +                self.model_with_reasoning_display_name()
 +            )),
 +            StatusLineItem::CurrentDir => Some(format!(
-+                "📁 폴더 {}",
++                "폴더 {}",
 +                format_directory_display(self.status_line_cwd(), /*max_width*/ None,)
 +            )),
 +            StatusLineItem::ProjectRoot => self
 +                .status_line_project_root_name()
-+                .map(|project| format!("프로젝트 {project}")),
++                .map(|project| format!("프로젝트명 {project}")),
 +            StatusLineItem::GitBranch => self
 +                .status_line_branch
 +                .clone()
@@ -687,7 +687,7 @@ index 6b590d7..03e54c4 100644
          }
      }
  
-@@ -801,6 +825,78 @@ impl ChatWidget {
+@@ -801,6 +825,80 @@ impl ChatWidget {
      }
  }
  
@@ -743,7 +743,7 @@ index 6b590d7..03e54c4 100644
 +}
 +
 +fn status_item_style(part: &str) -> Style {
-+    let color = if part.starts_with("◆ 모델") {
++    let color = if part.starts_with("모델명") {
 +        Color::Cyan
 +    } else if part.starts_with("상태") {
 +        Color::Yellow
@@ -753,7 +753,9 @@ index 6b590d7..03e54c4 100644
 +        Color::LightMagenta
 +    } else if part.contains("시간 사용량") || part.contains("분 사용량") || part.contains("일 사용량") {
 +        limit_usage_color(part)
-+    } else if part.starts_with("📁 폴더") {
++    } else if part.starts_with("프로젝트명") {
++        Color::LightCyan
++    } else if part.starts_with("폴더") {
 +        Color::LightBlue
 +    } else if part.starts_with("🌿 브랜치") {
 +        Color::LightGreen
@@ -767,7 +769,7 @@ index 6b590d7..03e54c4 100644
  where
      T: std::str::FromStr,
 diff --git a/codex-rs/tui/src/chatwidget/tests/status_and_layout.rs b/codex-rs/tui/src/chatwidget/tests/status_and_layout.rs
-index d7aefbe..5c2e40b 100644
+index d7aefbe..5ee6a6c 100644
 --- a/codex-rs/tui/src/chatwidget/tests/status_and_layout.rs
 +++ b/codex-rs/tui/src/chatwidget/tests/status_and_layout.rs
 @@ -122,7 +122,7 @@ async fn turn_started_uses_runtime_context_window_before_first_token_count() {
@@ -779,37 +781,40 @@ index d7aefbe..5c2e40b 100644
      );
      assert_eq!(chat.bottom_pane.context_window_percent(), Some(100));
  
-@@ -1287,7 +1287,7 @@ async fn status_line_context_used_renders_labeled_percent() {
+@@ -1287,7 +1287,10 @@ async fn status_line_context_used_renders_labeled_percent() {
  
      chat.refresh_status_line();
  
 -    assert_eq!(status_line_text(&chat), Some("Context 0% used".to_string()));
-+    assert_eq!(status_line_text(&chat), Some("맥락사용 0%".to_string()));
++    assert_eq!(
++        status_line_text(&chat),
++        Some("Context 사용량 ░░░░░░░░░░ 0%".to_string())
++    );
      assert!(
          drain_insert_history(&mut rx).is_empty(),
          "context-used should remain a valid status line item"
-@@ -1302,10 +1302,7 @@ async fn status_line_context_remaining_renders_labeled_percent() {
+@@ -1304,7 +1307,7 @@ async fn status_line_context_remaining_renders_labeled_percent() {
  
-     chat.refresh_status_line();
- 
--    assert_eq!(
--        status_line_text(&chat),
+     assert_eq!(
+         status_line_text(&chat),
 -        Some("Context 100% left".to_string())
--    );
-+    assert_eq!(status_line_text(&chat), Some("남은맥락 100%".to_string()));
++        Some("남은맥락 ██████████ 100%".to_string())
+     );
      assert!(
          drain_insert_history(&mut rx).is_empty(),
-         "context-remaining should remain a valid status line item"
-@@ -1320,7 +1317,7 @@ async fn status_line_legacy_context_usage_renders_context_used_percent() {
+@@ -1320,7 +1323,10 @@ async fn status_line_legacy_context_usage_renders_context_used_percent() {
  
      chat.refresh_status_line();
  
 -    assert_eq!(status_line_text(&chat), Some("Context 0% used".to_string()));
-+    assert_eq!(status_line_text(&chat), Some("맥락사용 0%".to_string()));
++    assert_eq!(
++        status_line_text(&chat),
++        Some("Context 사용량 ░░░░░░░░░░ 0%".to_string())
++    );
      assert!(
          drain_insert_history(&mut rx).is_empty(),
          "legacy context-usage should remain a valid status line item"
-@@ -1389,11 +1386,11 @@ async fn status_line_fast_mode_renders_on_and_off() {
+@@ -1389,11 +1395,11 @@ async fn status_line_fast_mode_renders_on_and_off() {
      chat.config.tui_status_line = Some(vec!["fast-mode".to_string()]);
  
      chat.refresh_status_line();
@@ -823,28 +828,28 @@ index d7aefbe..5c2e40b 100644
  }
  
  #[tokio::test]
-@@ -1440,7 +1437,9 @@ async fn status_line_model_with_reasoning_includes_fast_for_fast_capable_models(
+@@ -1440,7 +1446,9 @@ async fn status_line_model_with_reasoning_includes_fast_for_fast_capable_models(
  
      assert_eq!(
          status_line_text(&chat),
 -        Some(format!("gpt-5.4 xhigh fast · Context 0% used · {test_cwd}"))
 +        Some(format!(
-+            "◆ 모델 gpt-5.4 xhigh fast  │  맥락사용 0%  │  📁 폴더 {test_cwd}"
++            "모델명 gpt-5.4 xhigh fast  │  Context 사용량 ░░░░░░░░░░ 0%  │  폴더 {test_cwd}"
 +        ))
      );
  
      chat.set_model("gpt-5.3-codex");
-@@ -1449,7 +1448,7 @@ async fn status_line_model_with_reasoning_includes_fast_for_fast_capable_models(
+@@ -1449,7 +1457,7 @@ async fn status_line_model_with_reasoning_includes_fast_for_fast_capable_models(
      assert_eq!(
          status_line_text(&chat),
          Some(format!(
 -            "gpt-5.3-codex xhigh · Context 0% used · {test_cwd}"
-+            "◆ 모델 gpt-5.3-codex xhigh  │  맥락사용 0%  │  📁 폴더 {test_cwd}"
++            "모델명 gpt-5.3-codex xhigh  │  Context 사용량 ░░░░░░░░░░ 0%  │  폴더 {test_cwd}"
          ))
      );
  }
 diff --git a/codex-rs/tui/src/chatwidget/tests/status_surface_previews.rs b/codex-rs/tui/src/chatwidget/tests/status_surface_previews.rs
-index b13c735..033d25e 100644
+index b13c735..7d8457f 100644
 --- a/codex-rs/tui/src/chatwidget/tests/status_surface_previews.rs
 +++ b/codex-rs/tui/src/chatwidget/tests/status_surface_previews.rs
 @@ -236,7 +236,7 @@ async fn missing_project_root_uses_different_status_and_title_preview_sources()
@@ -852,7 +857,7 @@ index b13c735..033d25e 100644
      let title_preview = title_preview_line(&mut chat, &[TerminalTitleItem::Project]);
  
 -    assert_eq!(status_preview, "my-project");
-+    assert_eq!(status_preview, "프로젝트 my-project");
++    assert_eq!(status_preview, "프로젝트명 my-project");
      assert_eq!(title_preview, "project");
  }
  
