@@ -235,6 +235,64 @@ index 4f4f1d9..44845c3 100644
                      truncated_status_line = Some(line);
                  }
                  let can_show_left_and_context =
+diff --git a/codex-rs/tui/src/bottom_pane/status_surface_preview.rs b/codex-rs/tui/src/bottom_pane/status_surface_preview.rs
+index 93fca82..dd4a9be 100644
+--- a/codex-rs/tui/src/bottom_pane/status_surface_preview.rs
++++ b/codex-rs/tui/src/bottom_pane/status_surface_preview.rs
+@@ -32,25 +32,25 @@ impl StatusSurfacePreviewItem {
+         match self {
+             StatusSurfacePreviewItem::AppName => "codex",
+             StatusSurfacePreviewItem::ProjectName => "my-project",
+-            StatusSurfacePreviewItem::ProjectRoot => "my-project",
+-            StatusSurfacePreviewItem::CurrentDir => "~/my-project/subdir",
+-            StatusSurfacePreviewItem::Status => "Working",
+-            StatusSurfacePreviewItem::ThreadTitle => "thread title",
+-            StatusSurfacePreviewItem::GitBranch => "feat/awesome-feature",
+-            StatusSurfacePreviewItem::ContextRemaining => "Context 0% left",
+-            StatusSurfacePreviewItem::ContextUsed => "Context 0% used",
+-            StatusSurfacePreviewItem::FiveHourLimit => "5h 0%",
+-            StatusSurfacePreviewItem::WeeklyLimit => "weekly 0%",
+-            StatusSurfacePreviewItem::CodexVersion => "0.0.0",
+-            StatusSurfacePreviewItem::ContextWindowSize => "0 window",
+-            StatusSurfacePreviewItem::UsedTokens => "0 used",
+-            StatusSurfacePreviewItem::TotalInputTokens => "0 in",
+-            StatusSurfacePreviewItem::TotalOutputTokens => "0 out",
+-            StatusSurfacePreviewItem::SessionId => "550e8400-e29b-41d4",
+-            StatusSurfacePreviewItem::FastMode => "Fast on",
+-            StatusSurfacePreviewItem::Model => "gpt-5.2-codex",
+-            StatusSurfacePreviewItem::ModelWithReasoning => "gpt-5.2-codex medium",
+-            StatusSurfacePreviewItem::TaskProgress => "Tasks 0/0",
++            StatusSurfacePreviewItem::ProjectRoot => "프로젝트 my-project",
++            StatusSurfacePreviewItem::CurrentDir => "📁 폴더 ~/my-project/subdir",
++            StatusSurfacePreviewItem::Status => "상태 Working",
++            StatusSurfacePreviewItem::ThreadTitle => "스레드 thread title",
++            StatusSurfacePreviewItem::GitBranch => "🌿 브랜치 feat/awesome-feature",
++            StatusSurfacePreviewItem::ContextRemaining => "남은맥락 ░░░░░░░░░░ 0%",
++            StatusSurfacePreviewItem::ContextUsed => "맥락사용 ░░░░░░░░░░ 0%",
++            StatusSurfacePreviewItem::FiveHourLimit => "5시간 한도 남음 ░░░░░░░░░░ 0%",
++            StatusSurfacePreviewItem::WeeklyLimit => "7일 한도 남음 ░░░░░░░░░░ 0%",
++            StatusSurfacePreviewItem::CodexVersion => "버전 0.0.0",
++            StatusSurfacePreviewItem::ContextWindowSize => "창 0",
++            StatusSurfacePreviewItem::UsedTokens => "토큰 0",
++            StatusSurfacePreviewItem::TotalInputTokens => "입력 0",
++            StatusSurfacePreviewItem::TotalOutputTokens => "출력 0",
++            StatusSurfacePreviewItem::SessionId => "세션 550e8400-e29b-41d4",
++            StatusSurfacePreviewItem::FastMode => "빠른모드 켬",
++            StatusSurfacePreviewItem::Model => "◆ 모델 gpt-5.2-codex",
++            StatusSurfacePreviewItem::ModelWithReasoning => "◆ 모델 gpt-5.2-codex medium",
++            StatusSurfacePreviewItem::TaskProgress => "진행 Tasks 0/0",
+         }
+     }
+ 
+@@ -163,7 +163,7 @@ impl StatusSurfacePreviewData {
+             .into_iter()
+             .filter_map(|item| self.value_for(item))
+             .collect::<Vec<_>>()
+-            .join(" · ");
++            .join("  │  ");
+         if preview.is_empty() {
+             None
+         } else {
 diff --git a/codex-rs/tui/src/chatwidget.rs b/codex-rs/tui/src/chatwidget.rs
 index 8fbb2fe..b06f354 100644
 --- a/codex-rs/tui/src/chatwidget.rs
@@ -263,7 +321,7 @@ index 8fbb2fe..b06f354 100644
 +        let reset = reset_text
 +            .map(|resets_at| format!(" 리셋 {resets_at}"))
 +            .unwrap_or_default();
-+        Some(format!("{label} {bar} {percent}%{reset}"))
++        Some(format!("{label} 남음 {bar} {percent}%{reset}"))
      }
  
      fn status_line_reasoning_effort_label(effort: Option<ReasoningEffortConfig>) -> &'static str {
@@ -315,7 +373,7 @@ index 6b590d7..9d41ee4 100644
          };
          self.set_status_line(line);
      }
-@@ -498,79 +513,79 @@ impl ChatWidget {
+@@ -498,79 +513,87 @@ impl ChatWidget {
      /// git metadata.
      pub(super) fn status_line_value_for_item(&mut self, item: &StatusLineItem) -> Option<String> {
          match item {
@@ -375,7 +433,11 @@ index 6b590d7..9d41ee4 100644
 -                    .map(get_limits_duration)
 -                    .unwrap_or_else(|| "5h".to_string());
 -                self.status_line_limit_display(window, &label)
-+                self.status_line_limit_display(window, "5시간", /*include_reset_date*/ false)
++                let label = window
++                    .and_then(|window| window.window_minutes)
++                    .map(korean_limit_duration)
++                    .unwrap_or_else(|| "5시간 한도".to_string());
++                self.status_line_limit_display(window, &label, /*include_reset_date*/ false)
              }
              StatusLineItem::WeeklyLimit => {
                  let window = self
@@ -387,7 +449,11 @@ index 6b590d7..9d41ee4 100644
 -                    .map(get_limits_duration)
 -                    .unwrap_or_else(|| "weekly".to_string());
 -                self.status_line_limit_display(window, &label)
-+                self.status_line_limit_display(window, "7일", /*include_reset_date*/ true)
++                let label = window
++                    .and_then(|window| window.window_minutes)
++                    .map(korean_limit_duration)
++                    .unwrap_or_else(|| "7일 한도".to_string());
++                self.status_line_limit_display(window, &label, /*include_reset_date*/ true)
              }
 -            StatusLineItem::CodexVersion => Some(CODEX_CLI_VERSION.to_string()),
 +            StatusLineItem::CodexVersion => Some(format!("버전 {CODEX_CLI_VERSION}")),
@@ -428,7 +494,7 @@ index 6b590d7..9d41ee4 100644
          }
      }
  
-@@ -801,6 +816,55 @@ impl ChatWidget {
+@@ -801,6 +816,65 @@ impl ChatWidget {
      }
  }
  
@@ -437,6 +503,16 @@ index 6b590d7..9d41ee4 100644
 +    let filled = ((percent + 5) / 10) as usize;
 +    let empty = 10usize.saturating_sub(filled);
 +    format!("{}{} {percent}%", "█".repeat(filled), "░".repeat(empty))
++}
++
++fn korean_limit_duration(minutes: i64) -> String {
++    if minutes >= 1440 && minutes % 1440 == 0 {
++        format!("{}일 한도", minutes / 1440)
++    } else if minutes >= 60 && minutes % 60 == 0 {
++        format!("{}시간 한도", minutes / 60)
++    } else {
++        format!("{minutes}분 한도")
++    }
 +}
 +
 +fn status_line_spans(top_parts: &[String], bottom_parts: &[String]) -> Vec<Span<'static>> {
@@ -467,9 +543,9 @@ index 6b590d7..9d41ee4 100644
 +        Color::LightGreen
 +    } else if part.starts_with("맥락사용") {
 +        Color::LightMagenta
-+    } else if part.starts_with("5시간") {
++    } else if part.contains("시간 한도") || part.contains("분 한도") {
 +        Color::LightYellow
-+    } else if part.starts_with("7일") {
++    } else if part.contains("일 한도") {
 +        Color::Green
 +    } else if part.starts_with("📁 폴더") {
 +        Color::LightBlue
