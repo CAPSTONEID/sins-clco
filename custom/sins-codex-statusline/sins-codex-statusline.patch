@@ -437,27 +437,29 @@ index ad64469..ba2cb64 100644
 -"  Fast on                                                                       "
 +"  빠른모드 켬                                                                        "
 diff --git a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_model_with_reasoning_context_remaining_footer.snap b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_model_with_reasoning_context_remaining_footer.snap
-index 6200fdf..6294893 100644
+index 6200fdf..c47fe33 100644
 --- a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_model_with_reasoning_context_remaining_footer.snap
 +++ b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_model_with_reasoning_context_remaining_footer.snap
-@@ -6,4 +6,4 @@ expression: normalized_backend_snapshot(terminal.backend())
+@@ -6,4 +6,5 @@ expression: normalized_backend_snapshot(terminal.backend())
  "                                                                                "
  "› Ask Codex to do anything                                                      "
  "                                                                                "
 -"  gpt-5.4 xhigh fast · Context 100% left · /tmp/project                         "
-+"  ◆ 모델 gpt-5.4 xhigh fast  │  남은맥락 100%  │  📁 폴더 /tmp/project                   "
++"  모델명 gpt-5.4 xhigh fast                                                     " Hidden by multi-width symbols: [(3, " "), (5, " "), (7, " ")]
++"  남은맥락 ██████████ 100%  │  폴더 /tmp/project                                " Hidden by multi-width symbols: [(3, " "), (5, " "), (7, " "), (9, " "), (32, " "), (34, " ")]
 diff --git a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_model_with_reasoning_fast_footer.snap b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_model_with_reasoning_fast_footer.snap
-index 2ac794d..2fc42a1 100644
+index 2ac794d..03a95ee 100644
 --- a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_model_with_reasoning_fast_footer.snap
 +++ b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_model_with_reasoning_fast_footer.snap
-@@ -6,4 +6,4 @@ expression: normalized_backend_snapshot(terminal.backend())
+@@ -6,4 +6,5 @@ expression: normalized_backend_snapshot(terminal.backend())
  "                                                                                "
  "› Ask Codex to do anything                                                      "
  "                                                                                "
 -"  gpt-5.4 xhigh fast · Context 0% used · /tmp/project                           "
-+"  ◆ 모델 gpt-5.4 xhigh fast  │  Context 사용량 0%  │  📁 폴더 /tmp/project               "
++"  모델명 gpt-5.4 xhigh fast                                                     " Hidden by multi-width symbols: [(3, " "), (5, " "), (7, " ")]
++"  Context 사용량 ░░░░░░░░░░ 0%  │  폴더 /tmp/project                            " Hidden by multi-width symbols: [(11, " "), (13, " "), (15, " "), (36, " "), (38, " ")]
 diff --git a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_setup_popup_hardcoded_only.snap b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_setup_popup_hardcoded_only.snap
-index f1aca37..c78f3e2 100644
+index f1aca37..d6473bc 100644
 --- a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_setup_popup_hardcoded_only.snap
 +++ b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_setup_popup_hardcoded_only.snap
 @@ -16,5 +16,5 @@ expression: status_line_popup_snapshot(&mut chat)
@@ -465,10 +467,10 @@ index f1aca37..c78f3e2 100644
    [ ] context-remaining     Percentage of context window remaining (omitted when unknown)
  
 -  my-project · feat/awesome-feature · thread title
-+  프로젝트 my-project  │  🌿 브랜치 feat/awesome-feature  │  스레드 thread title
++  프 로 젝 트 명  my-project  │  🌿  브 랜 치  feat/awesome-feature  │  스 레 드  thread title
    Use ↑↓ to navigate, ←→ to move, space to select, enter to confirm, esc to cancel.
 diff --git a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_setup_popup_live_only.snap b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_setup_popup_live_only.snap
-index a5bb631..9161edc 100644
+index a5bb631..6681a28 100644
 --- a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_setup_popup_live_only.snap
 +++ b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_setup_popup_live_only.snap
 @@ -16,5 +16,5 @@ expression: status_line_popup_snapshot(&mut chat)
@@ -476,10 +478,10 @@ index a5bb631..9161edc 100644
    [ ] context-remaining     Percentage of context window remaining (omitted when unknown)
  
 -  preview-live-root · feature/live-preview-branch · Live preview thread
-+  프로젝트 preview-live-root  │  🌿 브랜치 feature/live-preview-branch  │  스레드 Live preview thread
++  프 로 젝 트 명  preview-live-root  │  🌿  브 랜 치  feature/live-preview-branch  │  스 레 드  Live preview …
    Use ↑↓ to navigate, ←→ to move, space to select, enter to confirm, esc to cancel.
 diff --git a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_setup_popup_mixed.snap b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_setup_popup_mixed.snap
-index e44459c..994c1f3 100644
+index e44459c..aa4c150 100644
 --- a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_setup_popup_mixed.snap
 +++ b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_setup_popup_mixed.snap
 @@ -16,5 +16,5 @@ expression: status_line_popup_snapshot(&mut chat)
@@ -487,10 +489,10 @@ index e44459c..994c1f3 100644
    [ ] context-remaining     Percentage of context window remaining (omitted when unknown)
  
 -  my-project · feature/mixed-preview · Mixed preview thread
-+  프로젝트 my-project  │  🌿 브랜치 feature/mixed-preview  │  스레드 Mixed preview thread
++  프 로 젝 트 명  my-project  │  🌿  브 랜 치  feature/mixed-preview  │  스 레 드  Mixed preview thread
    Use ↑↓ to navigate, ←→ to move, space to select, enter to confirm, esc to cancel.
 diff --git a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_surface_previews_hardcoded_only.snap b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_surface_previews_hardcoded_only.snap
-index abf3df3..3b0a867 100644
+index abf3df3..d786cc9 100644
 --- a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_surface_previews_hardcoded_only.snap
 +++ b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_surface_previews_hardcoded_only.snap
 @@ -2,5 +2,5 @@
@@ -498,10 +500,11 @@ index abf3df3..3b0a867 100644
  expression: snapshot
  ---
 -status line: my-project · feat/awesome-feature · thread title
-+status line: 프로젝트 my-project  │  🌿 브랜치 feat/awesome-feature  │  스레드 thread title
- terminal title: thread title | feat/awesome-feature | Tasks 0/0
+-terminal title: thread title | feat/awesome-feature | Tasks 0/0
++status line: 프로젝트명 my-project  │  🌿 브랜치 feat/awesome-feature  │  스레드 thread title
++terminal title: 스레드 thread title | 🌿 브랜치 feat/awesome-feature | 진행 Tasks 0/0
 diff --git a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_surface_previews_live_only.snap b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_surface_previews_live_only.snap
-index 4cf1871..4164546 100644
+index 4cf1871..ae8dc15 100644
 --- a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_surface_previews_live_only.snap
 +++ b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_surface_previews_live_only.snap
 @@ -2,5 +2,5 @@
@@ -509,10 +512,10 @@ index 4cf1871..4164546 100644
  expression: snapshot
  ---
 -status line: preview-live-root · feature/live-preview-branch · Live preview thread
-+status line: 프로젝트 preview-live-root  │  🌿 브랜치 feature/live-preview-branch  │  스레드 Live preview thread
++status line: 프로젝트명 preview-live-root  │  🌿 브랜치 feature/live-preview-branch  │  스레드 Live preview thread
  terminal title: preview-live-root | Live preview thread | feature/live-preview-branch | Tasks 2/5
 diff --git a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_surface_previews_mixed.snap b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_surface_previews_mixed.snap
-index ab50a69..983ce3e 100644
+index ab50a69..c8cc9a6 100644
 --- a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_surface_previews_mixed.snap
 +++ b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_surface_previews_mixed.snap
 @@ -2,5 +2,5 @@
@@ -520,10 +523,33 @@ index ab50a69..983ce3e 100644
  expression: snapshot
  ---
 -status line: my-project · feature/mixed-preview · Mixed preview thread
-+status line: 프로젝트 my-project  │  🌿 브랜치 feature/mixed-preview  │  스레드 Mixed preview thread
- terminal title: project | Mixed preview thread | Tasks 0/0
+-terminal title: project | Mixed preview thread | Tasks 0/0
++status line: 프로젝트명 my-project  │  🌿 브랜치 feature/mixed-preview  │  스레드 Mixed preview thread
++terminal title: project | Mixed preview thread | 진행 Tasks 0/0
+diff --git a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__terminal_title_setup_popup_hardcoded_only.snap b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__terminal_title_setup_popup_hardcoded_only.snap
+index 9ab8659..cbede30 100644
+--- a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__terminal_title_setup_popup_hardcoded_only.snap
++++ b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__terminal_title_setup_popup_hardcoded_only.snap
+@@ -16,5 +16,5 @@ expression: terminal_title_popup_snapshot(&mut chat)
+   [ ] activity       Spinner while working, action-required message while blocked.
+   [ ] run-state      Compact session run-state text (Ready, Working, Thinking)
+ 
+-  thread title | feat/awesome-feature | Tasks 0/0
++  스 레 드  thread title | 🌿  브 랜 치  feat/awesome-feature | 진 행  Tasks 0/0
+   Use ↑↓ to navigate, ←→ to move, space to select, enter to confirm, esc to cancel.
+diff --git a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__terminal_title_setup_popup_mixed.snap b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__terminal_title_setup_popup_mixed.snap
+index 842938c..061e15f 100644
+--- a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__terminal_title_setup_popup_mixed.snap
++++ b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__terminal_title_setup_popup_mixed.snap
+@@ -16,5 +16,5 @@ expression: terminal_title_popup_snapshot(&mut chat)
+   [ ] run-state      Compact session run-state text (Ready, Working, Thinking)
+   [ ] git-branch     Current Git branch (omitted when unavailable)
+ 
+-  project | Mixed preview thread | Tasks 0/0
++  project | Mixed preview thread | 진 행  Tasks 0/0
+   Use ↑↓ to navigate, ←→ to move, space to select, enter to confirm, esc to cancel.
 diff --git a/codex-rs/tui/src/chatwidget/status_surfaces.rs b/codex-rs/tui/src/chatwidget/status_surfaces.rs
-index 6b590d7..f62dbaf 100644
+index 6b590d7..cd3ce9a 100644
 --- a/codex-rs/tui/src/chatwidget/status_surfaces.rs
 +++ b/codex-rs/tui/src/chatwidget/status_surfaces.rs
 @@ -5,6 +5,7 @@
@@ -687,7 +713,7 @@ index 6b590d7..f62dbaf 100644
          }
      }
  
-@@ -801,6 +825,80 @@ impl ChatWidget {
+@@ -801,6 +825,97 @@ impl ChatWidget {
      }
  }
  
@@ -727,13 +753,25 @@ index 6b590d7..f62dbaf 100644
 +    }
 +}
 +
++fn usage_percent(part: &str) -> u8 {
++    part
++        .split_whitespace()
++        .find_map(|tok| tok.strip_suffix('%')?.parse::<u8>().ok())
++        .unwrap_or(0)
++}
++
++fn five_hour_limit_usage_color(part: &str) -> Color {
++    if usage_percent(part) >= 90 {
++        Color::Rgb(0xFF, 0x00, 0x3C)
++    } else {
++        Color::Rgb(0xFD, 0xFF, 0x00)
++    }
++}
++
 +/// Returns a color based on how much of the rate-limit window has been consumed.
 +/// The percentage is parsed from the trailing "NN% ..." portion of the part string.
 +fn limit_usage_color(part: &str) -> Color {
-+    let used_pct = part
-+        .split_whitespace()
-+        .find_map(|tok| tok.strip_suffix('%')?.parse::<u8>().ok())
-+        .unwrap_or(0);
++    let used_pct = usage_percent(part);
 +    match used_pct {
 +        0..=49 => Color::Green,
 +        50..=79 => Color::LightYellow,
@@ -751,7 +789,12 @@ index 6b590d7..f62dbaf 100644
 +        Color::LightGreen
 +    } else if part.starts_with("Context 사용량") {
 +        Color::LightMagenta
-+    } else if part.contains("시간 사용량") || part.contains("분 사용량") || part.contains("일 사용량") {
++    } else if part.starts_with("5시간 사용량") {
++        five_hour_limit_usage_color(part)
++    } else if part.contains("시간 사용량")
++        || part.contains("분 사용량")
++        || part.contains("일 사용량")
++    {
 +        limit_usage_color(part)
 +    } else if part.starts_with("프로젝트명") {
 +        Color::LightCyan
@@ -769,7 +812,7 @@ index 6b590d7..f62dbaf 100644
  where
      T: std::str::FromStr,
 diff --git a/codex-rs/tui/src/chatwidget/tests/status_and_layout.rs b/codex-rs/tui/src/chatwidget/tests/status_and_layout.rs
-index d7aefbe..5ee6a6c 100644
+index d7aefbe..675dc2b 100644
 --- a/codex-rs/tui/src/chatwidget/tests/status_and_layout.rs
 +++ b/codex-rs/tui/src/chatwidget/tests/status_and_layout.rs
 @@ -122,7 +122,7 @@ async fn turn_started_uses_runtime_context_window_before_first_token_count() {
@@ -834,7 +877,7 @@ index d7aefbe..5ee6a6c 100644
          status_line_text(&chat),
 -        Some(format!("gpt-5.4 xhigh fast · Context 0% used · {test_cwd}"))
 +        Some(format!(
-+            "모델명 gpt-5.4 xhigh fast  │  Context 사용량 ░░░░░░░░░░ 0%  │  폴더 {test_cwd}"
++            "모델명 gpt-5.4 xhigh fast\u{e000}Context 사용량 ░░░░░░░░░░ 0%  │  폴더 {test_cwd}"
 +        ))
      );
  
@@ -844,7 +887,7 @@ index d7aefbe..5ee6a6c 100644
          status_line_text(&chat),
          Some(format!(
 -            "gpt-5.3-codex xhigh · Context 0% used · {test_cwd}"
-+            "모델명 gpt-5.3-codex xhigh  │  Context 사용량 ░░░░░░░░░░ 0%  │  폴더 {test_cwd}"
++            "모델명 gpt-5.3-codex xhigh\u{e000}Context 사용량 ░░░░░░░░░░ 0%  │  폴더 {test_cwd}"
          ))
      );
  }
