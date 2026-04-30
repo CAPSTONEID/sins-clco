@@ -1,3 +1,0 @@
-[tui]
-status_line = ["model-with-reasoning", "five-hour-limit", "weekly-limit", "context-remaining", "context-used", "current-dir", "git-branch"]
-
