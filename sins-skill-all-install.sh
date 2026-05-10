@@ -100,10 +100,10 @@ case "$TARGET" in
     echo "   Claude Code를 재시작하면 /sins-* 스킬을 사용할 수 있습니다."
     ;;
   codex)
-    echo "   Codex에서 @${SKILL_DIR}/sins-web-pt/SKILL.md 처럼 파일 참조로 사용할 수 있습니다."
+    echo "   Codex에서 @${SKILL_DIR}/sins-web-pt/SKILL.md 또는 @${SKILL_DIR}/sins-cardvideo/SKILL.md 처럼 파일 참조로 사용할 수 있습니다."
     ;;
   hermes)
-    echo "   Hermes CLI를 재시작하거나 /reset 후 /skill sins-web-pt 또는 자동 스킬 로딩으로 사용할 수 있습니다."
+    echo "   Hermes CLI를 재시작하거나 /reset 후 /skill sins-web-pt, /skill sins-cardvideo 또는 자동 스킬 로딩으로 사용할 수 있습니다."
     echo "   Hermes가 없다면: curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash"
     ;;
 esac
