@@ -95,7 +95,7 @@ done <<< "$SKILLS"
 
 echo ""
 echo "✅ 설치 완료! 총 ${SKILL_COUNT}개 스킬이 $SKILL_DIR 에 설치되었습니다."
-echo "   /sins-web-pt는 첫 실행 시 make-slide neon-terminal 준비를 확인하고, 필요하면 npx -y make-slide@latest init을 자동 실행합니다. (npx 필요)"
+echo "   /sins-web-pt는 Lazyweb 레퍼런스 기반 웹 프레젠테이션과 TXT 대본을 생성하고, 최종 desktop/mobile 렌더링 검수를 자동으로 묶어서 수행합니다."
 case "$TARGET" in
   claude)
     echo "   Claude Code를 재시작하면 /sins-* 스킬을 사용할 수 있습니다."
