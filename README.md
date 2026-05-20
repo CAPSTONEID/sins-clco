@@ -67,6 +67,12 @@ curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-skil
 curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-skill-all-install.sh | bash -s -- hermes
 ```
 
+#### Antigravity CLI
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-skill-all-install.sh | bash -s -- antigravity
+```
+
 ---
 
 ### 방법 2 — 수동 설치
@@ -101,6 +107,16 @@ rm -rf /tmp/sins-clco
 echo "✅ Hermes Agent 설치 완료"
 ```
 
+#### Antigravity CLI
+
+```bash
+git clone https://github.com/CAPSTONEID/sins-clco.git /tmp/sins-clco
+cd /tmp/sins-clco
+bash sins-skill-all-install.sh antigravity
+rm -rf /tmp/sins-clco
+echo "✅ Antigravity CLI 설치 완료"
+```
+
 ---
 
 ### 방법 3 — 개별 스킬 설치
@@ -123,6 +139,12 @@ mkdir -p ~/.codex/skills
 
 ```bash
 mkdir -p ~/.hermes/skills/sins
+```
+
+#### Antigravity CLI 준비
+
+```bash
+mkdir -p ~/.agents/skills
 ```
 
 ---

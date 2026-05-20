@@ -21,8 +21,13 @@ case "$TARGET" in
     INSTALL_MODE="unzip"
     LABEL="Hermes Agent"
     ;;
+  antigravity)
+    SKILL_DIR="$HOME/.agents/skills"
+    INSTALL_MODE="unzip"
+    LABEL="Antigravity CLI"
+    ;;
   *)
-    echo "사용법: $0 [claude|codex|hermes]"
+    echo "사용법: $0 [claude|codex|hermes|antigravity]"
     echo "예시: $0 hermes"
     exit 1
     ;;
@@ -106,5 +111,8 @@ case "$TARGET" in
   hermes)
     echo "   Hermes CLI를 재시작하거나 /reset 후 /skill sins-web-pt, /skill sins-cardvideo 또는 자동 스킬 로딩으로 사용할 수 있습니다."
     echo "   Hermes가 없다면: curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash"
+    ;;
+  antigravity)
+    echo "   Antigravity CLI를 재시작하면 /sins-* 스킬을 사용할 수 있습니다."
     ;;
 esac
