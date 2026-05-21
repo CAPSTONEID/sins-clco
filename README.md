@@ -36,14 +36,14 @@ SINS 프로젝트용 Claude Code 스킬 모음과 멀티 에이전트 하네스�
 | `sins-imgvideo-prompt.skill` | `/sins-imgvideo-prompt` | AI 이미지·영상 프롬프트 생성 |
 | `sins-marketing-team.skill` | `/sins-marketing-team` | 마케팅 전략 팀 구성 및 실행 |
 | `sins-research-team.skill` | `/sins-research-team` | 리서치·분석 팀 구성 및 실행 |
-| `sins-web-pt.skill` | `/sins-web-pt` | 스크립트 기반 웹 발표자료 제작 (Lazyweb 레퍼런스 기반 디자인 + 자동 렌더링 검수) |
+| `sins-web-pt.skill` | `/sins-web-pt` | 스크립트/PPTX 기반 웹 발표자료 제작 (Lazyweb 레퍼런스 + frontend-slides 뷰포트 규칙 + 자동 렌더링 검수) |
 | `sins-muti-creator.skill` | `/sins-muti-creator` | 유튜브 스크립트·발표 대본·카드뉴스 통합 제작 (6개 페이지 자동 저장) |
 | `sins-press-release.skill` | `/sins-press-release` | 보도자료 작성 자동화 |
 | `sins-item-search.skill` | `/sins-item-search` | 아이템·상품 리서치 및 분석 |
 | `sins-cardvideo.skill` | `/sins-cardvideo` | JSON 기반 1080×1920 카드뉴스 영상 + 폴더 기반 16:9 HyperFrames 순차 카드 영상 제작 |
 | `sins-sidenote-pass.skill` | `/sins-sidenote-pass` | SideNotes 고정 폴더에 새 메모 저장 및 기본 접기 처리 |
 
-> 참고: `/sins-web-pt`는 Lazyweb MCP로 실제 웹/앱 스크린샷 레퍼런스를 검색한 뒤, 발표 주제에 맞는 레이아웃·색·밀도·컴포넌트 패턴을 반영해 HTML 웹 프레젠테이션과 TXT 발표 대본을 생성합니다. 최종 납품 전 desktop/mobile 렌더링 검수를 자동으로 묶어서 수행하도록 설계되어 있습니다.
+> 참고: `/sins-web-pt`는 Lazyweb MCP로 실제 웹/앱 스크린샷 레퍼런스를 검색한 뒤, 발표 주제에 맞는 레이아웃·색·밀도·컴포넌트 패턴을 반영해 HTML 웹 프레젠테이션과 TXT 발표 대본을 생성합니다. 이번 버전부터 `zarazhangrui/frontend-slides`의 단일 HTML, 스타일 프리뷰, PPTX 변환, 뷰포트 고정, 콘텐츠 밀도 제한 규칙을 `/sins-web-pt` 방식으로 흡수했습니다.
 
 ---
 
@@ -229,9 +229,9 @@ curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-researc
 
 ---
 
-**⑥ sins-web-pt** — 스크립트 기반 웹 발표자료 제작
+**⑥ sins-web-pt** — 스크립트/PPTX 기반 웹 발표자료 제작
 
-`sins-web-pt`는 Lazyweb MCP 디자인 리서치를 기반으로 사용합니다. HTML 작성 전 desktop 레퍼런스를 3회 이상 검색하고, 선택한 화면의 정보 구조·여백·타이포·카드/차트 패턴을 발표 내용에 맞게 재구성합니다. 최종 HTML은 키보드 전환만 허용하고, TXT 대본의 `(클릭)` 표시와 HTML 전환 단계가 1:1로 맞도록 검수합니다. 최종 납품 전 desktop/mobile 렌더링 검수는 한 번에 자동 실행하도록 스킬에 포함되어 있습니다.
+`sins-web-pt`는 Lazyweb MCP 디자인 리서치를 기반으로 사용합니다. HTML 작성 전 desktop 레퍼런스를 3회 이상 검색하고, 선택한 화면의 정보 구조·여백·타이포·카드/차트 패턴을 발표 내용에 맞게 재구성합니다. `frontend-slides`에서 가져온 단일 HTML, 스타일 프리뷰, PPTX 추출, 뷰포트 고정, 콘텐츠 밀도 제한 규칙도 포함되어 있습니다. 최종 HTML은 키보드 전환만 허용하고, TXT 대본의 `(클릭)` 표시와 HTML 전환 단계가 1:1로 맞도록 검수합니다.
 
 Claude Code:
 ```bash
