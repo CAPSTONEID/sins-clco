@@ -25,6 +25,33 @@ SINS 프로젝트용 Claude Code 및 Codex 스킬 패키지입니다.
 | `sins-sidenote-pass.skill` | `/sins-sidenote-pass` | SideNotes 고정 폴더에 새 메모 저장 및 기본 접기 처리 |
 | `sins-web-pt.skill` | `/sins-web-pt` | 스크립트/PPTX 기반 웹 발표자료 HTML 및 발표 대본 TXT 제작 |
 
+## 함께 설치되는 외부 오픈소스 스킬
+
+한 줄 설치와 수동 설치는 SINS 스킬 설치 후 아래 외부 스킬도 같이 설치합니다.
+
+| 이름 | 대상 | 출처 |
+|------|------|------|
+| Caveman | Claude 전용 | [JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman) |
+| Frontend Slides | Claude 전용 | [zarazhangrui/frontend-slides](https://github.com/zarazhangrui/frontend-slides) |
+| Grill Me | Claude 전용 | [mattpocock/skills](https://github.com/mattpocock/skills) |
+| Handoff | Claude 전용 | [mattpocock/skills](https://github.com/mattpocock/skills) |
+| gstack | Claude / Codex | [garrytan/gstack](https://github.com/garrytan/gstack) |
+| Superpowers | Claude / Codex | [obra/superpowers](https://github.com/obra/superpowers) |
+| Insane Search | Codex 전용 | [sinmb79/codex-insane-search](https://github.com/sinmb79/codex-insane-search) |
+| Insane Search | Claude 전용 | [fivetaku/insane-search](https://github.com/fivetaku/insane-search) |
+
+외부 스킬 설치를 건너뛰려면 다음처럼 실행합니다.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-skill-all-install.sh | SINS_SKIP_EXTERNAL=1 bash -s -- claude
+```
+
+`gstack`은 기본적으로 스킬 파일만 복사합니다. 브라우저 빌드와 Playwright 설치까지 포함한 gstack 자체 setup을 함께 실행하려면 다음처럼 명시합니다.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-skill-all-install.sh | SINS_RUN_GSTACK_SETUP=1 bash -s -- claude
+```
+
 ## 한 줄 설치
 
 ### Claude Code
