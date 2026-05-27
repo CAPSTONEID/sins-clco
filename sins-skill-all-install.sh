@@ -33,6 +33,11 @@ if ! command -v python3 >/dev/null 2>&1; then
   exit 1
 fi
 
+if [ "${SINS_SKIP_EXTERNAL:-0}" != "1" ] && ! command -v git >/dev/null 2>&1; then
+  echo "❌ 외부 스킬 설치에는 git이 필요합니다. git을 설치하거나 SINS_SKIP_EXTERNAL=1 로 외부 설치를 건너뛰세요."
+  exit 1
+fi
+
 echo "🔍 SINS 스킬 목록 조회 중... 대상: ${LABEL}"
 
 SKILLS=$(curl -fsSL "$API" | python3 -c "
@@ -61,6 +66,129 @@ mkdir -p "$SKILL_DIR"
 TMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TMP_DIR"' EXIT
 
+copy_dir_clean() {
+  src="$1"
+  dest="$2"
+  rm -rf "$dest"
+  mkdir -p "$(dirname "$dest")"
+  cp -R "$src" "$dest"
+}
+
+clone_external_repo() {
+  name="$1"
+  repo="$2"
+  dest="$TMP_DIR/external-$name"
+  echo "  → 외부 소스 받는 중: $name" >&2
+  git clone --depth 1 "$repo" "$dest" >/dev/null 2>&1
+  printf '%s\n' "$dest"
+}
+
+copy_frontend_slides() {
+  repo_dir="$1"
+  dest="$SKILL_DIR/frontend-slides"
+  rm -rf "$dest"
+  mkdir -p "$dest/scripts"
+  cp "$repo_dir/SKILL.md" "$dest/"
+  cp "$repo_dir/STYLE_PRESETS.md" "$dest/"
+  cp "$repo_dir/viewport-base.css" "$dest/"
+  cp "$repo_dir/html-template.md" "$dest/"
+  cp "$repo_dir/animation-patterns.md" "$dest/"
+  cp -R "$repo_dir/bold-template-pack" "$dest/"
+  cp -R "$repo_dir/scripts" "$dest/"
+}
+
+copy_all_skill_dirs() {
+  repo_dir="$1"
+  source_dir="$2"
+  prefix="$3"
+  if [ ! -d "$repo_dir/$source_dir" ]; then
+    return 0
+  fi
+  find "$repo_dir/$source_dir" -mindepth 1 -maxdepth 1 -type d | sort | while IFS= read -r skill_path; do
+    if [ -f "$skill_path/SKILL.md" ]; then
+      skill_base="$(basename "$skill_path")"
+      copy_dir_clean "$skill_path" "$SKILL_DIR/${prefix}${skill_base}"
+    fi
+  done
+}
+
+copy_gstack_fallback_skills() {
+  repo_dir="$1"
+  find "$repo_dir" -mindepth 1 -maxdepth 2 -type f -name SKILL.md | sort | while IFS= read -r skill_file; do
+    skill_dir="$(dirname "$skill_file")"
+    if [ "$skill_dir" = "$repo_dir" ]; then
+      continue
+    fi
+    rel="${skill_dir#$repo_dir/}"
+    case "$rel" in
+      test/*|docs/*|model-overlays/*|openclaw/*|claude|codex|gstack|agents|external-gstack)
+        continue
+        ;;
+    esac
+    skill_base="$(basename "$skill_dir")"
+    copy_dir_clean "$skill_dir" "$SKILL_DIR/gstack-$skill_base"
+  done
+}
+
+install_gstack() {
+  repo_dir="$1"
+  dest="$SKILL_DIR/gstack"
+  copy_dir_clean "$repo_dir" "$dest"
+  copy_gstack_fallback_skills "$repo_dir"
+  if [ "${SINS_RUN_GSTACK_SETUP:-0}" != "1" ]; then
+    echo "  → gstack 스킬 복사 완료. 전체 setup은 SINS_RUN_GSTACK_SETUP=1 일 때만 실행합니다."
+    return 0
+  fi
+  if command -v bun >/dev/null 2>&1 && [ -x "$dest/setup" ]; then
+    echo "  → gstack setup 실행 중..."
+    if ! (cd "$dest" && ./setup --host "$TARGET" --quiet --prefix); then
+      echo "  ⚠️ gstack setup 실패. 기본 스킬 복사 방식으로 진행합니다."
+    fi
+  else
+    echo "  ⚠️ bun이 없어 gstack setup은 건너뜁니다."
+  fi
+}
+
+install_external_skills() {
+  if [ "${SINS_SKIP_EXTERNAL:-0}" = "1" ]; then
+    echo ""
+    echo "⏭️ 외부 스킬 설치를 건너뜁니다. (SINS_SKIP_EXTERNAL=1)"
+    return 0
+  fi
+
+  echo ""
+  echo "🌐 외부 오픈소스 스킬 설치 중..."
+
+  if [ "$TARGET" = "claude" ]; then
+    caveman_dir="$(clone_external_repo caveman https://github.com/JuliusBrussee/caveman.git)"
+    copy_all_skill_dirs "$caveman_dir" "skills" ""
+
+    frontend_dir="$(clone_external_repo frontend-slides https://github.com/zarazhangrui/frontend-slides.git)"
+    copy_frontend_slides "$frontend_dir"
+
+    matt_dir="$(clone_external_repo mattpocock-skills https://github.com/mattpocock/skills.git)"
+    copy_dir_clean "$matt_dir/skills/productivity/grill-me" "$SKILL_DIR/grill-me"
+    copy_dir_clean "$matt_dir/skills/productivity/handoff" "$SKILL_DIR/handoff"
+
+    claude_insane_dir="$(clone_external_repo claude-insane-search https://github.com/fivetaku/insane-search.git)"
+    copy_dir_clean "$claude_insane_dir/skills/insane-search" "$SKILL_DIR/insane-search"
+  fi
+
+  if [ "$TARGET" = "codex" ]; then
+    codex_insane_dir="$(clone_external_repo codex-insane-search https://github.com/sinmb79/codex-insane-search.git)"
+    copy_dir_clean "$codex_insane_dir/plugins/insane-search/skills/insane-search" "$SKILL_DIR/insane-search"
+    copy_dir_clean "$codex_insane_dir/plugins/insane-search" "$HOME/.codex/plugins/insane-search"
+  fi
+
+  gstack_dir="$(clone_external_repo gstack https://github.com/garrytan/gstack.git)"
+  install_gstack "$gstack_dir"
+
+  superpowers_dir="$(clone_external_repo superpowers https://github.com/obra/superpowers.git)"
+  copy_all_skill_dirs "$superpowers_dir" "skills" "superpowers-"
+
+  echo "✅ 외부 오픈소스 스킬 설치 완료"
+}
+
 while IFS= read -r skill_file; do
   [ -z "$skill_file" ] && continue
   skill_name="${skill_file%.skill}"
@@ -87,6 +215,8 @@ PY
       ;;
   esac
 done <<< "$SKILLS"
+
+install_external_skills
 
 echo ""
 echo "✅ 설치 완료! 총 ${SKILL_COUNT}개 스킬이 $SKILL_DIR 에 설치되었습니다."
