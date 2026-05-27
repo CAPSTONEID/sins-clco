@@ -172,6 +172,9 @@ install_external_skills() {
 
     claude_insane_dir="$(clone_external_repo claude-insane-search https://github.com/fivetaku/insane-search.git)"
     copy_dir_clean "$claude_insane_dir/skills/insane-search" "$SKILL_DIR/insane-search"
+
+    harness_dir="$(clone_external_repo harness https://github.com/revfactory/harness.git)"
+    copy_dir_clean "$harness_dir/skills/harness" "$SKILL_DIR/harness"
   fi
 
   if [ "$TARGET" = "codex" ]; then
