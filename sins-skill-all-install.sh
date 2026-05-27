@@ -16,19 +16,9 @@ case "$TARGET" in
     INSTALL_MODE="unzip"
     LABEL="Codex"
     ;;
-  hermes)
-    SKILL_DIR="$HOME/.hermes/skills/sins"
-    INSTALL_MODE="unzip"
-    LABEL="Hermes Agent"
-    ;;
-  antigravity)
-    SKILL_DIR="$HOME/.agents/skills"
-    INSTALL_MODE="unzip"
-    LABEL="Antigravity CLI"
-    ;;
   *)
-    echo "사용법: $0 [claude|codex|hermes|antigravity]"
-    echo "예시: $0 hermes"
+    echo "사용법: $0 [claude|codex]"
+    echo "예시: $0 claude"
     exit 1
     ;;
 esac
@@ -106,13 +96,6 @@ case "$TARGET" in
     echo "   Claude Code를 재시작하면 /sins-* 스킬을 사용할 수 있습니다."
     ;;
   codex)
-    echo "   Codex에서 @${SKILL_DIR}/sins-web-pt/SKILL.md 또는 @${SKILL_DIR}/sins-cardvideo/SKILL.md 처럼 파일 참조로 사용할 수 있습니다."
-    ;;
-  hermes)
-    echo "   Hermes CLI를 재시작하거나 /reset 후 /skill sins-web-pt, /skill sins-cardvideo 또는 자동 스킬 로딩으로 사용할 수 있습니다."
-    echo "   Hermes가 없다면: curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash"
-    ;;
-  antigravity)
-    echo "   Antigravity CLI를 재시작하면 /sins-* 스킬을 사용할 수 있습니다."
+    echo "   Codex에서 @${SKILL_DIR}/sins-web-pt/SKILL.md 또는 @${SKILL_DIR}/sins-card-news-creator/SKILL.md 처럼 파일 참조로 사용할 수 있습니다."
     ;;
 esac
