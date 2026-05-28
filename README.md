@@ -233,3 +233,17 @@ Codex에서는 `@` 파일 참조로 스킬을 불러옵니다.
 |------|-----------|---------|
 | Claude Code | [claude.ai/code](https://claude.ai/code) | macOS / Linux |
 | Codex CLI | [openai.com/codex](https://openai.com/codex) | macOS / Linux |
+
+---
+
+## 설정 동기화 (다른 기기에서 동일 환경 구성)
+
+`CLAUDE.md` 페르소나와 caveman 자동 활성화 hook을 새 기기에 적용합니다.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-config-apply.sh | bash
+```
+
+적용 내용:
+- `~/CLAUDE.md` — 역할 페르소나, caveman mode, 작업 하네스 원칙
+- `~/.claude/settings.json` — SessionStart hook (세션 시작 시 caveman full 자동 활성화)
