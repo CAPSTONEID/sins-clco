@@ -37,6 +37,8 @@ SINS 프로젝트용 Claude Code, Codex, Hermes 스킬 패키지입니다.
 | Grill Me | Claude 전용 | [mattpocock/skills](https://github.com/mattpocock/skills) |
 | Handoff | Claude 전용 | [mattpocock/skills](https://github.com/mattpocock/skills) |
 | Harness | Claude 전용 | [revfactory/harness](https://github.com/revfactory/harness) |
+| UI/UX Pro Max | Claude 전용 | [nextlevelbuilder/ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) |
+| HyperFrames | Claude / Codex | [heygen-com/hyperframes](https://github.com/heygen-com/hyperframes) |
 | gstack | Claude / Codex | [garrytan/gstack](https://github.com/garrytan/gstack) |
 | Superpowers | Claude / Codex | [obra/superpowers](https://github.com/obra/superpowers) |
 | Insane Search | Codex 전용 | [sinmb79/codex-insane-search](https://github.com/sinmb79/codex-insane-search) |
