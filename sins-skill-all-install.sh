@@ -84,7 +84,8 @@ clone_external_repo() {
   repo="$2"
   dest="$TMP_DIR/external-$name"
   echo "  → 외부 소스 받는 중: $name" >&2
-  git clone --depth 1 "$repo" "$dest" >/dev/null 2>&1
+  # LFS 대용량(예: hyperframes 테스트 베이스라인) smudge를 건너뛰어 빠르고 가볍게 clone
+  GIT_LFS_SKIP_SMUDGE=1 git clone --depth 1 "$repo" "$dest" >/dev/null 2>&1
   printf '%s\n' "$dest"
 }
 
@@ -100,6 +101,15 @@ copy_frontend_slides() {
   cp "$repo_dir/animation-patterns.md" "$dest/"
   cp -R "$repo_dir/bold-template-pack" "$dest/"
   cp -R "$repo_dir/scripts" "$dest/"
+}
+
+copy_uiux_skill() {
+  repo_dir="$1"
+  dest="$SKILL_DIR/ui-ux-pro-max"
+  # data/scripts가 src/ 로의 심볼릭링크라 -L 로 실제 파일까지 복사해 풀어줌
+  rm -rf "$dest"
+  mkdir -p "$(dirname "$dest")"
+  cp -RL "$repo_dir/.claude/skills/ui-ux-pro-max" "$dest"
 }
 
 copy_all_skill_dirs() {
@@ -187,6 +197,10 @@ install_external_skills() {
 
     harness_dir="$(clone_external_repo harness https://github.com/revfactory/harness.git)"
     copy_dir_clean "$harness_dir/skills/harness" "$SKILL_DIR/harness"
+
+    # UI/UX Pro Max — Claude 전용 디자인 인텔리전스 스킬
+    uiux_dir="$(clone_external_repo ui-ux-pro-max https://github.com/nextlevelbuilder/ui-ux-pro-max-skill.git)"
+    copy_uiux_skill "$uiux_dir"
   fi
 
   if [ "$TARGET" = "codex" ]; then
@@ -194,6 +208,10 @@ install_external_skills() {
     copy_dir_clean "$codex_insane_dir/plugins/insane-search/skills/insane-search" "$SKILL_DIR/insane-search"
     copy_dir_clean "$codex_insane_dir/plugins/insane-search" "$HOME/.codex/plugins/insane-search"
   fi
+
+  # HyperFrames — Claude / Codex 공용. HTML→MP4 영상 제작 스킬 묶음(16개)
+  hyperframes_dir="$(clone_external_repo hyperframes https://github.com/heygen-com/hyperframes.git)"
+  copy_all_skill_dirs "$hyperframes_dir" "skills" ""
 
   gstack_dir="$(clone_external_repo gstack https://github.com/garrytan/gstack.git)"
   install_gstack "$gstack_dir"
