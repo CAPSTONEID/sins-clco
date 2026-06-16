@@ -213,6 +213,8 @@ while IFS= read -r skill_file; do
 
   case "$INSTALL_MODE" in
     unzip)
+      # 기존 설치본을 먼저 제거해 옛 구조(중첩 등)가 머지로 남지 않게 함
+      rm -rf "$SKILL_DIR/$skill_name"
       mkdir -p "$SKILL_DIR/$skill_name"
       python3 - "$tmp_file" "$SKILL_DIR/$skill_name" <<'PY'
 import sys, zipfile
