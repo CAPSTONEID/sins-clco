@@ -16,8 +16,13 @@ case "$TARGET" in
     INSTALL_MODE="unzip"
     LABEL="Codex"
     ;;
+  hermes)
+    SKILL_DIR="$HOME/.hermes/skills"
+    INSTALL_MODE="unzip"
+    LABEL="Hermes"
+    ;;
   *)
-    echo "사용법: $0 [claude|codex]"
+    echo "사용법: $0 [claude|codex|hermes]"
     echo "예시: $0 claude"
     exit 1
     ;;
@@ -156,6 +161,13 @@ install_external_skills() {
     return 0
   fi
 
+  if [ "$TARGET" = "hermes" ]; then
+    echo ""
+    echo "⏭️ Hermes는 gstack·superpowers·caveman 등 외부 스킬을 자체 번들로 이미 제공하므로 건너뜁니다."
+    echo "   (기존 ${SKILL_DIR} 의 스킬을 덮어쓰지 않습니다.)"
+    return 0
+  fi
+
   echo ""
   echo "🌐 외부 오픈소스 스킬 설치 중..."
 
@@ -230,5 +242,8 @@ case "$TARGET" in
     ;;
   codex)
     echo "   Codex에서 @${SKILL_DIR}/sins-web-pt/SKILL.md 또는 @${SKILL_DIR}/sins-card-news-creator/SKILL.md 처럼 파일 참조로 사용할 수 있습니다."
+    ;;
+  hermes)
+    echo "   Hermes를 재시작하면 ${SKILL_DIR} 의 /sins-* 스킬을 사용할 수 있습니다."
     ;;
 esac
