@@ -41,8 +41,11 @@ SINS 프로젝트용 Claude Code, Codex, Hermes 스킬 패키지입니다.
 | HyperFrames | Claude / Codex | [heygen-com/hyperframes](https://github.com/heygen-com/hyperframes) |
 | gstack | Claude / Codex | [garrytan/gstack](https://github.com/garrytan/gstack) |
 | Superpowers | Claude / Codex | [obra/superpowers](https://github.com/obra/superpowers) |
+| Humanize Korean | Claude / Codex | [epoko77-ai/im-not-ai](https://github.com/epoko77-ai/im-not-ai) |
 | Insane Search | Codex 전용 | [sinmb79/codex-insane-search](https://github.com/sinmb79/codex-insane-search) |
 | Insane Search | Claude 전용 | [fivetaku/insane-search](https://github.com/fivetaku/insane-search) |
+
+> **Humanize Korean 모드 차이** — Claude는 Fast(단일 호출) + strict 5인 파이프라인을 모두 설치합니다(스킬 `humanize-korean`·`humanize`·`humanize-redo` 3개 + `~/.claude/agents/` 서브에이전트 12개). Codex는 다중 서브에이전트를 결정적으로 실행하지 못해 Fast(단일 호출) 모드만 설치합니다(`humanize-korean` 1개). Hermes는 대상에서 제외됩니다.
 
 외부 스킬 설치를 건너뛰려면 다음처럼 실행합니다.
 

@@ -201,12 +201,26 @@ install_external_skills() {
     # UI/UX Pro Max — Claude 전용 디자인 인텔리전스 스킬
     uiux_dir="$(clone_external_repo ui-ux-pro-max https://github.com/nextlevelbuilder/ui-ux-pro-max-skill.git)"
     copy_uiux_skill "$uiux_dir"
+
+    # Humanize Korean — AI 한글 윤문. Claude는 Fast + strict 5인 파이프라인(서브에이전트 12개)
+    hk_dir="$(clone_external_repo im-not-ai https://github.com/epoko77-ai/im-not-ai.git)"
+    for s in humanize-korean humanize humanize-redo; do
+      copy_dir_clean "$hk_dir/.claude/skills/$s" "$SKILL_DIR/$s"
+    done
+    mkdir -p "$HOME/.claude/agents"
+    cp "$hk_dir"/agents/*.md "$HOME/.claude/agents/"
   fi
 
   if [ "$TARGET" = "codex" ]; then
     codex_insane_dir="$(clone_external_repo codex-insane-search https://github.com/sinmb79/codex-insane-search.git)"
     copy_dir_clean "$codex_insane_dir/plugins/insane-search/skills/insane-search" "$SKILL_DIR/insane-search"
     copy_dir_clean "$codex_insane_dir/plugins/insane-search" "$HOME/.codex/plugins/insane-search"
+
+    # Humanize Korean — AI 한글 윤문. Codex는 Fast(단일 호출) 모드만. references 심링크는 실체로 복사(-L)
+    hk_dir="$(clone_external_repo im-not-ai https://github.com/epoko77-ai/im-not-ai.git)"
+    rm -rf "$SKILL_DIR/humanize-korean"
+    mkdir -p "$SKILL_DIR"
+    cp -RL "$hk_dir/codex/skills/humanize-korean" "$SKILL_DIR/humanize-korean"
   fi
 
   # HyperFrames — Claude / Codex 공용. HTML→MP4 영상 제작 스킬 묶음(16개)
