@@ -164,6 +164,34 @@ install_gstack() {
   fi
 }
 
+install_oh_my_design() {
+  # oh-my-design — 286개 실제 기업 디자인 레퍼런스 기반 디자인 시스템 스킬/서브에이전트.
+  # 자체 npx CLI로 채널별 설치. Claude는 claude-code 채널, Codex는 codex 채널만 설치한다.
+  # (Claude: ~/.claude/skills · agents · data / Codex: ~/.agents/skills · ~/.codex/agents · ~/.codex/data)
+  case "$TARGET" in
+    claude) omd_channel="claude-code" ;;
+    codex)  omd_channel="codex" ;;
+    *) return 0 ;;
+  esac
+
+  if [ "${SINS_SKIP_OMD:-0}" = "1" ]; then
+    echo "  ⏭️ oh-my-design 설치를 건너뜁니다. (SINS_SKIP_OMD=1)"
+    return 0
+  fi
+
+  if ! command -v npx >/dev/null 2>&1; then
+    echo "  ⚠️ npx(Node.js)가 없어 oh-my-design 설치를 건너뜁니다. Node.js 설치 후 다시 실행하거나 SINS_SKIP_OMD=1 로 건너뛰세요."
+    return 0
+  fi
+
+  echo "  → oh-my-design 설치 중 (채널: ${omd_channel})..."
+  if npx -y oh-my-design-cli@latest install-skills --agent "$omd_channel" --all --global; then
+    echo "  ✅ oh-my-design 설치 완료"
+  else
+    echo "  ⚠️ oh-my-design 설치 실패. 계속 진행합니다."
+  fi
+}
+
 install_external_skills() {
   if [ "${SINS_SKIP_EXTERNAL:-0}" = "1" ]; then
     echo ""
@@ -232,6 +260,9 @@ install_external_skills() {
 
   superpowers_dir="$(clone_external_repo superpowers https://github.com/obra/superpowers.git)"
   copy_all_skill_dirs "$superpowers_dir" "skills" "superpowers-"
+
+  # oh-my-design — Claude / Codex 채널별 디자인 시스템 스킬(자체 npx 설치)
+  install_oh_my_design
 
   echo "✅ 외부 오픈소스 스킬 설치 완료"
 }
