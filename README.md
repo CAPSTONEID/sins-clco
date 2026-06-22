@@ -24,7 +24,7 @@ SINS 프로젝트용 Claude Code, Codex, Hermes 스킬 패키지입니다.
 | `sins-marketing-team.skill` | `/sins-marketing-team` | 마케팅 전략 팀 구성 및 실행 |
 | `sins-sidenote-pass.skill` | `/sins-sidenote-pass` | SideNotes 고정 폴더에 새 메모 저장 및 기본 접기 처리 |
 | `sins-web-pt.skill` | `/sins-web-pt` | 스크립트/PPTX 기반 웹 발표자료 HTML 및 발표 대본 TXT 제작 |
-| `sins-wiki-pass.skill` | `/sins-wiki-pass` | Obsidian "LLM Wiki" 볼트와 Notion 위키 DB 동시 저장·동기화 (수동 발동) |
+| `sins-wiki-pass.skill` | `/sins-wiki-pass` | Obsidian "LLM Wiki" 볼트와 Notion 위키 DB 동시 저장·동기화 (수동 발동, 기본 5종 자동분류 + `--dir`로 신규 카테고리 동적 생성) |
 | `sins-llmwiki-auto.skill` | `/sins-llmwiki-auto` | 질문·답변·업무·제작 내용을 **자동으로** LLM 위키에 정리·기록하는 상시 발동 정책 (sins-wiki-pass 연동) |
 
 ## 함께 설치되는 외부 오픈소스 스킬
