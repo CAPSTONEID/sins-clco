@@ -24,7 +24,7 @@ SINS 프로젝트용 Claude Code, Codex, Hermes 스킬 패키지입니다.
 | `sins-marketing-team.skill` | `/sins-marketing-team` | 마케팅 전략 팀 구성 및 실행 |
 | `sins-sidenote-pass.skill` | `/sins-sidenote-pass` | SideNotes 고정 폴더에 새 메모 저장 및 기본 접기 처리 |
 | `sins-web-pt.skill` | `/sins-web-pt` | 스크립트/PPTX 기반 웹 발표자료 HTML 및 발표 대본 TXT 제작 |
-| `sins-wiki-pass.skill` | `/sins-wiki-pass` | Obsidian "LLM Wiki" 볼트와 Notion 위키 DB 동시 저장·동기화 |
+| `sins-wiki-pass.skill` | `/sins-wiki-pass` | Obsidian "LLM Wiki" 볼트와 Notion 위키 DB 동시 저장·동기화 (CLAUDE.md 규칙으로 **상시 자동 기록** 가능) |
 
 ## 함께 설치되는 외부 오픈소스 스킬
 
@@ -329,6 +329,17 @@ import os, zipfile
 zipfile.ZipFile('/tmp/sins-wiki-pass.skill').extractall(os.path.expanduser('~/.hermes/skills/sins-wiki-pass'))
 PY
 ```
+
+#### 자동 기록 (상시 발동) 켜기
+
+기본은 수동 발동("위키에 넣어줘")이다. **질문·답변·업무·제작 내용을 자동으로** 옵시디언 + Notion에 정리·기록하려면, [`skill-list-docs/llm-wiki-autosave.md`](skill-list-docs/llm-wiki-autosave.md)의 규칙 블록을 `~/.claude/CLAUDE.md`(또는 프로젝트 CLAUDE.md) 끝에 붙여넣는다.
+
+- 지식·정보성 답변 → 자동 위키 노트
+- 마케팅 기획·전략·카피·리서치 → `concept`/`moc` 요약
+- 카드뉴스·웹·랜딩·PT·이미지 등 제작물 → `source` 메타 요약(산출물 경로 포함)
+- 인사·단순확인·잡담 → 제외
+- 끄기: 대화 중 `위키 자동저장 꺼` / `wiki off`
+- 토큰 영향(추정): 세션 평균 **+20~35%**
 
 ## 설치 확인
 
