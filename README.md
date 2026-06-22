@@ -24,7 +24,8 @@ SINS 프로젝트용 Claude Code, Codex, Hermes 스킬 패키지입니다.
 | `sins-marketing-team.skill` | `/sins-marketing-team` | 마케팅 전략 팀 구성 및 실행 |
 | `sins-sidenote-pass.skill` | `/sins-sidenote-pass` | SideNotes 고정 폴더에 새 메모 저장 및 기본 접기 처리 |
 | `sins-web-pt.skill` | `/sins-web-pt` | 스크립트/PPTX 기반 웹 발표자료 HTML 및 발표 대본 TXT 제작 |
-| `sins-wiki-pass.skill` | `/sins-wiki-pass` | Obsidian "LLM Wiki" 볼트와 Notion 위키 DB 동시 저장·동기화 (CLAUDE.md 규칙으로 **상시 자동 기록** 가능) |
+| `sins-wiki-pass.skill` | `/sins-wiki-pass` | Obsidian "LLM Wiki" 볼트와 Notion 위키 DB 동시 저장·동기화 (수동 발동) |
+| `sins-llmwiki-auto.skill` | `/sins-llmwiki-auto` | 질문·답변·업무·제작 내용을 **자동으로** LLM 위키에 정리·기록하는 상시 발동 정책 (sins-wiki-pass 연동) |
 
 ## 함께 설치되는 외부 오픈소스 스킬
 
@@ -330,9 +331,22 @@ zipfile.ZipFile('/tmp/sins-wiki-pass.skill').extractall(os.path.expanduser('~/.h
 PY
 ```
 
-#### 자동 기록 (상시 발동) 켜기
+### sins-llmwiki-auto (자동 기록 / 상시 발동)
 
-기본은 수동 발동("위키에 넣어줘")이다. **질문·답변·업무·제작 내용을 자동으로** 옵시디언 + Notion에 정리·기록하려면, [`skill-list-docs/llm-wiki-autosave.md`](skill-list-docs/llm-wiki-autosave.md)의 규칙 블록을 `~/.claude/CLAUDE.md`(또는 프로젝트 CLAUDE.md) 끝에 붙여넣는다.
+`sins-wiki-pass`는 수동 발동("위키에 넣어줘")이다. **질문·답변·업무·제작 내용을 자동으로** 옵시디언 + Notion에 정리·기록하려면 `sins-llmwiki-auto`를 쓴다. 함께 설치 후, [`skill-list-docs/llm-wiki-autosave.md`](skill-list-docs/llm-wiki-autosave.md)의 규칙 블록을 `~/.claude/CLAUDE.md`(또는 프로젝트 CLAUDE.md) 끝에 붙여넣으면 매 세션 영구 상시 발동.
+
+Claude Code:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-llmwiki-auto.skill \
+  -o /tmp/sins-llmwiki-auto.skill
+mkdir -p ~/.claude/skills/sins-llmwiki-auto
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-llmwiki-auto.skill').extractall(os.path.expanduser('~/.claude/skills/sins-llmwiki-auto'))
+PY
+```
+
 
 - 지식·정보성 답변 → 자동 위키 노트
 - 마케팅 기획·전략·카피·리서치 → `concept`/`moc` 요약

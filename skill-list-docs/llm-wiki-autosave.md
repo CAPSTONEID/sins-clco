@@ -1,10 +1,16 @@
-# LLM 위키 자동 기록 (상시 발동) — CLAUDE.md 규칙
+# sins-llmwiki-auto — LLM 위키 자동 기록 (상시 발동)
 
-`sins-wiki-pass` 스킬은 기본적으로 **수동 발동**("위키에 넣어줘")이다.
-아래 블록을 **`~/.claude/CLAUDE.md`(또는 프로젝트 CLAUDE.md) 끝에 그대로 붙여넣으면**,
-질문·답변·업무·제작 내용이 자동으로 옵시디언 vault + Notion DB에 정리·기록된다.
+**스킬명: `sins-llmwiki-auto`** (`skill-list/sins-llmwiki-auto.skill`)
 
-> 전제: `sins-wiki-pass` 스킬이 설치돼 있고(`sins-skill-all-install.sh`), 옵시디언 vault 경로와
+질문·답변·업무·제작 내용을 자동으로 옵시디언 vault + Notion DB에 정리·기록하는 **상시 발동 정책 스킬**.
+실제 기록은 `sins-wiki-pass`가 수행하고, `sins-llmwiki-auto`는 언제·무엇을·어떤 type으로 남길지 판단한다.
+
+켜는 방법 2가지:
+
+1. **스킬 설치** — `sins-skill-all-install.sh`로 `sins-llmwiki-auto` + `sins-wiki-pass` 설치 후, 세션에서 "위키 자동기록 켜".
+2. **영구 상시 발동** — 아래 규칙 블록을 `~/.claude/CLAUDE.md`(또는 프로젝트 CLAUDE.md) 끝에 붙여넣으면 매 세션 자동.
+
+> 전제: `sins-wiki-pass` 스킬이 함께 설치돼 있고(`sins-skill-all-install.sh`), 옵시디언 vault 경로와
 > Notion DB(`data_source_id`)가 스킬 안에 설정돼 있어야 한다. Notion MCP 연결 필요.
 
 ---
