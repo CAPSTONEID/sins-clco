@@ -26,6 +26,7 @@ SINS 프로젝트용 Claude Code, Codex, Hermes 스킬 패키지입니다.
 | `sins-web-pt.skill` | `/sins-web-pt` | 스크립트/PPTX 기반 웹 발표자료 HTML 및 발표 대본 TXT 제작 |
 | `sins-wiki-pass.skill` | `/sins-wiki-pass` | Obsidian "LLM Wiki" 볼트와 Notion 위키 DB 동시 저장·동기화 (수동 발동, 기본 5종 자동분류 + `--dir`로 신규 카테고리 동적 생성) |
 | `sins-llmwiki-auto.skill` | `/sins-llmwiki-auto` | 질문·답변·업무·제작 내용을 **자동으로** LLM 위키에 정리·기록하는 상시 발동 정책 (sins-wiki-pass 연동) |
+| `sins-loopass-setup.skill` | `/sins-loopass-setup` | 루프 엔지니어링(자율 AI 에이전트 루프)을 6단계 인터뷰로 설계·세팅하는 위저드 (트리거→행동→검증→정지조건→아키텍처→산출, 단계별 스킬·MCP 추천 + 실행 가능한 루프 스킬 자동 생성) |
 
 ## 함께 설치되는 외부 오픈소스 스킬
 
@@ -354,6 +355,46 @@ PY
 - 인사·단순확인·잡담 → 제외
 - 끄기: 대화 중 `위키 자동저장 꺼` / `wiki off`
 - 토큰 영향(추정): 세션 평균 **+20~35%**
+
+### sins-loopass-setup (루프 엔지니어링 셋업 위저드)
+
+자율 AI 에이전트 루프를 6단계 인터뷰(트리거→행동→검증→정지조건→아키텍처→산출)로 설계·세팅한다. 각 단계마다 핵심 질문 + 추가할 스킬·MCP를 함께 묻고, 마지막에 정지조건 4종(검증 통과 / max_iterations / 예산 / no-progress)이 코드에 박힌 실행 가능한 루프 스킬을 자동 생성한다.
+
+Claude Code:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-loopass-setup.skill \
+  -o /tmp/sins-loopass-setup.skill
+mkdir -p ~/.claude/skills/sins-loopass-setup
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-loopass-setup.skill').extractall(os.path.expanduser('~/.claude/skills/sins-loopass-setup'))
+PY
+```
+
+Codex:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-loopass-setup.skill \
+  -o /tmp/sins-loopass-setup.skill
+mkdir -p ~/.codex/skills/sins-loopass-setup
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-loopass-setup.skill').extractall(os.path.expanduser('~/.codex/skills/sins-loopass-setup'))
+PY
+```
+
+Hermes:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-loopass-setup.skill \
+  -o /tmp/sins-loopass-setup.skill
+mkdir -p ~/.hermes/skills/sins-loopass-setup
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-loopass-setup.skill').extractall(os.path.expanduser('~/.hermes/skills/sins-loopass-setup'))
+PY
+```
 
 ## 설치 확인
 
