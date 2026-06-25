@@ -255,6 +255,12 @@ install_external_skills() {
   hyperframes_dir="$(clone_external_repo hyperframes https://github.com/heygen-com/hyperframes.git)"
   copy_all_skill_dirs "$hyperframes_dir" "skills" ""
 
+  # Ponytail — Claude / Codex 공용. YAGNI·최소 구현 강제 슬래시 명령 스킬 묶음(6개)
+  # 참고: 번들은 슬래시 명령 스킬만 복사한다. 상시 발동(always-on) 라이프사이클 훅은
+  #       /plugin(Claude) · codex plugin(Codex) 정규 설치로만 연결된다.
+  ponytail_dir="$(clone_external_repo ponytail https://github.com/DietrichGebert/ponytail.git)"
+  copy_all_skill_dirs "$ponytail_dir" "skills" ""
+
   gstack_dir="$(clone_external_repo gstack https://github.com/garrytan/gstack.git)"
   install_gstack "$gstack_dir"
 

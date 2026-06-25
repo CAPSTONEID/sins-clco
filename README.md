@@ -44,12 +44,15 @@ SINS 프로젝트용 Claude Code, Codex, Hermes 스킬 패키지입니다.
 | HyperFrames | Claude / Codex | [heygen-com/hyperframes](https://github.com/heygen-com/hyperframes) |
 | gstack | Claude / Codex | [garrytan/gstack](https://github.com/garrytan/gstack) |
 | Superpowers | Claude / Codex | [obra/superpowers](https://github.com/obra/superpowers) |
+| Ponytail | Claude / Codex | [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) |
 | Humanize Korean | Claude / Codex | [epoko77-ai/im-not-ai](https://github.com/epoko77-ai/im-not-ai) |
 | Insane Search | Codex 전용 | [sinmb79/codex-insane-search](https://github.com/sinmb79/codex-insane-search) |
 | Insane Search | Claude 전용 | [fivetaku/insane-search](https://github.com/fivetaku/insane-search) |
 | oh-my-design | Claude / Codex | [kwakseongjae/oh-my-design](https://github.com/kwakseongjae/oh-my-design) |
 
 > **oh-my-design 채널 차이** — 286개 실제 기업 디자인 레퍼런스 기반 디자인 시스템 스킬 17개 + 서브에이전트 16개. 자체 `oh-my-design-cli` npx 설치를 사용하며 Claude·Codex 채널을 따로 설치합니다. Claude는 `--agent claude-code`로 스킬 `~/.claude/skills`, 에이전트 `~/.claude/agents`, 데이터 `~/.claude/data`에 설치하고, Codex는 `--agent codex`로 스킬 `~/.agents/skills`, 에이전트 `~/.codex/agents`, 데이터 `~/.codex/data`에 설치합니다(각 도구의 정규 경로). `npx`(Node.js)가 필요하며 없으면 자동으로 건너뜁니다. 건너뛰려면 `SINS_SKIP_OMD=1`. Hermes는 대상에서 제외됩니다.
+
+> **Ponytail 설치 범위** — YAGNI·표준 라이브러리 우선·최소 구현을 강제하는 "게으른 시니어 개발자" 모드. 번들은 슬래시 명령 스킬 6개(`ponytail`·`ponytail-audit`·`ponytail-help`·`ponytail-review`·`ponytail-gain`·`ponytail-debt`)만 `skills/`에서 복사합니다. **상시 발동(always-on) 라이프사이클 훅은 번들로 연결되지 않습니다** — 매 프롬프트 자동 활성화가 필요하면 정규 플러그인 설치를 쓰세요. Claude `/plugin marketplace add DietrichGebert/ponytail` → `/plugin install ponytail@ponytail`(두 프롬프트로 분리 실행), Codex `codex plugin marketplace add DietrichGebert/ponytail`. 훅 실행에는 `node`가 PATH에 있어야 합니다. Hermes는 대상에서 제외됩니다.
 
 > **Humanize Korean 모드 차이** — Claude는 Fast(단일 호출) + strict 5인 파이프라인을 모두 설치합니다(스킬 `humanize-korean`·`humanize`·`humanize-redo` 3개 + `~/.claude/agents/` 서브에이전트 12개). Codex는 다중 서브에이전트를 결정적으로 실행하지 못해 Fast(단일 호출) 모드만 설치합니다(`humanize-korean` 1개). Hermes는 대상에서 제외됩니다.
 
