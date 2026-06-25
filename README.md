@@ -27,6 +27,7 @@ SINS 프로젝트용 Claude Code, Codex, Hermes 스킬 패키지입니다.
 | `sins-wiki-pass.skill` | `/sins-wiki-pass` | Obsidian "LLM Wiki" 볼트와 Notion 위키 DB 동시 저장·동기화 (수동 발동, 기본 5종 자동분류 + `--dir`로 신규 카테고리 동적 생성) |
 | `sins-llmwiki-auto.skill` | `/sins-llmwiki-auto` | 질문·답변·업무·제작 내용을 **자동으로** LLM 위키에 정리·기록하는 상시 발동 정책 (sins-wiki-pass 연동) |
 | `sins-loopass-setup.skill` | `/sins-loopass-setup` | 루프 엔지니어링(자율 AI 에이전트 루프)을 6단계 인터뷰로 설계·세팅하는 위저드 (트리거→행동→검증→정지조건→아키텍처→산출, 단계별 스킬·MCP 추천 + 실행 가능한 루프 스킬 자동 생성) |
+| `sins-higgsfield.skill` | `/sins-higgsfield` | 힉스필드(Higgsfield) MCP로 이미지·영상을 9스텝 선택카드로 단계별 생성 (유형→참고이미지→프롬프트→보강→모델/Soul 캐릭터→화면비→퀄리티→영상 길이·오디오→갯수→get_cost 비용확인→확정, 하네스 없는 순수 위저드) |
 
 ## 함께 설치되는 외부 오픈소스 스킬
 
@@ -393,6 +394,46 @@ mkdir -p ~/.hermes/skills/sins-loopass-setup
 python3 - <<'PY'
 import os, zipfile
 zipfile.ZipFile('/tmp/sins-loopass-setup.skill').extractall(os.path.expanduser('~/.hermes/skills/sins-loopass-setup'))
+PY
+```
+
+### sins-higgsfield (힉스필드 이미지·영상 단계별 생성)
+
+힉스필드(Higgsfield) MCP가 연결된 환경에서, 이미지/영상을 9스텝 선택카드로 한 스텝씩 설계해 생성한다. 유형→참고이미지→프롬프트→보강→모델(Soul이면 캐릭터까지)→화면비→퀄리티→(영상이면 길이·오디오)→갯수→`get_cost` 비용확인→확정 순서. 모델 카탈로그·Soul 캐릭터·크레딧을 런타임에 실제 조회하며, 하네스 없는 순수 위저드다. **힉스필드 MCP 연결이 필요하다.**
+
+Claude Code:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-higgsfield.skill \
+  -o /tmp/sins-higgsfield.skill
+mkdir -p ~/.claude/skills/sins-higgsfield
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-higgsfield.skill').extractall(os.path.expanduser('~/.claude/skills/sins-higgsfield'))
+PY
+```
+
+Codex:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-higgsfield.skill \
+  -o /tmp/sins-higgsfield.skill
+mkdir -p ~/.codex/skills/sins-higgsfield
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-higgsfield.skill').extractall(os.path.expanduser('~/.codex/skills/sins-higgsfield'))
+PY
+```
+
+Hermes:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-higgsfield.skill \
+  -o /tmp/sins-higgsfield.skill
+mkdir -p ~/.hermes/skills/sins-higgsfield
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-higgsfield.skill').extractall(os.path.expanduser('~/.hermes/skills/sins-higgsfield'))
 PY
 ```
 
