@@ -29,6 +29,7 @@ SINS 프로젝트용 Claude Code, Codex, Hermes 스킬 패키지입니다.
 | `sins-loopass-setup.skill` | `/sins-loopass-setup` | 루프 엔지니어링(자율 AI 에이전트 루프)을 6단계 인터뷰로 설계·세팅하는 위저드 (트리거→행동→검증→정지조건→아키텍처→산출, 단계별 스킬·MCP 추천 + 실행 가능한 루프 스킬 자동 생성) |
 | `sins-higgsfield.skill` | `/sins-higgsfield` | 힉스필드(Higgsfield) MCP로 이미지·영상을 9스텝 선택카드로 단계별 생성 (유형→참고이미지→프롬프트→보강→모델/Soul 캐릭터→화면비→퀄리티→영상 길이·오디오→갯수→get_cost 비용확인→확정, 하네스 없는 순수 위저드) |
 | `sins-contents-thumbstyle-prompt.skill` | `/sins-contents-thumbstyle-prompt` | 입력 내용에 맞춰 SINSRA 고정 썸네일 스타일(Anthropic 미니멀 싱글라인 네온 두들·#FF5E00·검정 배경) 프롬프트를 자동 작성하고 힉스필드로 총 4장(16:9 3장 + 9:16 1장, 오브제 모두 다르게) 생성 (내용 입력→오브제 확인/변경→이미지별 네온 강조컬러(추천 팔레트 포함)→모델 선택(GPT Image 2 최우선)→get_cost 비용확인→4장 생성) |
+| `sins-yt-subtitles.skill` | `/sins-yt-subtitles` | SBV 자막을 유튜브용 VTT로 변환 (무조건 1줄·한 줄 목표 15자(공백 제외·단어 안 쪼갬)·마침표에서 자막 분리·쉼표에서 끊기 선호·가독성 우선, /humanize-korean 으로 오탈자만 2회 검수해 음성 싱크 보존, 결정론적 재분할 + difflib 재타이밍 + 최소 표시시간 보장) |
 
 ## 함께 설치되는 외부 오픈소스 스킬
 
@@ -438,6 +439,44 @@ mkdir -p ~/.hermes/skills/sins-higgsfield
 python3 - <<'PY'
 import os, zipfile
 zipfile.ZipFile('/tmp/sins-higgsfield.skill').extractall(os.path.expanduser('~/.hermes/skills/sins-higgsfield'))
+PY
+```
+
+### sins-yt-subtitles (SBV → 유튜브 VTT 자막 변환)
+
+Claude Code:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-yt-subtitles.skill \
+  -o /tmp/sins-yt-subtitles.skill
+mkdir -p ~/.claude/skills/sins-yt-subtitles
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-yt-subtitles.skill').extractall(os.path.expanduser('~/.claude/skills/sins-yt-subtitles'))
+PY
+```
+
+Codex:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-yt-subtitles.skill \
+  -o /tmp/sins-yt-subtitles.skill
+mkdir -p ~/.codex/skills/sins-yt-subtitles
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-yt-subtitles.skill').extractall(os.path.expanduser('~/.codex/skills/sins-yt-subtitles'))
+PY
+```
+
+Hermes:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-yt-subtitles.skill \
+  -o /tmp/sins-yt-subtitles.skill
+mkdir -p ~/.hermes/skills/sins-yt-subtitles
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-yt-subtitles.skill').extractall(os.path.expanduser('~/.hermes/skills/sins-yt-subtitles'))
 PY
 ```
 
