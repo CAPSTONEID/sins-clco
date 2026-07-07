@@ -30,6 +30,7 @@ SINS 프로젝트용 Claude Code, Codex, Hermes 스킬 패키지입니다.
 | `sins-higgsfield.skill` | `/sins-higgsfield` | 힉스필드(Higgsfield) MCP로 이미지·영상을 9스텝 선택카드로 단계별 생성 (유형→참고이미지→프롬프트→보강→모델/Soul 캐릭터→화면비→퀄리티→영상 길이·오디오→갯수→get_cost 비용확인→확정, 하네스 없는 순수 위저드) |
 | `sins-contents-thumbstyle-prompt.skill` | `/sins-contents-thumbstyle-prompt` | 입력 내용에 맞춰 SINSRA 고정 썸네일 스타일(Anthropic 미니멀 싱글라인 네온 두들·#FF5E00·검정 배경) 프롬프트를 자동 작성하고 힉스필드로 총 4장(16:9 3장 + 9:16 1장, 오브제 모두 다르게) 생성 (내용 입력→오브제 확인/변경→이미지별 네온 강조컬러(추천 팔레트 포함)→모델 선택(GPT Image 2 최우선)→get_cost 비용확인→4장 생성) |
 | `sins-yt-subtitles.skill` | `/sins-yt-subtitles` | SBV 자막을 유튜브용 VTT로 변환 (무조건 1줄·한 줄 목표 15자(공백 제외·단어 안 쪼갬)·마침표에서 자막 분리·쉼표에서 끊기 선호·가독성 우선, /humanize-korean 으로 오탈자만 2회 검수해 음성 싱크 보존, 결정론적 재분할 + difflib 재타이밍 + 최소 표시시간 보장) |
+| `sins-lenis.skill` | `/sins-lenis` | HTML `</head>` 직전에 Lenis 부드러운 스크롤 스니펫(CSS·JS·`new Lenis({ autoRaf: true })`) 삽입, 이미 있으면 중복 삽입 없이 알림 (unpkg CDN·버전 1.3.23 핀 고정) |
 
 ## 함께 설치되는 외부 오픈소스 스킬
 
@@ -477,6 +478,44 @@ mkdir -p ~/.hermes/skills/sins-yt-subtitles
 python3 - <<'PY'
 import os, zipfile
 zipfile.ZipFile('/tmp/sins-yt-subtitles.skill').extractall(os.path.expanduser('~/.hermes/skills/sins-yt-subtitles'))
+PY
+```
+
+### sins-lenis (Lenis 부드러운 스크롤 스니펫 삽입)
+
+Claude Code:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-lenis.skill \
+  -o /tmp/sins-lenis.skill
+mkdir -p ~/.claude/skills/sins-lenis
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-lenis.skill').extractall(os.path.expanduser('~/.claude/skills/sins-lenis'))
+PY
+```
+
+Codex:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-lenis.skill \
+  -o /tmp/sins-lenis.skill
+mkdir -p ~/.codex/skills/sins-lenis
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-lenis.skill').extractall(os.path.expanduser('~/.codex/skills/sins-lenis'))
+PY
+```
+
+Hermes:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-lenis.skill \
+  -o /tmp/sins-lenis.skill
+mkdir -p ~/.hermes/skills/sins-lenis
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-lenis.skill').extractall(os.path.expanduser('~/.hermes/skills/sins-lenis'))
 PY
 ```
 
