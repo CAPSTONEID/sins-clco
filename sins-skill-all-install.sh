@@ -261,6 +261,11 @@ install_external_skills() {
   ponytail_dir="$(clone_external_repo ponytail https://github.com/DietrichGebert/ponytail.git)"
   copy_all_skill_dirs "$ponytail_dir" "skills" ""
 
+  # Emil Kowalski Skills — Claude / Codex 공용. UI 애니메이션·모션·디자인 엔지니어링 스킬 묶음(5개:
+  # animation-vocabulary · apple-design · emil-design-eng · improve-animations · review-animations)
+  emil_dir="$(clone_external_repo emil-skills https://github.com/emilkowalski/skills.git)"
+  copy_all_skill_dirs "$emil_dir" "skills" ""
+
   gstack_dir="$(clone_external_repo gstack https://github.com/garrytan/gstack.git)"
   install_gstack "$gstack_dir"
 
