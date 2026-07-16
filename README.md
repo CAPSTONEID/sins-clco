@@ -31,6 +31,7 @@ SINS 프로젝트용 Claude Code, Codex, Hermes 스킬 패키지입니다.
 | `sins-contents-thumbstyle-prompt.skill` | `/sins-contents-thumbstyle-prompt` | 입력 내용에 맞춰 SINSRA 고정 썸네일 스타일(Anthropic 미니멀 싱글라인 네온 두들·#FF5E00·검정 배경) 프롬프트를 자동 작성하고 힉스필드로 총 4장(16:9 3장 + 9:16 1장, 오브제 모두 다르게) 생성 (내용 입력→오브제 확인/변경→이미지별 네온 강조컬러(추천 팔레트 포함)→모델 선택(GPT Image 2 최우선)→get_cost 비용확인→4장 생성) |
 | `sins-yt-subtitles.skill` | `/sins-yt-subtitles` | SBV 자막을 유튜브용 VTT로 변환 (무조건 1줄·한 줄 목표 15자(공백 제외·단어 안 쪼갬)·마침표에서 자막 분리·쉼표에서 끊기 선호·가독성 우선, /humanize-korean 으로 오탈자만 2회 검수해 음성 싱크 보존, 결정론적 재분할 + difflib 재타이밍 + 최소 표시시간 보장) |
 | `sins-lenis.skill` | `/sins-lenis` | HTML `</head>` 직전에 Lenis 부드러운 스크롤 스니펫(CSS·JS·`new Lenis({ autoRaf: true })`) 삽입, 이미 있으면 중복 삽입 없이 알림 (unpkg CDN·버전 1.3.23 핀 고정) |
+| `sins-mycontentsmake.skill` | `/sins-mycontentsmake` | 유튜브 영상 콘텐츠 자산(썸네일 프롬프트·제목·스크립트·영상설명/캡션/태그·썸네일이미지·슬라이드·카드뉴스)을 한 번에 제작해 노션 하위 7페이지로 발행하는 통합 워크플로우 (작업 전 노션 부모 링크 강제 확보→7페이지 생성(번호 이모지=아이콘)→스크립트 먼저 작성 후 나머지 병렬 팬아웃→슬라이드는 `/sins-web-pt`·카드뉴스는 `/sins-card-news-creator`·최종 글 검수는 `/humanize-korean`) |
 
 ## 함께 설치되는 외부 오픈소스 스킬
 
@@ -519,6 +520,44 @@ mkdir -p ~/.hermes/skills/sins-lenis
 python3 - <<'PY'
 import os, zipfile
 zipfile.ZipFile('/tmp/sins-lenis.skill').extractall(os.path.expanduser('~/.hermes/skills/sins-lenis'))
+PY
+```
+
+### sins-mycontentsmake (유튜브 콘텐츠 자산 통합 제작 → 노션 발행)
+
+Claude Code:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-mycontentsmake.skill \
+  -o /tmp/sins-mycontentsmake.skill
+mkdir -p ~/.claude/skills/sins-mycontentsmake
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-mycontentsmake.skill').extractall(os.path.expanduser('~/.claude/skills/sins-mycontentsmake'))
+PY
+```
+
+Codex:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-mycontentsmake.skill \
+  -o /tmp/sins-mycontentsmake.skill
+mkdir -p ~/.codex/skills/sins-mycontentsmake
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-mycontentsmake.skill').extractall(os.path.expanduser('~/.codex/skills/sins-mycontentsmake'))
+PY
+```
+
+Hermes:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-mycontentsmake.skill \
+  -o /tmp/sins-mycontentsmake.skill
+mkdir -p ~/.hermes/skills/sins-mycontentsmake
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-mycontentsmake.skill').extractall(os.path.expanduser('~/.hermes/skills/sins-mycontentsmake'))
 PY
 ```
 
