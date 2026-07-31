@@ -31,6 +31,7 @@ SINS 프로젝트용 Claude Code, Codex, Hermes 스킬 패키지입니다.
 | `sins-contents-thumbstyle-prompt.skill` | `/sins-contents-thumbstyle-prompt` | 입력 내용에 맞춰 SINSRA 고정 썸네일 스타일(Anthropic 미니멀 싱글라인 네온 두들·#FF5E00·검정 배경) 프롬프트를 자동 작성하고 힉스필드로 총 4장(16:9 3장 + 9:16 1장, 오브제 모두 다르게) 생성 (내용 입력→오브제 확인/변경→이미지별 네온 강조컬러(추천 팔레트 포함)→모델 선택(GPT Image 2 최우선)→get_cost 비용확인→4장 생성) |
 | `sins-yt-subtitles.skill` | `/sins-yt-subtitles` | SBV 자막을 유튜브용 VTT로 변환 (무조건 1줄·한 줄 목표 15자(공백 제외·단어 안 쪼갬)·마침표에서 자막 분리·쉼표에서 끊기 선호·가독성 우선, /humanize-korean 으로 오탈자만 2회 검수해 음성 싱크 보존, 결정론적 재분할 + difflib 재타이밍 + 최소 표시시간 보장) |
 | `sins-lenis.skill` | `/sins-lenis` | HTML `</head>` 직전에 Lenis 부드러운 스크롤 스니펫(CSS·JS·`new Lenis({ autoRaf: true })`) 삽입, 이미 있으면 중복 삽입 없이 알림 (unpkg CDN·버전 1.3.23 핀 고정) |
+| `sins-palmierpro-cutedit.skill` | `/sins-palmierpro-cutedit` | PalmierPro MCP로 **현재 열려있는 프로젝트 타임라인을 직접 읽고 컷편집** (무음 삭제 1.5초 기준·앞뒤 3프레임 여백 → 군소리('음'·'어'·'아') 제거 → 버벅임 반복 제거(마지막만 유지) → 5초 내 반복 발화 제거). 무음은 `remove_silence` 네이티브 처리, 나머지 3룰은 단어 인덱스로 모아 `remove_words` **한 번에** 반영(인덱스 밀림 방지). 한국어 오삭제 위험 때문에 `matches` 자동매칭 대신 인덱스 지목 방식, 삭제 목록 승인 후 실행 |
 | `sins-mycontentsmake.skill` | `/sins-mycontentsmake` | 유튜브 영상 콘텐츠 자산(썸네일 프롬프트·제목·스크립트·영상설명/캡션/태그·썸네일이미지·슬라이드·카드뉴스)을 한 번에 제작해 노션 하위 7페이지로 발행하는 통합 워크플로우 (작업 전 노션 부모 링크 강제 확보→7페이지 생성(번호 이모지=아이콘)→스크립트 먼저 작성 후 나머지 병렬 팬아웃→최종 글 검수는 `/humanize-korean`). **슬라이드(6)·카드뉴스(7) 페이지는 빈 페이지만 생성하고 내용은 사용자가 직접 제작**(하위 스킬 자동 호출 안 함) |
 
 ## 함께 설치되는 외부 오픈소스 스킬
@@ -561,6 +562,65 @@ zipfile.ZipFile('/tmp/sins-mycontentsmake.skill').extractall(os.path.expanduser(
 PY
 ```
 
+### sins-palmierpro-cutedit (PalmierPro 타임라인 컷편집)
+
+Claude Code:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-palmierpro-cutedit.skill \
+  -o /tmp/sins-palmierpro-cutedit.skill
+mkdir -p ~/.claude/skills/sins-palmierpro-cutedit
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-palmierpro-cutedit.skill').extractall(os.path.expanduser('~/.claude/skills/sins-palmierpro-cutedit'))
+PY
+```
+
+Codex:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-palmierpro-cutedit.skill \
+  -o /tmp/sins-palmierpro-cutedit.skill
+mkdir -p ~/.codex/skills/sins-palmierpro-cutedit
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-palmierpro-cutedit.skill').extractall(os.path.expanduser('~/.codex/skills/sins-palmierpro-cutedit'))
+PY
+```
+
+Hermes:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-palmierpro-cutedit.skill \
+  -o /tmp/sins-palmierpro-cutedit.skill
+mkdir -p ~/.hermes/skills/sins-palmierpro-cutedit
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-palmierpro-cutedit.skill').extractall(os.path.expanduser('~/.hermes/skills/sins-palmierpro-cutedit'))
+PY
+```
+
+**사전 준비 — PalmierPro MCP 연결 (이 스킬 전용)**
+
+PalmierPro는 실행 중일 때 `http://127.0.0.1:19789/mcp` 에 MCP 서버를 엽니다. 한 번만 등록하면 됩니다.
+
+```bash
+# Claude Code
+claude mcp add --transport http palmier-pro http://127.0.0.1:19789/mcp
+
+# Codex
+codex mcp add palmier-pro --url http://127.0.0.1:19789/mcp
+```
+
+Cursor는 `~/.cursor/mcp.json` 에 동일 URL을 등록합니다.
+
+| 확인 | 방법 |
+|------|------|
+| 연결 상태 | `claude mcp list` → `palmier-pro ✔ Connected` |
+| `ConnectionRefused` | PalmierPro 앱이 꺼져 있음. 앱을 실행한 뒤 재시도 |
+
+편집 대상은 **현재 열려있는 프로젝트**입니다. 파일 경로를 넘기지 않습니다.
+
 ## 설치 확인
 
 Claude Code:
@@ -594,6 +654,12 @@ Codex에서는 `@` 파일 참조로 스킬을 불러옵니다.
 | Claude Code | [claude.ai/code](https://claude.ai/code) | macOS / Linux |
 | Codex CLI | [openai.com/codex](https://openai.com/codex) | macOS / Linux |
 | Hermes | [atomicbot.ai](https://atomicbot.ai) | macOS / Linux |
+
+스킬별 추가 요구사항:
+
+| 스킬 | 추가 요구사항 |
+|------|---------------|
+| `/sins-palmierpro-cutedit` | [PalmierPro](https://github.com/palmier-io/palmier-pro) 실행 중 + MCP 등록 (macOS 26 Tahoe · Apple Silicon) |
 
 ---
 
