@@ -311,13 +311,13 @@ install_external_skills
 
 echo ""
 echo "✅ 설치 완료! 총 ${SKILL_COUNT}개 스킬이 $SKILL_DIR 에 설치되었습니다."
-echo "   /sins-web-pt는 Lazyweb 레퍼런스와 frontend-slides 뷰포트 규칙을 기반으로 HTML 웹 프레젠테이션과 TXT 대본을 생성하며, PPTX 입력도 추출해 재구성합니다."
+echo "   /sins-video-consource는 Lazyweb 레퍼런스와 frontend-slides 뷰포트 규칙을 기반으로 HTML 웹 프레젠테이션과 TXT 대본을 생성하며, PPTX 입력도 추출해 재구성합니다."
 case "$TARGET" in
   claude)
     echo "   Claude Code를 재시작하면 /sins-* 스킬을 사용할 수 있습니다."
     ;;
   codex)
-    echo "   Codex에서 @${SKILL_DIR}/sins-web-pt/SKILL.md 또는 @${SKILL_DIR}/sins-card-news-creator/SKILL.md 처럼 파일 참조로 사용할 수 있습니다."
+    echo "   Codex에서 @${SKILL_DIR}/sins-video-consource/SKILL.md 또는 @${SKILL_DIR}/sins-card-news-creator/SKILL.md 처럼 파일 참조로 사용할 수 있습니다."
     ;;
   hermes)
     echo "   Hermes를 재시작하면 ${SKILL_DIR} 의 /sins-* 스킬을 사용할 수 있습니다."

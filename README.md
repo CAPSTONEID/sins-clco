@@ -23,7 +23,7 @@ SINS 프로젝트용 Claude Code, Codex, Hermes 스킬 패키지입니다.
 | `sins-card-news-creator.skill` | `/sins-card-news-creator` | 인스타그램 카드뉴스 **카드 JSON TXT**, 캡션 TXT, 이미지 프롬프트 TXT 제작 (**HTML 파일은 만들지 않음** — 카드 데이터를 11필드 고정 스키마 JSON 배열로 `.txt` 저장 + 응답에도 코드블록 출력, 실제 렌더는 Figma 플러그인 `figma_plugin_sins` 담당) |
 | `sins-marketing-team.skill` | `/sins-marketing-team` | 마케팅 전략 팀 구성 및 실행 |
 | `sins-sidenote-pass.skill` | `/sins-sidenote-pass` | SideNotes 고정 폴더에 새 메모 저장 및 기본 접기 처리 |
-| `sins-web-pt.skill` | `/sins-web-pt` | 스크립트/PPTX 기반 웹 발표자료 HTML 및 발표 대본 TXT 제작 |
+| `sins-video-consource.skill` | `/sins-video-consource` | 스크립트/PPTX 기반 웹 발표자료 HTML 및 발표 대본 TXT 제작 |
 | `sins-wiki-pass.skill` | `/sins-wiki-pass` | Obsidian "LLM Wiki" 볼트와 Notion 위키 DB 동시 저장·동기화 (수동 발동, 타입 6종→폴더 자동 매핑 + Notion 카테고리 8종 고정 선택, 제목에 `영상 - `·`프롬프트 - ` 등 종류 프리픽스 자동) |
 | `sins-llmwiki-auto.skill` | `/sins-llmwiki-auto` | 질문·답변·업무·제작 내용을 **자동으로** LLM 위키에 정리·기록하는 상시 발동 정책 (sins-wiki-pass 연동) |
 | `sins-loopass-setup.skill` | `/sins-loopass-setup` | 루프 엔지니어링(자율 AI 에이전트 루프)을 6단계 인터뷰로 설계·세팅하는 위저드 (트리거→행동→검증→정지조건→아키텍처→산출, 단계별 스킬·MCP 추천 + 실행 가능한 루프 스킬 자동 생성) |
@@ -268,41 +268,41 @@ zipfile.ZipFile('/tmp/sins-sidenote-pass.skill').extractall(os.path.expanduser('
 PY
 ```
 
-### sins-web-pt
+### sins-video-consource
 
 Claude Code:
 
 ```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-web-pt.skill \
-  -o /tmp/sins-web-pt.skill
-mkdir -p ~/.claude/skills/sins-web-pt
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-video-consource.skill \
+  -o /tmp/sins-video-consource.skill
+mkdir -p ~/.claude/skills/sins-video-consource
 python3 - <<'PY'
 import os, zipfile
-zipfile.ZipFile('/tmp/sins-web-pt.skill').extractall(os.path.expanduser('~/.claude/skills/sins-web-pt'))
+zipfile.ZipFile('/tmp/sins-video-consource.skill').extractall(os.path.expanduser('~/.claude/skills/sins-video-consource'))
 PY
 ```
 
 Codex:
 
 ```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-web-pt.skill \
-  -o /tmp/sins-web-pt.skill
-mkdir -p ~/.codex/skills/sins-web-pt
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-video-consource.skill \
+  -o /tmp/sins-video-consource.skill
+mkdir -p ~/.codex/skills/sins-video-consource
 python3 - <<'PY'
 import os, zipfile
-zipfile.ZipFile('/tmp/sins-web-pt.skill').extractall(os.path.expanduser('~/.codex/skills/sins-web-pt'))
+zipfile.ZipFile('/tmp/sins-video-consource.skill').extractall(os.path.expanduser('~/.codex/skills/sins-video-consource'))
 PY
 ```
 
 Hermes:
 
 ```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-web-pt.skill \
-  -o /tmp/sins-web-pt.skill
-mkdir -p ~/.hermes/skills/sins-web-pt
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-video-consource.skill \
+  -o /tmp/sins-video-consource.skill
+mkdir -p ~/.hermes/skills/sins-video-consource
 python3 - <<'PY'
 import os, zipfile
-zipfile.ZipFile('/tmp/sins-web-pt.skill').extractall(os.path.expanduser('~/.hermes/skills/sins-web-pt'))
+zipfile.ZipFile('/tmp/sins-video-consource.skill').extractall(os.path.expanduser('~/.hermes/skills/sins-video-consource'))
 PY
 ```
 
@@ -644,7 +644,7 @@ ls ~/.hermes/skills/
 Codex에서는 `@` 파일 참조로 스킬을 불러옵니다.
 
 ```text
-@~/.codex/skills/sins-web-pt/SKILL.md 위 내용대로 실행해줘
+@~/.codex/skills/sins-video-consource/SKILL.md 위 내용대로 실행해줘
 ```
 
 ## 요구사항
