@@ -20,7 +20,7 @@ SINS 프로젝트용 Claude Code, Codex, Hermes 스킬 패키지입니다.
 
 | 파일 | 명령어 | 설명 |
 |------|--------|------|
-| `sins-card-news-creator.skill` | `/sins-card-news-creator` | 인스타그램 카드뉴스 HTML, 캡션 TXT, 이미지 프롬프트 TXT 제작 |
+| `sins-card-news-creator.skill` | `/sins-card-news-creator` | 인스타그램 카드뉴스 **카드 JSON TXT**, 캡션 TXT, 이미지 프롬프트 TXT 제작 (**HTML 파일은 만들지 않음** — 카드 데이터를 11필드 고정 스키마 JSON 배열로 `.txt` 저장 + 응답에도 코드블록 출력, 실제 렌더는 Figma 플러그인 `figma_plugin_sins` 담당) |
 | `sins-marketing-team.skill` | `/sins-marketing-team` | 마케팅 전략 팀 구성 및 실행 |
 | `sins-sidenote-pass.skill` | `/sins-sidenote-pass` | SideNotes 고정 폴더에 새 메모 저장 및 기본 접기 처리 |
 | `sins-web-pt.skill` | `/sins-web-pt` | 스크립트/PPTX 기반 웹 발표자료 HTML 및 발표 대본 TXT 제작 |
