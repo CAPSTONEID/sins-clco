@@ -1,6 +1,6 @@
-# SINS Claude & Codex & Hermes 스킬 패키지
+# SINS Claude & Codex & Hermes & Grok 스킬 패키지
 
-SINS 프로젝트용 Claude Code, Codex, Hermes 스킬 패키지입니다.
+SINS 프로젝트용 Claude Code, Codex, Hermes, Grok 스킬 패키지입니다.
 
 ---
 
@@ -36,33 +36,33 @@ SINS 프로젝트용 Claude Code, Codex, Hermes 스킬 패키지입니다.
 
 ## 함께 설치되는 외부 오픈소스 스킬
 
-한 줄 설치와 수동 설치는 SINS 스킬 설치 후 아래 외부 스킬도 같이 설치합니다. (Hermes 대상은 gstack·superpowers·caveman 등을 자체 번들로 이미 제공하므로 외부 스킬 설치를 건너뛰고 SINS 스킬만 설치합니다.)
+한 줄 설치와 수동 설치는 SINS 스킬 설치 후 아래 외부 스킬도 같이 설치합니다. (Hermes 대상은 gstack·superpowers·caveman 등을 자체 번들로 이미 제공하므로 외부 스킬 설치를 건너뛰고 SINS 스킬만 설치합니다.) Grok은 Claude와 `SKILL.md` 프론트매터 규격이 같아 스킬을 그대로 복사해 씁니다.
 
 | 이름 | 대상 | 출처 |
 |------|------|------|
-| Caveman | Claude 전용 | [JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman) |
+| Caveman | Claude / Grok | [JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman) |
 | Frontend Slides | Claude 전용 | [zarazhangrui/frontend-slides](https://github.com/zarazhangrui/frontend-slides) |
 | Grill Me | Claude 전용 | [mattpocock/skills](https://github.com/mattpocock/skills) |
 | Handoff | Claude 전용 | [mattpocock/skills](https://github.com/mattpocock/skills) |
 | Harness | Claude 전용 | [revfactory/harness](https://github.com/revfactory/harness) |
 | UI/UX Pro Max | Claude 전용 | [nextlevelbuilder/ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) |
-| HyperFrames | Claude / Codex | [heygen-com/hyperframes](https://github.com/heygen-com/hyperframes) |
-| gstack | Claude / Codex | [garrytan/gstack](https://github.com/garrytan/gstack) |
-| Superpowers | Claude / Codex | [obra/superpowers](https://github.com/obra/superpowers) |
-| Ponytail | Claude / Codex | [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) |
-| Humanize Korean | Claude / Codex | [epoko77-ai/im-not-ai](https://github.com/epoko77-ai/im-not-ai) |
-| Emil Kowalski Skills | Claude / Codex | [emilkowalski/skills](https://github.com/emilkowalski/skills) |
+| HyperFrames | Claude / Codex / Grok | [heygen-com/hyperframes](https://github.com/heygen-com/hyperframes) |
+| gstack | Claude / Codex / Grok | [garrytan/gstack](https://github.com/garrytan/gstack) |
+| Superpowers | Claude / Codex / Grok | [obra/superpowers](https://github.com/obra/superpowers) |
+| Ponytail | Claude / Codex / Grok | [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) |
+| Humanize Korean | Claude / Codex / Grok | [epoko77-ai/im-not-ai](https://github.com/epoko77-ai/im-not-ai) |
+| Emil Kowalski Skills | Claude / Codex / Grok | [emilkowalski/skills](https://github.com/emilkowalski/skills) |
 | Insane Search | Codex 전용 | [sinmb79/codex-insane-search](https://github.com/sinmb79/codex-insane-search) |
 | Insane Search | Claude 전용 | [fivetaku/insane-search](https://github.com/fivetaku/insane-search) |
 | oh-my-design | Claude / Codex | [kwakseongjae/oh-my-design](https://github.com/kwakseongjae/oh-my-design) |
 
-> **oh-my-design 채널 차이** — 286개 실제 기업 디자인 레퍼런스 기반 디자인 시스템 스킬 17개 + 서브에이전트 16개. 자체 `oh-my-design-cli` npx 설치를 사용하며 Claude·Codex 채널을 따로 설치합니다. Claude는 `--agent claude-code`로 스킬 `~/.claude/skills`, 에이전트 `~/.claude/agents`, 데이터 `~/.claude/data`에 설치하고, Codex는 `--agent codex`로 스킬 `~/.agents/skills`, 에이전트 `~/.codex/agents`, 데이터 `~/.codex/data`에 설치합니다(각 도구의 정규 경로). `npx`(Node.js)가 필요하며 없으면 자동으로 건너뜁니다. 건너뛰려면 `SINS_SKIP_OMD=1`. Hermes는 대상에서 제외됩니다.
+> **oh-my-design 채널 차이** — 286개 실제 기업 디자인 레퍼런스 기반 디자인 시스템 스킬 17개 + 서브에이전트 16개. 자체 `oh-my-design-cli` npx 설치를 사용하며 Claude·Codex 채널을 따로 설치합니다. Claude는 `--agent claude-code`로 스킬 `~/.claude/skills`, 에이전트 `~/.claude/agents`, 데이터 `~/.claude/data`에 설치하고, Codex는 `--agent codex`로 스킬 `~/.agents/skills`, 에이전트 `~/.codex/agents`, 데이터 `~/.codex/data`에 설치합니다(각 도구의 정규 경로). `npx`(Node.js)가 필요하며 없으면 자동으로 건너뜁니다. 건너뛰려면 `SINS_SKIP_OMD=1`. Hermes·Grok는 `oh-my-design-cli` 채널이 없어 대상에서 제외됩니다.
 
-> **Ponytail 설치 범위** — YAGNI·표준 라이브러리 우선·최소 구현을 강제하는 "게으른 시니어 개발자" 모드. 번들은 슬래시 명령 스킬 6개(`ponytail`·`ponytail-audit`·`ponytail-help`·`ponytail-review`·`ponytail-gain`·`ponytail-debt`)만 `skills/`에서 복사합니다. **상시 발동(always-on) 라이프사이클 훅은 번들로 연결되지 않습니다** — 매 프롬프트 자동 활성화가 필요하면 정규 플러그인 설치를 쓰세요. Claude `/plugin marketplace add DietrichGebert/ponytail` → `/plugin install ponytail@ponytail`(두 프롬프트로 분리 실행), Codex `codex plugin marketplace add DietrichGebert/ponytail`. 훅 실행에는 `node`가 PATH에 있어야 합니다. Hermes는 대상에서 제외됩니다.
+> **Ponytail 설치 범위** — YAGNI·표준 라이브러리 우선·최소 구현을 강제하는 "게으른 시니어 개발자" 모드. 번들은 슬래시 명령 스킬 6개(`ponytail`·`ponytail-audit`·`ponytail-help`·`ponytail-review`·`ponytail-gain`·`ponytail-debt`)만 `skills/`에서 복사합니다. **상시 발동(always-on) 라이프사이클 훅은 번들로 연결되지 않습니다** — 매 프롬프트 자동 활성화가 필요하면 정규 플러그인 설치를 쓰세요. Claude `/plugin marketplace add DietrichGebert/ponytail` → `/plugin install ponytail@ponytail`(두 프롬프트로 분리 실행), Codex `codex plugin marketplace add DietrichGebert/ponytail`, Grok `grok plugin marketplace add DietrichGebert/ponytail`. 훅 실행에는 `node`가 PATH에 있어야 합니다. Hermes는 대상에서 제외됩니다.
 
 > **Emil Kowalski Skills** — UI 애니메이션·모션·디자인 엔지니어링 스킬 5개(`animation-vocabulary`·`apple-design`·`emil-design-eng`·`improve-animations`·`review-animations`). Vaul·Sonner 제작자 Emil Kowalski의 UI 폴리시·애니메이션 철학을 담은 스킬로, `skills/`에서 그대로 복사합니다. Hermes는 대상에서 제외됩니다.
 
-> **Humanize Korean 모드 차이** — Claude는 Fast(단일 호출) + strict 5인 파이프라인을 모두 설치합니다(스킬 `humanize-korean`·`humanize`·`humanize-redo` 3개 + `~/.claude/agents/` 서브에이전트 12개). Codex는 다중 서브에이전트를 결정적으로 실행하지 못해 Fast(단일 호출) 모드만 설치합니다(`humanize-korean` 1개). Hermes는 대상에서 제외됩니다.
+> **Humanize Korean 모드 차이** — Claude는 Fast(단일 호출) + strict 5인 파이프라인을 모두 설치합니다(스킬 `humanize-korean`·`humanize`·`humanize-redo` 3개 + `~/.claude/agents/` 서브에이전트 12개). Codex와 Grok은 다중 서브에이전트를 결정적으로 실행하지 못해 Fast(단일 호출) 모드만 설치합니다(`humanize-korean` 1개). Hermes는 대상에서 제외됩니다.
 
 외부 스킬 설치를 건너뛰려면 다음처럼 실행합니다.
 
@@ -102,6 +102,20 @@ curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-skil
 curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-skill-all-install.sh | bash -s -- hermes
 ```
 
+### Grok
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-skill-all-install.sh | bash -s -- grok
+```
+
+> **Grok 설치 참고**
+>
+> - **설치 위치는 `~/.grok/skills/`** 입니다. Grok은 파일 변경을 감지해 재시작 없이 몇 초 안에 슬래시 메뉴에 반영합니다. `grok inspect` 로 확인하세요.
+> - **Claude Code를 이미 쓰고 있다면 설치가 필요 없을 수도 있습니다.** Grok은 기본값으로 `~/.claude/skills/` 를 함께 스캔해(Claude 호환) `grok inspect` 에 `[claude]` 태그로 표시합니다. Claude 쪽 스킬을 지우거나 `GROK_CLAUDE_SKILLS_ENABLED=false` 로 호환 스캔을 끌 계획이면 `grok` 대상으로 따로 설치하세요.
+> - **MCP는 이관되지 않습니다.** 노션(`/sins-mycontentsmake`)·힉스필드(`/sins-contents-thumbstyle-prompt`·`/sins-higgsfield`)·Lazyweb(`/sins-video-consource`)·PalmierPro(`/sins-palmierpro-cutedit`)는 `grok mcp add` 로 따로 등록해야 동작합니다. 상태 확인은 `grok mcp list` · `grok mcp doctor`.
+> - **서브에이전트 구성은 다릅니다.** Claude의 `~/.claude/agents/*.md` 12개 팀 에이전트는 그대로 쓰이지 않습니다. Grok은 `--agents` JSON 또는 자체 서브에이전트 정의를 씁니다. `/humanize-korean` 은 이 때문에 Fast(단일 호출) 모드만 설치합니다.
+> - **이름이 겹치면** Grok이 `/user:이름` 처럼 스코프를 붙인 명령으로도 함께 노출합니다. (`grok inspect` 가 `[collides with ...]` 로 표시)
+
 ## 수동 설치
 
 ### Claude Code
@@ -134,6 +148,16 @@ rm -rf /tmp/sins-clco
 echo "Hermes 설치 완료"
 ```
 
+### Grok
+
+```bash
+git clone https://github.com/CAPSTONEID/sins-clco.git /tmp/sins-clco
+cd /tmp/sins-clco
+bash sins-skill-all-install.sh grok
+rm -rf /tmp/sins-clco
+echo "Grok 설치 완료"
+```
+
 ## 개별 스킬 설치
 
 ### Claude Code 준비
@@ -152,6 +176,12 @@ mkdir -p ~/.codex/skills
 
 ```bash
 mkdir -p ~/.hermes/skills
+```
+
+### Grok 준비
+
+```bash
+mkdir -p ~/.grok/skills
 ```
 
 ### sins-card-news-creator
@@ -189,6 +219,18 @@ mkdir -p ~/.hermes/skills/sins-card-news-creator
 python3 - <<'PY'
 import os, zipfile
 zipfile.ZipFile('/tmp/sins-card-news-creator.skill').extractall(os.path.expanduser('~/.hermes/skills/sins-card-news-creator'))
+PY
+```
+
+Grok:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-card-news-creator.skill \
+  -o /tmp/sins-card-news-creator.skill
+mkdir -p ~/.grok/skills/sins-card-news-creator
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-card-news-creator.skill').extractall(os.path.expanduser('~/.grok/skills/sins-card-news-creator'))
 PY
 ```
 
@@ -230,6 +272,18 @@ zipfile.ZipFile('/tmp/sins-marketing-team.skill').extractall(os.path.expanduser(
 PY
 ```
 
+Grok:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-marketing-team.skill \
+  -o /tmp/sins-marketing-team.skill
+mkdir -p ~/.grok/skills/sins-marketing-team
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-marketing-team.skill').extractall(os.path.expanduser('~/.grok/skills/sins-marketing-team'))
+PY
+```
+
 ### sins-sidenote-pass
 
 Claude Code:
@@ -265,6 +319,18 @@ mkdir -p ~/.hermes/skills/sins-sidenote-pass
 python3 - <<'PY'
 import os, zipfile
 zipfile.ZipFile('/tmp/sins-sidenote-pass.skill').extractall(os.path.expanduser('~/.hermes/skills/sins-sidenote-pass'))
+PY
+```
+
+Grok:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-sidenote-pass.skill \
+  -o /tmp/sins-sidenote-pass.skill
+mkdir -p ~/.grok/skills/sins-sidenote-pass
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-sidenote-pass.skill').extractall(os.path.expanduser('~/.grok/skills/sins-sidenote-pass'))
 PY
 ```
 
@@ -306,6 +372,18 @@ zipfile.ZipFile('/tmp/sins-video-consource.skill').extractall(os.path.expanduser
 PY
 ```
 
+Grok:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-video-consource.skill \
+  -o /tmp/sins-video-consource.skill
+mkdir -p ~/.grok/skills/sins-video-consource
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-video-consource.skill').extractall(os.path.expanduser('~/.grok/skills/sins-video-consource'))
+PY
+```
+
 ### sins-wiki-pass
 
 Claude Code:
@@ -341,6 +419,18 @@ mkdir -p ~/.hermes/skills/sins-wiki-pass
 python3 - <<'PY'
 import os, zipfile
 zipfile.ZipFile('/tmp/sins-wiki-pass.skill').extractall(os.path.expanduser('~/.hermes/skills/sins-wiki-pass'))
+PY
+```
+
+Grok:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-wiki-pass.skill \
+  -o /tmp/sins-wiki-pass.skill
+mkdir -p ~/.grok/skills/sins-wiki-pass
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-wiki-pass.skill').extractall(os.path.expanduser('~/.grok/skills/sins-wiki-pass'))
 PY
 ```
 
@@ -408,6 +498,18 @@ zipfile.ZipFile('/tmp/sins-loopass-setup.skill').extractall(os.path.expanduser('
 PY
 ```
 
+Grok:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-loopass-setup.skill \
+  -o /tmp/sins-loopass-setup.skill
+mkdir -p ~/.grok/skills/sins-loopass-setup
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-loopass-setup.skill').extractall(os.path.expanduser('~/.grok/skills/sins-loopass-setup'))
+PY
+```
+
 ### sins-higgsfield (힉스필드 이미지·영상 단계별 생성)
 
 힉스필드(Higgsfield) MCP가 연결된 환경에서, 이미지/영상을 9스텝 선택카드로 한 스텝씩 설계해 생성한다. 유형→참고이미지→프롬프트→보강→모델(Soul이면 캐릭터까지)→화면비→퀄리티→(영상이면 길이·오디오)→갯수→`get_cost` 비용확인→확정 순서. 모델 카탈로그·Soul 캐릭터·크레딧을 런타임에 실제 조회하며, 하네스 없는 순수 위저드다. **힉스필드 MCP 연결이 필요하다.**
@@ -445,6 +547,18 @@ mkdir -p ~/.hermes/skills/sins-higgsfield
 python3 - <<'PY'
 import os, zipfile
 zipfile.ZipFile('/tmp/sins-higgsfield.skill').extractall(os.path.expanduser('~/.hermes/skills/sins-higgsfield'))
+PY
+```
+
+Grok:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-higgsfield.skill \
+  -o /tmp/sins-higgsfield.skill
+mkdir -p ~/.grok/skills/sins-higgsfield
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-higgsfield.skill').extractall(os.path.expanduser('~/.grok/skills/sins-higgsfield'))
 PY
 ```
 
@@ -486,6 +600,18 @@ zipfile.ZipFile('/tmp/sins-yt-subtitles.skill').extractall(os.path.expanduser('~
 PY
 ```
 
+Grok:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-yt-subtitles.skill \
+  -o /tmp/sins-yt-subtitles.skill
+mkdir -p ~/.grok/skills/sins-yt-subtitles
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-yt-subtitles.skill').extractall(os.path.expanduser('~/.grok/skills/sins-yt-subtitles'))
+PY
+```
+
 ### sins-lenis (Lenis 부드러운 스크롤 스니펫 삽입)
 
 Claude Code:
@@ -521,6 +647,18 @@ mkdir -p ~/.hermes/skills/sins-lenis
 python3 - <<'PY'
 import os, zipfile
 zipfile.ZipFile('/tmp/sins-lenis.skill').extractall(os.path.expanduser('~/.hermes/skills/sins-lenis'))
+PY
+```
+
+Grok:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-lenis.skill \
+  -o /tmp/sins-lenis.skill
+mkdir -p ~/.grok/skills/sins-lenis
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-lenis.skill').extractall(os.path.expanduser('~/.grok/skills/sins-lenis'))
 PY
 ```
 
@@ -562,6 +700,18 @@ zipfile.ZipFile('/tmp/sins-mycontentsmake.skill').extractall(os.path.expanduser(
 PY
 ```
 
+Grok:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-mycontentsmake.skill \
+  -o /tmp/sins-mycontentsmake.skill
+mkdir -p ~/.grok/skills/sins-mycontentsmake
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-mycontentsmake.skill').extractall(os.path.expanduser('~/.grok/skills/sins-mycontentsmake'))
+PY
+```
+
 ### sins-palmierpro-cutedit (PalmierPro 타임라인 컷편집)
 
 Claude Code:
@@ -600,6 +750,18 @@ zipfile.ZipFile('/tmp/sins-palmierpro-cutedit.skill').extractall(os.path.expandu
 PY
 ```
 
+Grok:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-palmierpro-cutedit.skill \
+  -o /tmp/sins-palmierpro-cutedit.skill
+mkdir -p ~/.grok/skills/sins-palmierpro-cutedit
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-palmierpro-cutedit.skill').extractall(os.path.expanduser('~/.grok/skills/sins-palmierpro-cutedit'))
+PY
+```
+
 **사전 준비 — PalmierPro MCP 연결 (이 스킬 전용)**
 
 PalmierPro는 실행 중일 때 `http://127.0.0.1:19789/mcp` 에 MCP 서버를 엽니다. 한 번만 등록하면 됩니다.
@@ -610,13 +772,16 @@ claude mcp add --transport http palmier-pro http://127.0.0.1:19789/mcp
 
 # Codex
 codex mcp add palmier-pro --url http://127.0.0.1:19789/mcp
+
+# Grok
+grok mcp add --transport http palmier-pro http://127.0.0.1:19789/mcp
 ```
 
 Cursor는 `~/.cursor/mcp.json` 에 동일 URL을 등록합니다.
 
 | 확인 | 방법 |
 |------|------|
-| 연결 상태 | `claude mcp list` → `palmier-pro ✔ Connected` |
+| 연결 상태 | `claude mcp list` → `palmier-pro ✔ Connected` (Grok은 `grok mcp doctor palmier-pro`) |
 | `ConnectionRefused` | PalmierPro 앱이 꺼져 있음. 앱을 실행한 뒤 재시도 |
 
 편집 대상은 **현재 열려있는 프로젝트**입니다. 파일 경로를 넘기지 않습니다.
@@ -641,6 +806,13 @@ Hermes:
 ls ~/.hermes/skills/
 ```
 
+Grok:
+
+```bash
+ls ~/.grok/skills/
+grok inspect            # 발견된 스킬 전체와 출처(user·project·plugin)를 함께 확인
+```
+
 Codex에서는 `@` 파일 참조로 스킬을 불러옵니다.
 
 ```text
@@ -654,6 +826,7 @@ Codex에서는 `@` 파일 참조로 스킬을 불러옵니다.
 | Claude Code | [claude.ai/code](https://claude.ai/code) | macOS / Linux |
 | Codex CLI | [openai.com/codex](https://openai.com/codex) | macOS / Linux |
 | Hermes | [atomicbot.ai](https://atomicbot.ai) | macOS / Linux |
+| Grok CLI | `npm i -g @xai-official/grok` | macOS / Linux |
 
 스킬별 추가 요구사항:
 
@@ -674,3 +847,4 @@ curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-conf
 적용 내용:
 - `~/CLAUDE.md` — 역할 페르소나, caveman mode, 작업 하네스 원칙
 - `~/.claude/settings.json` — SessionStart hook (세션 시작 시 caveman full 자동 활성화)
+- `~/.grok/rules/sins-persona.md` — Grok이 설치돼 있으면 같은 페르소나를 홈 룰로 복사 (Grok은 `~/CLAUDE.md` 를 스캔하지 않고 `~/.grok/rules/` 를 항상 읽습니다. caveman 규칙이 페르소나 본문에 있어 훅 없이 상시 적용)

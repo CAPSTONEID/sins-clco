@@ -7,6 +7,13 @@ echo "📝 CLAUDE.md 적용 중..."
 curl -fsSL "$REPO_RAW/config/CLAUDE.md" -o "$HOME/CLAUDE.md"
 echo "✅ ~/CLAUDE.md 적용 완료"
 
+if command -v grok >/dev/null 2>&1 || [ -d "$HOME/.grok" ]; then
+  # Grok은 ~/.grok/rules/ 의 *.md 를 항상 홈 룰로 읽는다. (~/CLAUDE.md 는 스캔 대상이 아님)
+  mkdir -p "$HOME/.grok/rules"
+  cp "$HOME/CLAUDE.md" "$HOME/.grok/rules/sins-persona.md"
+  echo "✅ ~/.grok/rules/sins-persona.md 적용 완료 (Grok 홈 룰 — caveman 모드 포함)"
+fi
+
 echo "⚙️  caveman SessionStart hook 적용 중..."
 python3 - <<'PY'
 import json, os
@@ -46,3 +53,4 @@ PY
 echo ""
 echo "✅ 설정 적용 완료!"
 echo "   Claude Code 재시작하면 caveman mode 자동 활성화됩니다."
+echo "   Grok은 ~/.grok/rules/sins-persona.md 로 같은 페르소나·caveman 규칙이 적용됩니다. (훅 없이 홈 룰로 상시 적용)"
