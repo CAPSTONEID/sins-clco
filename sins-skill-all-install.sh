@@ -21,8 +21,13 @@ case "$TARGET" in
     INSTALL_MODE="unzip"
     LABEL="Hermes"
     ;;
+  grok)
+    SKILL_DIR="$HOME/.grok/skills"
+    INSTALL_MODE="unzip"
+    LABEL="Grok"
+    ;;
   *)
-    echo "사용법: $0 [claude|codex|hermes]"
+    echo "사용법: $0 [claude|codex|hermes|grok]"
     echo "예시: $0 claude"
     exit 1
     ;;
@@ -171,6 +176,10 @@ install_oh_my_design() {
   case "$TARGET" in
     claude) omd_channel="claude-code" ;;
     codex)  omd_channel="codex" ;;
+    grok)
+      echo "  ⏭️ oh-my-design는 claude-code·codex 채널만 제공해 Grok에서는 건너뜁니다."
+      return 0
+      ;;
     *) return 0 ;;
   esac
 
@@ -251,7 +260,20 @@ install_external_skills() {
     cp -RL "$hk_dir/codex/skills/humanize-korean" "$SKILL_DIR/humanize-korean"
   fi
 
-  # HyperFrames — Claude / Codex 공용. HTML→MP4 영상 제작 스킬 묶음(16개)
+  if [ "$TARGET" = "grok" ]; then
+    # Grok은 SKILL.md 프론트매터(name·description)가 Claude와 동일해 스킬을 그대로 복사한다.
+    caveman_dir="$(clone_external_repo caveman https://github.com/JuliusBrussee/caveman.git)"
+    copy_all_skill_dirs "$caveman_dir" "skills" ""
+
+    # Humanize Korean — Grok은 Claude의 ~/.claude/agents 서브에이전트 12개를 그대로 쓰지 못하므로
+    # Codex와 같은 Fast(단일 호출) 모드만 설치한다. references 심링크는 실체로 복사(-L)
+    hk_dir="$(clone_external_repo im-not-ai https://github.com/epoko77-ai/im-not-ai.git)"
+    rm -rf "$SKILL_DIR/humanize-korean"
+    mkdir -p "$SKILL_DIR"
+    cp -RL "$hk_dir/codex/skills/humanize-korean" "$SKILL_DIR/humanize-korean"
+  fi
+
+  # HyperFrames — Claude / Codex / Grok 공용. HTML→MP4 영상 제작 스킬 묶음(16개)
   hyperframes_dir="$(clone_external_repo hyperframes https://github.com/heygen-com/hyperframes.git)"
   copy_all_skill_dirs "$hyperframes_dir" "skills" ""
 
@@ -321,5 +343,9 @@ case "$TARGET" in
     ;;
   hermes)
     echo "   Hermes를 재시작하면 ${SKILL_DIR} 의 /sins-* 스킬을 사용할 수 있습니다."
+    ;;
+  grok)
+    echo "   Grok은 파일 변경을 감지해 몇 초 안에 슬래시 메뉴에 /sins-* 스킬이 올라옵니다. (grok inspect 로 확인)"
+    echo "   MCP(노션·힉스필드·Lazyweb·PalmierPro 등)는 자동 이관되지 않습니다. grok mcp add 로 따로 등록하세요."
     ;;
 esac
