@@ -55,12 +55,15 @@ SINS 프로젝트용 Claude Code, Codex, Hermes, Grok 스킬 패키지입니다.
 | Insane Search | Codex 전용 | [sinmb79/codex-insane-search](https://github.com/sinmb79/codex-insane-search) |
 | Insane Search | Claude 전용 | [fivetaku/insane-search](https://github.com/fivetaku/insane-search) |
 | oh-my-design | Claude / Codex | [kwakseongjae/oh-my-design](https://github.com/kwakseongjae/oh-my-design) |
+| Fluent Korean | Claude 전용 | [snflkd/fluent-korean](https://github.com/snflkd/fluent-korean) |
 
 > **oh-my-design 채널 차이** — 286개 실제 기업 디자인 레퍼런스 기반 디자인 시스템 스킬 17개 + 서브에이전트 16개. 자체 `oh-my-design-cli` npx 설치를 사용하며 Claude·Codex 채널을 따로 설치합니다. Claude는 `--agent claude-code`로 스킬 `~/.claude/skills`, 에이전트 `~/.claude/agents`, 데이터 `~/.claude/data`에 설치하고, Codex는 `--agent codex`로 스킬 `~/.agents/skills`, 에이전트 `~/.codex/agents`, 데이터 `~/.codex/data`에 설치합니다(각 도구의 정규 경로). `npx`(Node.js)가 필요하며 없으면 자동으로 건너뜁니다. 건너뛰려면 `SINS_SKIP_OMD=1`. Hermes·Grok는 `oh-my-design-cli` 채널이 없어 대상에서 제외됩니다.
 
 > **Ponytail 설치 범위** — YAGNI·표준 라이브러리 우선·최소 구현을 강제하는 "게으른 시니어 개발자" 모드. 번들은 슬래시 명령 스킬 6개(`ponytail`·`ponytail-audit`·`ponytail-help`·`ponytail-review`·`ponytail-gain`·`ponytail-debt`)만 `skills/`에서 복사합니다. **상시 발동(always-on) 라이프사이클 훅은 번들로 연결되지 않습니다** — 매 프롬프트 자동 활성화가 필요하면 정규 플러그인 설치를 쓰세요. Claude `/plugin marketplace add DietrichGebert/ponytail` → `/plugin install ponytail@ponytail`(두 프롬프트로 분리 실행), Codex `codex plugin marketplace add DietrichGebert/ponytail`, Grok `grok plugin marketplace add DietrichGebert/ponytail`. 훅 실행에는 `node`가 PATH에 있어야 합니다. Hermes는 대상에서 제외됩니다.
 
 > **Emil Kowalski Skills** — UI 애니메이션·모션·디자인 엔지니어링 스킬 5개(`animation-vocabulary`·`apple-design`·`emil-design-eng`·`improve-animations`·`review-animations`). Vaul·Sonner 제작자 Emil Kowalski의 UI 폴리시·애니메이션 철학을 담은 스킬로, `skills/`에서 그대로 복사합니다. Hermes는 대상에서 제외됩니다.
+
+> **Fluent Korean 설치 형태** — 스킬이 아니라 Claude Code의 **output-style**입니다. `~/.claude/output-styles/` 에 `fluent-korean.md`(코딩 지침 유지판)와 `fluent-korean-not-coding.md`(코딩 지침 미유지판) 2종을 복사하며, 설치한 뒤 `/output-style` 에서 골라 켭니다. 조사와 어미의 생략을 금지하고, 명사구로 문장을 끝내지 못하게 하며, 비유적 어휘와 엠대시(—)를 자제시켜 한국어 응답의 의미를 명확하게 만듭니다. 코드·주석·변수명·커밋 메시지·로그 문자열·인용문은 적용 대상에서 제외됩니다. **`caveman` 과는 문장 생성 규칙이 정면으로 충돌하므로 두 가지를 동시에 켜지 마세요.** 플러그인 형태로 관리하고 싶다면 `/plugin marketplace add snflkd/fluent-korean` → `/plugin install fluent-korean@fluent-korean` 을 사용합니다(두 프롬프트로 분리 실행). output-style은 Claude Code 전용 개념이라 Codex·Grok·Hermes는 대상에서 제외됩니다.
 
 > **Humanize Korean 모드 차이** — Claude는 Fast(단일 호출) + strict 5인 파이프라인을 모두 설치합니다(스킬 `humanize-korean`·`humanize`·`humanize-redo` 3개 + `~/.claude/agents/` 서브에이전트 12개). Codex와 Grok은 다중 서브에이전트를 결정적으로 실행하지 못해 Fast(단일 호출) 모드만 설치합니다(`humanize-korean` 1개). Hermes는 대상에서 제외됩니다.
 
