@@ -246,6 +246,13 @@ install_external_skills() {
     done
     mkdir -p "$HOME/.claude/agents"
     cp "$hk_dir"/agents/*.md "$HOME/.claude/agents/"
+
+    # Fluent Korean — 스킬이 아니라 output-style이므로 ~/.claude/output-styles 에 복사한다.
+    # 코딩 지침 유지판(fluent-korean)과 미유지판(fluent-korean-not-coding) 2종을 함께 설치하고,
+    # 사용자가 /output-style 에서 직접 골라 켠다. (caveman과 문장 규칙이 충돌하므로 자동 활성화하지 않는다)
+    fk_dir="$(clone_external_repo fluent-korean https://github.com/snflkd/fluent-korean.git)"
+    mkdir -p "$HOME/.claude/output-styles"
+    cp "$fk_dir"/plugins/fluent-korean/output-styles/*.md "$HOME/.claude/output-styles/"
   fi
 
   if [ "$TARGET" = "codex" ]; then
