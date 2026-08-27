@@ -24,7 +24,7 @@ SINS 프로젝트용 Claude Code, Codex, Hermes, Grok 스킬 패키지입니다.
 | `sins-marketing-team.skill` | `/sins-marketing-team` | 마케팅 전략 팀 구성 및 실행 |
 | `sins-sidenote-pass.skill` | `/sins-sidenote-pass` | SideNotes 고정 폴더에 새 메모 저장 및 기본 접기 처리 |
 | `sins-video-consource.skill` | `/sins-video-consource` | 대본(또는 오디오·영상·PPTX)을 입력받아 **제작 모드 3종 중 하나를 먼저 고르고** 결과물을 만드는 7인 팀 워크플로우 — 옵션1 **스크립트만**(TXT 대본) / 옵션2 **영상 자동 제작** / 옵션3 **스크립트+HTML**(기본값). **[옵션2 영상]** `/hyperframes`로 롱폼 2560×1440(2K, 자막 없음)과 숏폼 1080×1920 2편(서로 다른 챕터·서로 다른 주장, 각 90초 이내, 전사 자막 필수)을 제작. 제작 착수 전 **배경 계열**(그리드·대리석·페이퍼·기타)과 **컬러 계획**(60 배경 / 30 글자 / 10 포인트)을 질문으로 확정한다. 숏폼은 릴스·쇼츠 UI **데드존을 실측 회피**(안전영역 y 228~1347, y 983 아래 우측 182px 잠식, 업로드 확대 대비 좌우 120px) — 본문은 화면 중앙보다 위, 자막은 안전영역 최하단에 화면 가로 중앙·1줄·17자 이내(`/sins-yt-subtitles` 기준). 씬은 **대본 → 그림 결정 → 문구** 순서로 설계하고 **스택 형태 6종**(`cards` 나열 / `compare` 대립 / `flow` 순서 / `contain` 포함 / `bigstat` 수치 / `quote` 비유·선언)에서 골라 **같은 형태 3연속 금지·한 편 3종 이상**, 비유·사물은 라벨 카드 글자가 아니라 **인라인 SVG 픽토그램**으로 시각화, **제목 위계 3단**(XL 116px 1줄 / 기본 88px / SM 72px), 모션 6종(하이라이트·등장·카운트업·선 드로잉·마스크 와이프·카메라 푸시) 중 **씬당 2종까지**. 마지막 약 2초는 그라디언트가 페이드인되며 유튜브·인스타그램 채널 안내 3줄이 순차 등장하고, 그 아래 작은 글씨로 `본 영상을 유튜브로 보셨다면 전체 영상을 관련 동영상을 통해 시청할 수 있습니다.` 주석 1줄이 붙는 **CTA 고정**(설명란·고정댓글 문안 동반 납품). `scripts/verify-frame.js`로 슬롯·데드존·넘침·줄 수·편 번호 노출을 실측해 **violations 0**이어야 통과하고, 검증기가 못 잡는 하이라이트 상태·형태 다양성·CTA 순차 등장은 렌더한 mp4에서 따로 확인. **[옵션3 웹PT]** 1920×1080 고정 스테이지 + 전 슬라이드 동일 좌표 마스터 프레임(챕터·제목·부제·본문·페이지수), 제목은 **결론 문장**, 차트 50% 이상·수치 100% 시각화, Lazyweb MCP 레퍼런스 기반 디자인, **키보드 전용 전환**(클릭·드래그 금지). 전 모드 공통으로 폰트는 제목 국민대해공체 400(**볼드 절대 금지**) + 본문 Presentation 300, 컬러는 60-30-10, 한글은 `/humanize-korean` 윤문 후 마침표마다 줄바꿈 |
-| `sins-wiki-pass.skill` | `/sins-wiki-pass` | Obsidian "LLM Wiki" 볼트와 Notion 위키 DB 동시 저장·동기화 (수동 발동, 타입 6종→폴더 자동 매핑 + Notion 카테고리 8종 고정 선택, 제목에 `영상 - `·`프롬프트 - ` 등 종류 프리픽스 자동) |
+| `sins-wiki-pass.skill` | `/sins-wiki-pass` | Notion 위키 DB(`LLM Wiki Index`)에만 저장 (옵시디언 쓰기 없음, 수동 발동, 타입 6종 + 카테고리 8종 고정 선택, 제목에 `영상 - `·`프롬프트 - ` 등 종류 프리픽스 자동) |
 | `sins-llmwiki-auto.skill` | `/sins-llmwiki-auto` | 질문·답변·업무·제작 내용을 **자동으로** LLM 위키에 정리·기록하는 상시 발동 정책 (sins-wiki-pass 연동) |
 | `sins-loopass-setup.skill` | `/sins-loopass-setup` | 루프 엔지니어링(자율 AI 에이전트 루프)을 6단계 인터뷰로 설계·세팅하는 위저드 (트리거→행동→검증→정지조건→아키텍처→산출, 단계별 스킬·MCP 추천 + 실행 가능한 루프 스킬 자동 생성) |
 | `sins-higgsfield.skill` | `/sins-higgsfield` | 힉스필드(Higgsfield) MCP로 이미지·영상을 9스텝 선택카드로 단계별 생성 (유형→참고이미지→프롬프트→보강→모델/Soul 캐릭터→화면비→퀄리티→영상 길이·오디오→갯수→get_cost 비용확인→확정, 하네스 없는 순수 위저드) |
@@ -390,6 +390,8 @@ PY
 
 ### sins-wiki-pass
 
+Notion `LLM Wiki Index`에만 저장한다. 옵시디언 vault에는 쓰지 않는다.
+
 Claude Code:
 
 ```bash
@@ -440,7 +442,7 @@ PY
 
 ### sins-llmwiki-auto (자동 기록 / 상시 발동)
 
-`sins-wiki-pass`는 수동 발동("위키에 넣어줘")이다. **질문·답변·업무·제작 내용을 자동으로** 옵시디언 + Notion에 정리·기록하려면 `sins-llmwiki-auto`를 쓴다. 함께 설치 후, [`skill-list-docs/llm-wiki-autosave.md`](skill-list-docs/llm-wiki-autosave.md)의 규칙 블록을 `~/.claude/CLAUDE.md`(또는 프로젝트 CLAUDE.md) 끝에 붙여넣으면 매 세션 영구 상시 발동.
+`sins-wiki-pass`는 수동 발동("위키에 넣어줘")이다. **질문·답변·업무·제작 내용을 자동으로** Notion 위키 DB에 정리·기록하려면 `sins-llmwiki-auto`를 쓴다. 옵시디언에는 쓰지 않는다. 함께 설치 후, [`skill-list-docs/llm-wiki-autosave.md`](skill-list-docs/llm-wiki-autosave.md)의 규칙 블록을 `~/.claude/CLAUDE.md`(또는 프로젝트 CLAUDE.md) 끝에 붙여넣으면 매 세션 영구 상시 발동.
 
 Claude Code:
 
