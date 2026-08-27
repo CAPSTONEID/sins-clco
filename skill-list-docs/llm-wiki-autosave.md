@@ -2,15 +2,15 @@
 
 **스킬명: `sins-llmwiki-auto`** (`skill-list/sins-llmwiki-auto.skill`)
 
-질문·답변·업무·제작 내용을 자동으로 옵시디언 vault + Notion DB에 정리·기록하는 **상시 발동 정책 스킬**.
-실제 기록은 `sins-wiki-pass`가 수행하고, `sins-llmwiki-auto`는 언제·무엇을·어떤 type으로 남길지 판단한다.
+질문·답변·업무·제작 내용을 자동으로 Notion DB에 정리·기록하는 **상시 발동 정책 스킬**.
+**옵시디언에는 쓰지 않는다.** 실제 기록은 `sins-wiki-pass`가 수행하고, `sins-llmwiki-auto`는 언제·무엇을·어떤 type으로 남길지 판단한다.
 
 켜는 방법 2가지:
 
 1. **스킬 설치** — `sins-skill-all-install.sh`로 `sins-llmwiki-auto` + `sins-wiki-pass` 설치 후, 세션에서 "위키 자동기록 켜".
 2. **영구 상시 발동** — 아래 규칙 블록을 `~/.claude/CLAUDE.md`(또는 프로젝트 CLAUDE.md) 끝에 붙여넣으면 매 세션 자동.
 
-> 전제: `sins-wiki-pass` 스킬이 함께 설치돼 있고(`sins-skill-all-install.sh`), 옵시디언 vault 경로와
+> 전제: `sins-wiki-pass` 스킬이 함께 설치돼 있고(`sins-skill-all-install.sh`),
 > Notion DB(`data_source_id`)가 스킬 안에 설정돼 있어야 한다. Notion MCP 연결 필요.
 
 ---
@@ -20,13 +20,13 @@
 ```markdown
 ## LLM 위키 자동 기록 (상시 발동)
 
-**지식·정보성 답변을 끝낼 때마다 자동으로 `sins-wiki-pass` 스킬을 발동해 옵시디언 vault + Notion DB에 동시 기록한다. 사용자에게 묻지 않고 저장한다.**
+**지식·정보성 답변을 끝낼 때마다 자동으로 `sins-wiki-pass` 스킬을 발동해 Notion DB에 기록한다. 옵시디언에는 쓰지 않는다. 사용자에게 묻지 않고 저장한다.**
 
 - **저장 대상(YES):** 개념 설명, 방법·튜토리얼, 리서치·분석 결과, 재사용 가치 있는 코드/스크립트, 도구 사용법, 출처·레퍼런스 정리.
 - **업무·제작 기록(YES — 상시):** 마케팅 기획·전략·카피·리서치·분석·자동화 스크립트, 그리고 웹사이트·카드뉴스·랜딩페이지·프레젠테이션·이미지 등 **모든 업무 및 제작 작업**은 완료 직후 **정리된 요약 1장**을 위키에 남긴다. 산출물 파일 본체가 아니라 **무엇을·누구 대상으로·어떤 의도·핵심 결정·결과물 위치**를 정리한 노트. type 선택: 산출물 제작=`source`, 전략·기획·분석=`concept` 또는 `moc`, 재사용 스크립트·템플릿=`tool`/`prompt`. 포함 권장: 제목, 작업 종류, 타겟·페르소나, 핵심 메시지·목표, 톤·컨셉, 주요 결정·근거, 산출물 저장 경로/링크, 날짜. 전용 스킬(`sins-card-news-creator`, `sins-marketing-team` 등)로 작업이 끝난 직후 이어서 `sins-wiki-pass` 발동.
 - **저장 제외(NO):** 인사·잡담, 단순 확인("네/맞아요"), 1~2줄 짧은 잡답, 파일 위치 같은 일회성 답변, 사용자가 "저장하지 마"라고 한 경우.
-- **흐름:** ① 답변 본문 작성 → ② 제목·`type`(concept/tool/prompt/source/moc)·요약·태그 추론(불명확해도 추론 가능하면 진행, 진짜 모호할 때만 1줄 질문) → ③ `sins-wiki-pass` 발동(옵시디언 스크립트 + Notion MCP 미러링) → ④ 끝에 2줄 보고(옵시디언 경로 + Notion URL).
-- **중복:** 같은 제목 재기록 시 스킬 규칙대로 옵시디언은 덮어쓰며 created 보존, Notion은 검색 후 update.
+- **흐름:** ① 답변 본문 작성 → ② 제목·`type`(concept/tool/prompt/source/moc)·요약·태그 추론(불명확해도 추론 가능하면 진행, 진짜 모호할 때만 1줄 질문) → ③ `sins-wiki-pass` 발동(Notion MCP만) → ④ 끝에 1줄 보고(Notion URL).
+- **중복:** 같은 제목 재기록 시 스킬 규칙대로 Notion은 검색 후 update.
 - **해제:** "위키 자동저장 꺼" / "wiki off" → 그 세션 동안 중단.
 ```
 
