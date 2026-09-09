@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# 설치 원칙: Claude / Codex / Hermes / Grok 는 각자 스킬 디렉터리에 독립 복사한다.
+# 대상 간에 ln -s 로 공유하지 않는다. 목적지가 심볼릭 링크면 링크만 지우고 실체 디렉터리로 다시 깐다.
+
 REPO_RAW="https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list"
 API="https://api.github.com/repos/CAPSTONEID/sins-clco/contents/skill-list"
 TARGET="${1:-claude}"
@@ -76,12 +79,25 @@ mkdir -p "$SKILL_DIR"
 TMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TMP_DIR"' EXIT
 
+remove_dest() {
+  dest="$1"
+  if [ -L "$dest" ]; then
+    rm -f "$dest"
+  elif [ -e "$dest" ]; then
+    rm -rf "$dest"
+  fi
+}
+
 copy_dir_clean() {
   src="$1"
   dest="$2"
-  rm -rf "$dest"
+  remove_dest "$dest"
   mkdir -p "$(dirname "$dest")"
   cp -R "$src" "$dest"
+  if [ -L "$dest" ]; then
+    echo "❌ $dest 가 심볼릭 링크로 남았습니다. 독립 복사에 실패했습니다." >&2
+    exit 1
+  fi
 }
 
 clone_external_repo() {
@@ -97,7 +113,7 @@ clone_external_repo() {
 copy_frontend_slides() {
   repo_dir="$1"
   dest="$SKILL_DIR/frontend-slides"
-  rm -rf "$dest"
+  remove_dest "$dest"
   mkdir -p "$dest/scripts"
   cp "$repo_dir/SKILL.md" "$dest/"
   cp "$repo_dir/STYLE_PRESETS.md" "$dest/"
@@ -112,7 +128,7 @@ copy_uiux_skill() {
   repo_dir="$1"
   dest="$SKILL_DIR/ui-ux-pro-max"
   # data/scripts가 src/ 로의 심볼릭링크라 -L 로 실제 파일까지 복사해 풀어줌
-  rm -rf "$dest"
+  remove_dest "$dest"
   mkdir -p "$(dirname "$dest")"
   cp -RL "$repo_dir/.claude/skills/ui-ux-pro-max" "$dest"
 }
@@ -240,9 +256,11 @@ install_external_skills() {
     copy_uiux_skill "$uiux_dir"
 
     # Humanize Korean — AI 한글 윤문. Claude는 Fast + strict 5인 파이프라인(서브에이전트 12개)
+    # 기존 ln -s 설치본이 있으면 링크만 제거하고 실체로 복사한다.
     hk_dir="$(clone_external_repo im-not-ai https://github.com/epoko77-ai/im-not-ai.git)"
     for s in humanize-korean humanize humanize-redo; do
-      copy_dir_clean "$hk_dir/.claude/skills/$s" "$SKILL_DIR/$s"
+      remove_dest "$SKILL_DIR/$s"
+      cp -RL "$hk_dir/.claude/skills/$s" "$SKILL_DIR/$s"
     done
     mkdir -p "$HOME/.claude/agents"
     cp "$hk_dir"/agents/*.md "$HOME/.claude/agents/"
@@ -262,20 +280,21 @@ install_external_skills() {
 
     # Humanize Korean — AI 한글 윤문. Codex는 Fast(단일 호출) 모드만. references 심링크는 실체로 복사(-L)
     hk_dir="$(clone_external_repo im-not-ai https://github.com/epoko77-ai/im-not-ai.git)"
-    rm -rf "$SKILL_DIR/humanize-korean"
+    remove_dest "$SKILL_DIR/humanize-korean"
     mkdir -p "$SKILL_DIR"
     cp -RL "$hk_dir/codex/skills/humanize-korean" "$SKILL_DIR/humanize-korean"
   fi
 
   if [ "$TARGET" = "grok" ]; then
-    # Grok은 SKILL.md 프론트매터(name·description)가 Claude와 동일해 스킬을 그대로 복사한다.
+    # Grok은 SKILL.md 프론트매터(name·description)가 Claude와 같아 같은 패키지를
+    # ~/.grok/skills 에 독립 복사한다. Claude 경로와 심볼릭 링크로 잇지 않는다.
     caveman_dir="$(clone_external_repo caveman https://github.com/JuliusBrussee/caveman.git)"
     copy_all_skill_dirs "$caveman_dir" "skills" ""
 
     # Humanize Korean — Grok은 Claude의 ~/.claude/agents 서브에이전트 12개를 그대로 쓰지 못하므로
     # Codex와 같은 Fast(단일 호출) 모드만 설치한다. references 심링크는 실체로 복사(-L)
     hk_dir="$(clone_external_repo im-not-ai https://github.com/epoko77-ai/im-not-ai.git)"
-    rm -rf "$SKILL_DIR/humanize-korean"
+    remove_dest "$SKILL_DIR/humanize-korean"
     mkdir -p "$SKILL_DIR"
     cp -RL "$hk_dir/codex/skills/humanize-korean" "$SKILL_DIR/humanize-korean"
   fi
@@ -316,8 +335,8 @@ while IFS= read -r skill_file; do
 
   case "$INSTALL_MODE" in
     unzip)
-      # 기존 설치본을 먼저 제거해 옛 구조(중첩 등)가 머지로 남지 않게 함
-      rm -rf "$SKILL_DIR/$skill_name"
+      # 기존 설치본을 먼저 제거해 옛 구조(중첩·심볼릭 링크 공유)가 머지로 남지 않게 함
+      remove_dest "$SKILL_DIR/$skill_name"
       mkdir -p "$SKILL_DIR/$skill_name"
       python3 - "$tmp_file" "$SKILL_DIR/$skill_name" <<'PY'
 import sys, zipfile
@@ -352,7 +371,8 @@ case "$TARGET" in
     echo "   Hermes를 재시작하면 ${SKILL_DIR} 의 /sins-* 스킬을 사용할 수 있습니다."
     ;;
   grok)
-    echo "   Grok은 파일 변경을 감지해 몇 초 안에 슬래시 메뉴에 /sins-* 스킬이 올라옵니다. (grok inspect 로 확인)"
+    echo "   Grok 스킬은 ${SKILL_DIR} 에 독립 복사됩니다. Claude/Codex/Hermes 경로와 심볼릭 링크로 공유하지 않습니다."
+    echo "   파일 변경은 몇 초 안에 슬래시 메뉴에 반영됩니다. (grok inspect 로 확인)"
     echo "   MCP(노션·힉스필드·Lazyweb·PalmierPro 등)는 자동 이관되지 않습니다. grok mcp add 로 따로 등록하세요."
     ;;
 esac
