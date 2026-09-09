@@ -2,6 +2,8 @@
 
 SINS 프로젝트용 Claude Code, Codex, Hermes, Grok 스킬 패키지입니다.
 
+각 대상은 자기 스킬 디렉터리에 **독립 복사**로 설치합니다. 심볼릭 링크로 Claude·Codex·Hermes·Grok 경로를 서로 잇지 않습니다.
+
 ---
 
 📧 Mail : [project@capstone.id](mailto:project@capstone.id)
@@ -37,7 +39,7 @@ SINS 프로젝트용 Claude Code, Codex, Hermes, Grok 스킬 패키지입니다.
 
 ## 함께 설치되는 외부 오픈소스 스킬
 
-한 줄 설치와 수동 설치는 SINS 스킬 설치 후 아래 외부 스킬도 같이 설치합니다. (Hermes 대상은 gstack·superpowers·caveman 등을 자체 번들로 이미 제공하므로 외부 스킬 설치를 건너뛰고 SINS 스킬만 설치합니다.) Grok은 Claude와 `SKILL.md` 프론트매터 규격이 같아 스킬을 그대로 복사해 씁니다.
+한 줄 설치와 수동 설치는 SINS 스킬 설치 후 아래 외부 스킬도 같이 설치합니다. (Hermes 대상은 gstack·superpowers·caveman 등을 자체 번들로 이미 제공하므로 외부 스킬 설치를 건너뛰고 SINS 스킬만 설치합니다.) Grok은 Claude와 `SKILL.md` 프론트매터 규격이 같아 같은 패키지를 **`~/.grok/skills/`에 독립 복사**합니다. Claude 경로와 심볼릭 링크로 공유하지 않습니다.
 
 | 이름 | 대상 | 출처 |
 |------|------|------|
@@ -114,8 +116,8 @@ curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-skil
 
 > **Grok 설치 참고**
 >
-> - **설치 위치는 `~/.grok/skills/`** 입니다. Grok은 파일 변경을 감지해 재시작 없이 몇 초 안에 슬래시 메뉴에 반영합니다. `grok inspect` 로 확인하세요.
-> - **Claude Code를 이미 쓰고 있다면 설치가 필요 없을 수도 있습니다.** Grok은 기본값으로 `~/.claude/skills/` 를 함께 스캔해(Claude 호환) `grok inspect` 에 `[claude]` 태그로 표시합니다. Claude 쪽 스킬을 지우거나 `GROK_CLAUDE_SKILLS_ENABLED=false` 로 호환 스캔을 끌 계획이면 `grok` 대상으로 따로 설치하세요.
+> - **설치 위치는 `~/.grok/skills/`** 입니다. Claude·Codex·Hermes와 심볼릭 링크로 공유하지 않고, `grok` 대상으로 이 설치를 실행해 **독립 복사**합니다. 파일 변경은 재시작 없이 몇 초 안에 슬래시 메뉴에 반영됩니다. `grok inspect` 로 확인하세요.
+> - **Claude 호환 스캔은 설치를 대신하지 않습니다.** Grok이 기본값으로 `~/.claude/skills/` 를 함께 읽을 수는 있지만, SINS 스킬은 반드시 `~/.grok/skills/` 에 따로 둡니다. Claude 쪽과 섞이지 않게 하려면 `GROK_CLAUDE_SKILLS_ENABLED=false`.
 > - **MCP는 이관되지 않습니다.** 노션(`/sins-mycontentsmake`)·힉스필드(`/sins-contents-thumbstyle-prompt`·`/sins-higgsfield`)·Lazyweb(`/sins-video-consource`)·PalmierPro(`/sins-palmierpro-cutedit`)는 `grok mcp add` 로 따로 등록해야 동작합니다. 상태 확인은 `grok mcp list` · `grok mcp doctor`.
 > - **서브에이전트 구성은 다릅니다.** Claude의 `~/.claude/agents/*.md` 12개 팀 에이전트는 그대로 쓰이지 않습니다. Grok은 `--agents` JSON 또는 자체 서브에이전트 정의를 씁니다. `/humanize-korean` 은 이 때문에 Fast(단일 호출) 모드만 설치합니다.
 > - **이름이 겹치면** Grok이 `/user:이름` 처럼 스코프를 붙인 명령으로도 함께 노출합니다. (`grok inspect` 가 `[collides with ...]` 로 표시)
