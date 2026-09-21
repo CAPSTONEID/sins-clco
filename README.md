@@ -342,6 +342,8 @@ PY
 
 ### sins-video-consource
 
+페이퍼 콜라주의 단계·카드 번호는 **종이 위쪽**에 두고 카드와 함께 등장합니다. 롱폼·숏폼 썸네일은 반드시 `/sins-contents-thumbstyle-prompt`를 적용하며, **썸네일 스타일 질문에 대한 사용자 답변을 받은 후** 생성·합성합니다. 영상 스타일이나 모델·비용 승인은 썸네일 스타일 선택을 대신하지 않습니다. [필수 스타일 선택 절차](skill-list-docs/thumbnail-style-confirmation.md)를 참고하세요.
+
 영상은 **페이퍼 콜라주·맥 파인더창·네오 브루탈리즘** 중 선택합니다. 페이퍼 콜라주는 봉투·문서·폴더·분기·교정 등 내용별 배치와 모션을 사용하며, 동일 배치·주동작의 3장면 연속 반복을 방지하고 실제 화면과 MP4로 검수합니다. 패키지에 `references/paper-motion-variety.md`와 종이 프레임 검증기가 포함되어 Claude Code·Codex·Hermes·Grok 설치에 동일하게 적용됩니다. 기존 사용자도 아래 명령으로 다시 설치하면 업데이트됩니다. [상세 디자인 규칙](skill-list-docs/video-paper-briefing.md)과 [장면·모션 변주](skill-list-docs/paper-motion-variety.md)를 참고하세요.
 
 Claude Code:
