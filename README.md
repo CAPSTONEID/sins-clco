@@ -342,7 +342,7 @@ PY
 
 ### sins-video-consource
 
-영상 기본 스타일은 **테이프 없는 페이퍼 브리핑**입니다. 아래 패키지에는 `references/paper-briefing.md`와 `scripts/verify-paper-frame.js`가 함께 들어 있어 Claude Code·Codex·Hermes·Grok 설치에 동일하게 적용됩니다. 기존 사용자도 아래 명령으로 다시 설치하면 업데이트됩니다. [상세 디자인 규칙](skill-list-docs/video-paper-briefing.md)을 참고하세요.
+영상은 **페이퍼 콜라주·맥 파인더창·네오 브루탈리즘** 중 선택합니다. 페이퍼 콜라주는 봉투·문서·폴더·분기·교정 등 내용별 배치와 모션을 사용하며, 동일 배치·주동작의 3장면 연속 반복을 방지하고 실제 화면과 MP4로 검수합니다. 패키지에 `references/paper-motion-variety.md`와 종이 프레임 검증기가 포함되어 Claude Code·Codex·Hermes·Grok 설치에 동일하게 적용됩니다. 기존 사용자도 아래 명령으로 다시 설치하면 업데이트됩니다. [상세 디자인 규칙](skill-list-docs/video-paper-briefing.md)과 [장면·모션 변주](skill-list-docs/paper-motion-variety.md)를 참고하세요.
 
 Claude Code:
 
