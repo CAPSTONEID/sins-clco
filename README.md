@@ -30,7 +30,7 @@ SINS 프로젝트용 Claude Code, Codex, Hermes, Grok 스킬 패키지입니다.
 | `sins-llmwiki-auto.skill` | `/sins-llmwiki-auto` | 질문·답변·업무·제작 내용을 **자동으로** LLM 위키에 정리·기록하는 상시 발동 정책 (sins-wiki-pass 연동) |
 | `sins-loopass-setup.skill` | `/sins-loopass-setup` | 루프 엔지니어링(자율 AI 에이전트 루프)을 6단계 인터뷰로 설계·세팅하는 위저드 (트리거→행동→검증→정지조건→아키텍처→산출, 단계별 스킬·MCP 추천 + 실행 가능한 루프 스킬 자동 생성) |
 | `sins-higgsfield.skill` | `/sins-higgsfield` | 힉스필드(Higgsfield) MCP로 이미지·영상을 9스텝 선택카드로 단계별 생성 (유형→참고이미지→프롬프트→보강→모델/Soul 캐릭터→화면비→퀄리티→영상 길이·오디오→갯수→get_cost 비용확인→확정, 하네스 없는 순수 위저드) |
-| `sins-contents-thumbstyle-prompt.skill` | `/sins-contents-thumbstyle-prompt` | 유튜브 롱폼 썸네일을 **한 줄·가운데 정렬, 작은 도입 문구 없이 1280×720**으로 제작한다. 내용에 맞는 실사·3D·두들을 고르고 사선·중앙 양분할을 검토해 **크기·밀도·명암·원근이 극적으로 대비되는 구도**를 설계한다. 폰트는 **Cafe24ProSlim·KblJump·페이퍼로지 600(Paperozi)·프리젠테이션 600(Presentation)**. 사용자 장수와 확정 설정을 유지하며 미정 항목만 질문한다. 배경은 Higgsfield로 생성하고 한글은 실제 서체·굵기로 합성한다. 원본·320×180·160×90·위쪽 절반을 검수한다. 일반 가로형·쇼츠·릴스의 기존 규격과 9:16 Presentation 9Black 규칙은 별도 유지한다. |
+| `sins-contents-thumbstyle-prompt.skill` | `/sins-contents-thumbstyle-prompt` | 제작 범위·스타일·구도와 색·문구·서체·생성 설정을 사용자가 단계별로 선택하는 대화형 썸네일 워크플로우다. 영상 스킬에서 호출되어도 독립된 제작 모드로 처음부터 시작하며, 모든 선택과 최종 확인 전에는 생성하지 않는다. 유튜브 롱폼은 **한 줄·가운데 정렬, 작은 도입 문구 없이 1280×720**으로 제작하고 실사·3D·두들·페이퍼 콜라주와 사선·중앙 양분할을 검토한다. 폰트는 **Cafe24ProSlim·KblJump·페이퍼로지 600(Paperozi)·프리젠테이션 600(Presentation)**. 일반 가로형·쇼츠·릴스의 기존 규격과 9:16 Presentation 9Black 규칙은 별도 유지한다. |
 | `sins-yt-subtitles.skill` | `/sins-yt-subtitles` | SBV 자막을 유튜브용 VTT로 변환 (무조건 1줄·한 줄 목표 15자(공백 제외·단어 안 쪼갬)·마침표에서 자막 분리·쉼표에서 끊기 선호·가독성 우선, `[음악]`·`[박수]` 등 대괄호 효과음 태그·아웃트로(`오늘 영상은 여기까지입니다`~끝)·문장 첫머리 추임새(`자`) 자동 삭제, /humanize-korean 으로 오탈자만 2회 검수해 음성 싱크 보존, 결정론적 재분할 + difflib 재타이밍 + 최소 표시시간 보장) |
 | `sins-lenis.skill` | `/sins-lenis` | HTML `</head>` 직전에 Lenis 부드러운 스크롤 스니펫(CSS·JS·`new Lenis({ autoRaf: true })`) 삽입, 이미 있으면 중복 삽입 없이 알림 (unpkg CDN·버전 1.3.23 핀 고정) |
 | `sins-fluent-korean.skill` | `/sins-fluent-korean` | 한국어 응답에서 조사·어미를 생략하지 않고 문장을 서술어로 완성하게 하여, 전보체 기계 한국어를 막는 문체 지침. 코드·주석·인용문은 제외. 원문 MIT: snflkd/fluent-korean |
@@ -346,7 +346,7 @@ PY
 
 썸네일 타이틀은 배경 이미지 위에 **글자만** 합성합니다. 제목 뒤 박스·스크림·그라데이션·블러·글로우와 글자 그림자·외곽선을 사용하지 않으며, 이 규칙은 영상 스킬의 롱폼·숏폼 썸네일에도 적용됩니다.
 
-페이퍼 콜라주의 단계·카드 번호는 **종이 위쪽**에 두고 카드와 함께 등장합니다. 롱폼·숏폼 썸네일은 반드시 `/sins-contents-thumbstyle-prompt`를 적용하며, **썸네일 스타일 질문에 대한 사용자 답변을 받은 후** 생성·합성합니다. 영상 스타일이나 모델·비용 승인은 썸네일 스타일 선택을 대신하지 않습니다. [필수 스타일 선택 절차](skill-list-docs/thumbnail-style-confirmation.md)를 참고하세요.
+페이퍼 콜라주의 단계·카드 번호는 **종이 위쪽**에 두고 카드와 함께 등장합니다. 롱폼·숏폼 썸네일은 반드시 `/sins-contents-thumbstyle-prompt`를 독립된 제작 모드로 시작합니다. 제작 범위 → 스타일 → 구도와 색 → 문구 → 서체와 표기 → 생성 설정과 최종 확인을 사용자가 단계별로 선택한 후에만 생성·합성합니다. 영상에서 고른 스타일·색·모델은 썸네일 설정으로 자동 승계하지 않습니다. [대화형 썸네일 선택 절차](skill-list-docs/thumbnail-style-confirmation.md)를 참고하세요.
 
 영상은 **페이퍼 콜라주·맥 파인더창·네오 브루탈리즘** 중 선택합니다. 페이퍼 콜라주는 봉투·문서·폴더·분기·교정 등 내용별 배치와 모션을 사용하며, 동일 배치·주동작의 3장면 연속 반복을 방지하고 실제 화면과 MP4로 검수합니다. 패키지에 `references/paper-motion-variety.md`와 종이 프레임 검증기가 포함되어 Claude Code·Codex·Hermes·Grok 설치에 동일하게 적용됩니다. 기존 사용자도 아래 명령으로 다시 설치하면 업데이트됩니다. [상세 디자인 규칙](skill-list-docs/video-paper-briefing.md)과 [장면·모션 변주](skill-list-docs/paper-motion-variety.md)를 참고하세요.
 
