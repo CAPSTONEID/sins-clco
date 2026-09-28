@@ -157,7 +157,7 @@ copy_gstack_fallback_skills() {
     fi
     rel="${skill_dir#$repo_dir/}"
     case "$rel" in
-      test/*|docs/*|model-overlays/*|openclaw/*|claude|codex|gstack|agents|external-gstack)
+      test/*|docs/*|model-overlays/*|openclaw/*|claude|gstack|agents|external-gstack)
         continue
         ;;
     esac
@@ -255,15 +255,22 @@ install_external_skills() {
     uiux_dir="$(clone_external_repo ui-ux-pro-max https://github.com/nextlevelbuilder/ui-ux-pro-max-skill.git)"
     copy_uiux_skill "$uiux_dir"
 
-    # Humanize Korean — AI 한글 윤문. Claude는 Fast + strict 5인 파이프라인(서브에이전트 12개)
+    # Humanize Korean — AI 한글 윤문. Claude는 스킬 4개 + 런타임 서브에이전트 4개(upstream 기본 설치 범위)
     # 기존 ln -s 설치본이 있으면 링크만 제거하고 실체로 복사한다.
     hk_dir="$(clone_external_repo im-not-ai https://github.com/epoko77-ai/im-not-ai.git)"
-    for s in humanize-korean humanize humanize-redo; do
+    for s in humanize-korean humanize humanize-scan humanize-redo; do
       remove_dest "$SKILL_DIR/$s"
-      cp -RL "$hk_dir/.claude/skills/$s" "$SKILL_DIR/$s"
+      cp -RL "$hk_dir/skills/$s" "$SKILL_DIR/$s"
     done
     mkdir -p "$HOME/.claude/agents"
-    cp "$hk_dir"/agents/*.md "$HOME/.claude/agents/"
+    # 이전 버전이 복사한 은퇴·개발용 에이전트 정리 (upstream은 전역 상주 시 오라우팅 위험으로 기본 제외)
+    for a in ai-tell-detector korean-style-rewriter content-fidelity-auditor naturalness-reviewer humanize-web-architect \
+             korean-translation-scholar post-editese-metric-engineer quick-rules-integrator taxonomy-gap-analyzer translationese-research-distiller; do
+      rm -f "$HOME/.claude/agents/$a.md"
+    done
+    for a in humanize-monolith humanize-diagnostician humanize-finalizer korean-ai-tell-taxonomist; do
+      cp "$hk_dir/agents/$a.md" "$HOME/.claude/agents/"
+    done
 
     # Fluent Korean — 스킬이 아니라 output-style이므로 ~/.claude/output-styles 에 복사한다.
     # 코딩 지침 유지판(fluent-korean)과 미유지판(fluent-korean-not-coding) 2종을 함께 설치하고,
@@ -278,7 +285,7 @@ install_external_skills() {
     copy_dir_clean "$codex_insane_dir/plugins/insane-search/skills/insane-search" "$SKILL_DIR/insane-search"
     copy_dir_clean "$codex_insane_dir/plugins/insane-search" "$HOME/.codex/plugins/insane-search"
 
-    # Humanize Korean — AI 한글 윤문. Codex는 Fast(단일 호출) 모드만. references 심링크는 실체로 복사(-L)
+    # Humanize Korean — AI 한글 윤문. Codex는 light·standard·heavy 전체 경로(역할을 순차 실행). references 심링크는 실체로 복사(-L)
     hk_dir="$(clone_external_repo im-not-ai https://github.com/epoko77-ai/im-not-ai.git)"
     remove_dest "$SKILL_DIR/humanize-korean"
     mkdir -p "$SKILL_DIR"
@@ -291,15 +298,15 @@ install_external_skills() {
     caveman_dir="$(clone_external_repo caveman https://github.com/JuliusBrussee/caveman.git)"
     copy_all_skill_dirs "$caveman_dir" "skills" ""
 
-    # Humanize Korean — Grok은 Claude의 ~/.claude/agents 서브에이전트 12개를 그대로 쓰지 못하므로
-    # Codex와 같은 Fast(단일 호출) 모드만 설치한다. references 심링크는 실체로 복사(-L)
+    # Humanize Korean — Grok은 Claude의 ~/.claude/agents 서브에이전트를 그대로 쓰지 못하므로
+    # Codex용 패키지(역할 순차 실행)를 설치한다. references 심링크는 실체로 복사(-L)
     hk_dir="$(clone_external_repo im-not-ai https://github.com/epoko77-ai/im-not-ai.git)"
     remove_dest "$SKILL_DIR/humanize-korean"
     mkdir -p "$SKILL_DIR"
     cp -RL "$hk_dir/codex/skills/humanize-korean" "$SKILL_DIR/humanize-korean"
   fi
 
-  # HyperFrames — Claude / Codex / Grok 공용. HTML→MP4 영상 제작 스킬 묶음(16개)
+  # HyperFrames — Claude / Codex / Grok 공용. HTML→MP4 영상 제작 스킬 묶음(21개)
   hyperframes_dir="$(clone_external_repo hyperframes https://github.com/heygen-com/hyperframes.git)"
   copy_all_skill_dirs "$hyperframes_dir" "skills" ""
 
@@ -309,8 +316,10 @@ install_external_skills() {
   ponytail_dir="$(clone_external_repo ponytail https://github.com/DietrichGebert/ponytail.git)"
   copy_all_skill_dirs "$ponytail_dir" "skills" ""
 
-  # Emil Kowalski Skills — Claude / Codex 공용. UI 애니메이션·모션·디자인 엔지니어링 스킬 묶음(5개:
-  # animation-vocabulary · apple-design · emil-design-eng · improve-animations · review-animations)
+  # Emil Kowalski Skills — Claude / Codex 공용. UI 애니메이션·모션·디자인 엔지니어링 스킬 묶음(13개:
+  # animate · animate-expo · animation-vocabulary · apple-design · ask-sonner · emil-design-eng ·
+  # find-animation-opportunities · improve-animations · mobile-native · pick-ui-library · prototype ·
+  # review-animations · write-swift)
   emil_dir="$(clone_external_repo emil-skills https://github.com/emilkowalski/skills.git)"
   copy_all_skill_dirs "$emil_dir" "skills" ""
 
