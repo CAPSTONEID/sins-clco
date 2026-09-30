@@ -217,6 +217,22 @@ install_oh_my_design() {
   fi
 }
 
+install_shared_scripts() {
+  echo ""
+  echo "🔧 공용 스크립트 설치 중..."
+
+  SHARED_DIR="$SKILL_DIR/_shared"
+  mkdir -p "$SHARED_DIR"
+
+  echo "  → jev.py 설치 중..."
+  if curl -fsSL "https://github.com/CAPSTONEID/sins-clco/raw/main/shared/jev.py" -o "$SHARED_DIR/jev.py"; then
+    chmod +x "$SHARED_DIR/jev.py"
+    echo "  ✅ jev.py 설치 완료"
+  else
+    echo "  ⚠️ jev.py 설치 실패. 계속 진행합니다."
+  fi
+}
+
 install_external_skills() {
   if [ "${SINS_SKIP_EXTERNAL:-0}" = "1" ]; then
     echo ""
@@ -365,6 +381,8 @@ PY
 done <<< "$SKILLS"
 
 install_external_skills
+
+install_shared_scripts
 
 echo ""
 echo "✅ 설치 완료! 총 ${SKILL_COUNT}개 스킬이 $SKILL_DIR 에 설치되었습니다."
