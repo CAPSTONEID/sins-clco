@@ -25,7 +25,7 @@ SINS 프로젝트용 Claude Code, Codex, Hermes, Grok 스킬 패키지입니다.
 | `sins-card-news-creator.skill` | `/sins-card-news-creator` | 인스타그램 카드뉴스의 11필드 **카드 JSON TXT·캡션 TXT·이미지 프롬프트 TXT** 제작. 카드 HTML은 만들지 않고 Figma 플러그인에서 렌더한다. 한글은 `/sins-fluent-korean`·`/humanize-korean`으로 검수한다. **별도로 요청한 유튜브 롱폼 썸네일**에는 한 줄·가운데 정렬, 내용에 맞는 실사·3D·두들, 극적인 분할 비교와 4종 폰트 선택을 적용한다. 카드뉴스·쇼츠의 기존 규칙은 유지한다. |
 | `sins-marketing-team.skill` | `/sins-marketing-team` | 마케팅 전략 팀 구성 및 실행 |
 | `sins-sidenote-pass.skill` | `/sins-sidenote-pass` | SideNotes 고정 폴더에 새 메모 저장 및 기본 접기 처리 |
-| `sins-video-consource.skill` | `/sins-video-consource` | 대본·오디오·영상·PPTX로 스크립트 / 영상 / 스크립트+HTML을 제작한다. 영상은 페이퍼 콜라주·맥 파인더창·네오 브루탈리즘 중 선택하고 사용자 지정 60/30/10 컬러를 유지한다. 본문은 문서·아이콘 설명·흐름도·비교·수치·타임라인 등 13종에서 다양하게 구성하며 커서 동선을 변주한다. 연결선은 노드 중심에 정렬하고 문서는 단일 구분선과 세로 목록을 기본으로 검수한다. 롱폼 2560×1440, 숏폼 1080×1920 2편. 전사 자막은 기본 생략하되 사용자의 명시적 요청이 우선한다. 실제 렌더 프레임과 재생을 검수한다. |
+| `sins-video-consource.skill` | `/sins-video-consource` | 대본·오디오·영상·PPTX로 스크립트 / 영상 / 스크립트+HTML을 제작한다. 영상은 페이퍼 콜라주·맥 파인더창·네오 브루탈리즘·다이내믹 타일 창 중 선택하고 사용자 지정 60/30/10 컬러를 유지한다. 본문은 문서·아이콘 설명·흐름도·비교·수치·타임라인 등 13종에서 다양하게 구성하며 커서 동선을 변주한다. 연결선은 노드 중심에 정렬하고 문서는 단일 구분선과 세로 목록을 기본으로 검수한다. 롱폼 2560×1440, 숏폼 1080×1920 2편. 전사 자막은 기본 생략하되 사용자의 명시적 요청이 우선한다. 실제 렌더 프레임과 재생을 검수한다. |
 | `sins-wiki-pass.skill` | `/sins-wiki-pass` | Notion 위키 DB(`LLM Wiki Index`)에만 저장 (옵시디언 쓰기 없음, 수동 발동, 타입 6종 + 카테고리 8종 고정 선택, 제목에 `영상 - `·`프롬프트 - ` 등 종류 프리픽스 자동) |
 | `sins-llmwiki-auto.skill` | `/sins-llmwiki-auto` | 질문·답변·업무·제작 내용을 **자동으로** LLM 위키에 정리·기록하는 상시 발동 정책 (sins-wiki-pass 연동) |
 | `sins-loopass-setup.skill` | `/sins-loopass-setup` | 루프 엔지니어링(자율 AI 에이전트 루프)을 6단계 인터뷰로 설계·세팅하는 위저드 (트리거→행동→검증→정지조건→아키텍처→산출, 단계별 스킬·MCP 추천 + 실행 가능한 루프 스킬 자동 생성) |
@@ -350,7 +350,7 @@ PY
 
 페이퍼 콜라주의 단계·카드 번호는 **종이 위쪽**에 두고 카드와 함께 등장합니다. 롱폼·숏폼 썸네일은 반드시 `/sins-contents-thumbstyle-prompt`를 독립된 제작 모드로 시작합니다. 제작 범위 → 스타일 → 구도와 색 → 문구 → 서체와 표기 → 생성 설정과 최종 확인을 사용자가 단계별로 선택한 후에만 생성·합성합니다. 영상에서 고른 스타일·색·모델은 썸네일 설정으로 자동 승계하지 않습니다. [대화형 썸네일 선택 절차](skill-list-docs/thumbnail-style-confirmation.md)를 참고하세요.
 
-영상은 **페이퍼 콜라주·맥 파인더창·네오 브루탈리즘** 중 선택합니다. 페이퍼 콜라주는 봉투·문서·폴더·분기·교정 등 내용별 배치와 모션을 사용하며, 동일 배치·주동작의 3장면 연속 반복을 방지하고 실제 화면과 MP4로 검수합니다. 패키지에 `references/paper-motion-variety.md`와 종이 프레임 검증기가 포함되어 Claude Code·Codex·Hermes·Grok 설치에 동일하게 적용됩니다. 기존 사용자도 아래 명령으로 다시 설치하면 업데이트됩니다. [상세 디자인 규칙](skill-list-docs/video-paper-briefing.md)과 [장면·모션 변주](skill-list-docs/paper-motion-variety.md)를 참고하세요.
+영상은 **페이퍼 콜라주·맥 파인더창·네오 브루탈리즘·다이내믹 타일 창** 중 선택합니다. 다이내믹 타일 창(`tile-motion`)은 브라우저형 창 1~4개가 16px 간격 타일로 깔리고, 새 창이 들어올 때 기존 창이 동시에 줄어들며 분할·승격·레일 강등·최대화로 크기가 계속 바뀝니다. 전용 검증기 `scripts/verify-tile-frame.js`로 간격·덮임률·활성 창·제목 위치를 검수합니다. [타일 창 규칙](skill-list-docs/video-style-profiles.md#4-다이내믹-타일-창-tile-motion)을 참고하세요. 페이퍼 콜라주는 봉투·문서·폴더·분기·교정 등 내용별 배치와 모션을 사용하며, 동일 배치·주동작의 3장면 연속 반복을 방지하고 실제 화면과 MP4로 검수합니다. 패키지에 `references/paper-motion-variety.md`와 종이 프레임 검증기가 포함되어 Claude Code·Codex·Hermes·Grok 설치에 동일하게 적용됩니다. 기존 사용자도 아래 명령으로 다시 설치하면 업데이트됩니다. [상세 디자인 규칙](skill-list-docs/video-paper-briefing.md)과 [장면·모션 변주](skill-list-docs/paper-motion-variety.md)를 참고하세요.
 
 Claude Code:
 
