@@ -20,19 +20,35 @@ export const parseEtime = (etime: string): number => {
   return Number(days) * 86400 + h * 3600 + m * 60 + s
 }
 
-export const classify = (command: string): string | undefined =>
-  KINDS.find(([, re]) => re.test(command))?.[0]
+// 셸 래퍼(zsh -c "…", bash -c "…")는 명령 문자열에 렌더 명령이 들어 있어도 렌더로 치지 않음
+const SHELL = /^(\S*\/)?(ba|z|da)?sh\s+(-\w+\s+)*-c\s/
 
-// `ps -axo pid=,etime=,command=` 출력에서 렌더 프로세스만 추림
-export const parsePs = (stdout: string): RenderJob[] =>
-  stdout.split('\n').flatMap(line => {
-    const m = line.trim().match(/^(\d+)\s+(\S+)\s+(.+)$/)
+export const classify = (command: string): string | undefined =>
+  SHELL.test(command) ? undefined : KINDS.find(([, re]) => re.test(command))?.[0]
+
+// `ps -axo pid=,ppid=,etime=,command=` 출력에서 렌더 프로세스만 추림
+// npx 는 npm exec → node …/hyperframes → ffmpeg 처럼 여러 겹으로 뜨므로,
+// 조상 중에 이미 렌더로 잡힌 프로세스가 있으면 건너뛰고 맨 위 하나만 남김
+export const parsePs = (stdout: string): RenderJob[] => {
+  const rows = stdout.split('\n').flatMap(line => {
+    const m = line.trim().match(/^(\d+)\s+(\d+)\s+(\S+)\s+(.+)$/)
     if (!m) return []
-    const [, pid = '', etime = '', command = ''] = m
-    const kind = classify(command)
-    if (!kind) return []
-    return [{ pid: Number(pid), kind, command, seconds: parseEtime(etime) }]
+    const [, pid = '', ppid = '', etime = '', command = ''] = m
+    return [{ pid: Number(pid), ppid: Number(ppid), command, seconds: parseEtime(etime), kind: classify(command) }]
   })
+  const parent = new Map(rows.map(r => [r.pid, r.ppid]))
+  const isJob = new Set(rows.filter(r => r.kind).map(r => r.pid))
+  const hasJobAncestor = (pid: number): boolean => {
+    // ponytail: 깊이 64 제한으로 순환 방지
+    for (let p = parent.get(pid), n = 0; p !== undefined && p > 1 && n < 64; p = parent.get(p), n++) {
+      if (isJob.has(p)) return true
+    }
+    return false
+  }
+  return rows.flatMap(r =>
+    r.kind && !hasJobAncestor(r.pid) ? [{ pid: r.pid, kind: r.kind, command: r.command, seconds: r.seconds }] : [],
+  )
+}
 
 export const fmt = (sec: number): string => {
   const s = Math.max(0, Math.round(sec))

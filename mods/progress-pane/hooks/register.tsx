@@ -67,7 +67,7 @@ export const register: Register = on => {
     $.clock.every(3000, async () => {
       let found: RenderJob[]
       try {
-        const { stdout } = await $.process.run(['ps', '-axo', 'pid=,etime=,command='])
+        const { stdout } = await $.process.run(['ps', '-axo', 'pid=,ppid=,etime=,command='])
         found = parsePs(stdout)
       } catch {
         return
