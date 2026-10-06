@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register, Timer } from 'claude-code'
 
 import type { RenderJob, Run, Task } from '../types'
-import { average, fmt, parsePs } from './render'
+import { average, fmt, parsePs, percent } from './render'
 import { BAR, dur, fallback, mix } from './run'
 
 const PANE = 'progress'
@@ -221,18 +221,33 @@ export const register: Register = on => {
         {list.length === 0 && <Text dimColor>진행 중인 렌더 없음</Text>}
         {list.map(job => {
           const avg = average(past[job.kind])
+          const pct = percent(job.seconds, avg)
+          // 기록 있으면 평균 대비 % 만큼 채움, 없으면 작업 진행 바처럼 움직이는 6칸 블록
+          const filled = pct === undefined ? 0 : Math.round((pct / 100) * BAR)
+          const pos = job.seconds % BAR
+          const cell = (i: number) => {
+            if (i < filled) return <Text key={`r${i}`} color={mix(i / BAR)}>█</Text>
+            if (pct === undefined && (i - pos + BAR) % BAR < 6) return <Text key={`r${i}`} color={mix(i / BAR)}>▓</Text>
+            return <Text key={`r${i}`} dimColor>░</Text>
+          }
+          const label = pct === undefined ? '기록 없음' : `약 ${pct}%`
           const eta =
             avg === undefined
-              ? '예상 시간: 기록 없음'
+              ? `${fmt(job.seconds)} 경과 · 한 번 끝나면 다음부터 % 표시`
               : job.seconds < avg
-                ? `남은 시간 약 ${fmt(avg - job.seconds)} (평균 ${fmt(avg)})`
-                : `평균 ${fmt(avg)} 초과`
+                ? `${fmt(job.seconds)} 경과 · 남은 시간 약 ${fmt(avg - job.seconds)} (평균 ${fmt(avg)})`
+                : `${fmt(job.seconds)} 경과 · 평균 ${fmt(avg)} 초과`
           return (
             <Box key={`j${job.pid}`} flexDirection="column">
-              <Text>
-                {job.kind} · {fmt(job.seconds)} 경과
-              </Text>
-              <Text dimColor>{eta}</Text>
+              <Text bold color="cyan">▶ {job.kind}</Text>
+              <Box flexDirection="row">
+                {Array.from({ length: BAR }, (_, i) => cell(i))}
+                <Text bold>
+                  {'  '}
+                  {label}
+                </Text>
+              </Box>
+              <Text dimColor>⏱ {eta}</Text>
               <Text dimColor>{job.command.slice(0, width)}</Text>
             </Box>
           )

@@ -45,3 +45,8 @@ export const fmt = (sec: number): string => {
 // 같은 종류 과거 소요 시간 평균(최근 10건)
 export const average = (list: number[] | undefined): number | undefined =>
   list && list.length > 0 ? list.reduce((a, b) => a + b, 0) / list.length : undefined
+
+// 평균 소요 시간 대비 진행률(%) — 기록 없으면 undefined, 끝나기 전엔 99 에서 멈춤
+// ponytail: 실제 진행률이 아니라 과거 평균 기준 추정치
+export const percent = (seconds: number, avg: number | undefined): number | undefined =>
+  avg === undefined || avg <= 0 ? undefined : Math.min(99, Math.floor((seconds / avg) * 100))
