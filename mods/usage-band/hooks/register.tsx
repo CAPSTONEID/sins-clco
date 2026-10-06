@@ -65,7 +65,8 @@ export const register: Register = on => {
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     const s = await read($, snap)
-    if (e.props.hasSurvey || !ROWS.some(r => s[r.key])) return next(e)
+    // CLI(터미널) 전용: 데스크톱·VS Code 는 task-progress-band 가 그린다
+    if (e.surface !== 'terminal' || e.props.hasSurvey || !ROWS.some(r => s[r.key])) return next(e)
 
     const now = await $.clock.now()
     const { Box, Text } = $.ui.resolve(e)
