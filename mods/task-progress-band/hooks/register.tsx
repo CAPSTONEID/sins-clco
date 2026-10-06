@@ -173,7 +173,7 @@ export const register: Register = on => {
   }).catch(($, e, next) => next(e))
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
-    // 데스크톱·VS Code 전용: CLI(터미널)는 usage-band 가 그린다
+    // 데스크톱 앱 전용: CLI(터미널)는 usage-band 가 그린다. VS Code 확장 채팅 패널은 mod 화면을 그리지 않음 (VS Code 내장 터미널의 claude 는 usage-band)
     if (e.surface === 'terminal' || e.props.hasSurvey) {
       return next(e)
     }

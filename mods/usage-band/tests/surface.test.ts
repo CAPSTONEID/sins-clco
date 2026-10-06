@@ -2,7 +2,7 @@ import { expect, mock, test } from 'claude-code/testing'
 
 const PROPS = { hasSurvey: false, isWorking: false, maxRows: 10, bodyColumns: 100 } as never
 
-// 터미널은 usage-band, 데스크톱·VS Code 는 task-progress-band 가 입력창 위를 그린다
+// 터미널은 usage-band, 데스크톱 앱은 task-progress-band 가 입력창 위를 그린다
 for (const surface of ['terminal', 'desktop', 'vscode'] as const) {
   test(`${surface}: ${surface === 'terminal' ? '게이지를 그린다' : '그리지 않고 넘긴다'}`, async ($, on) => {
     const t = Date.UTC(2026, 9, 6, 12)

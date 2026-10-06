@@ -98,7 +98,7 @@ curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-skil
 
 ### Claude Code mods (사용량 막대 · 작업 진행 패널 · Higgsfield 띠 · AI 티 점수)
 
-터미널(CLI)과 데스크톱 앱 · VS Code 에서 서로 다른 막대가 나옵니다.
+터미널(CLI)과 데스크톱 앱(Code 탭)에서 서로 다른 막대가 나옵니다. VS Code 확장 채팅 패널은 mod 화면을 그리지 않습니다 (VS Code 내장 터미널에서 `claude` 를 실행하면 터미널 막대가 나옵니다).
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-mods-install.sh | bash
@@ -931,7 +931,7 @@ curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-conf
 
 ## Claude Code mods (사용량 막대 · 작업 진행 패널 · Higgsfield 띠 · AI 티 점수)
 
-Claude Code 화면 자체를 꾸미는 mod 5개를 새 기기에 설치합니다. 입력창 위 막대는 **화면 종류에 따라 다른 mod 가 그립니다** — 터미널(CLI)은 `usage-band`, 데스크톱 앱 · VS Code 는 `task-progress-band`. 셋을 함께 켜도 겹치지 않습니다.
+Claude Code 화면 자체를 꾸미는 mod 5개를 새 기기에 설치합니다. 입력창 위 막대는 **화면 종류에 따라 다른 mod 가 그립니다** — 터미널(CLI)은 `usage-band`, 데스크톱 앱(Code 탭)은 `task-progress-band`. 셋을 함께 켜도 겹치지 않습니다.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-mods-install.sh | bash
@@ -942,7 +942,7 @@ curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-mods
 | mod | 화면 | 위치 | 내용 |
 |-----|------|------|------|
 | `usage-band` | 터미널(CLI) | 입력창 위 | 구분선 + **Model · Effort(5단계 표시)** + **컨텍스트 · 5시간 한도 · 7일 한도** 그라데이션 게이지 (25/50/75% 눈금, 토큰 수, 초기화까지 남은 시간) |
-| `task-progress-band` | 데스크톱 · VS Code | 입력창 위 | **Model · Effort(5단계 표시) · Tasks(작업 완료율) · 컨텍스트 · 5시간 한도 · 7일 한도** 둥근 그라디언트 막대 (광택 · 점무늬 · 눈금, 토큰 수, 초기화까지 남은 시간). 한도 75% · 90%(컨텍스트 70% · 85%)를 넘으면 주황 · 빨강, Tasks 줄은 ✕ 로 숨김 |
+| `task-progress-band` | 데스크톱 앱(Code 탭) | 입력창 위 | **Model · Effort(5단계 표시) · Tasks(작업 완료율) · 컨텍스트 · 5시간 한도 · 7일 한도** 둥근 그라디언트 막대 (광택 · 점무늬 · 눈금, 토큰 수, 초기화까지 남은 시간). 한도 75% · 90%(컨텍스트 70% · 85%)를 넘으면 주황 · 빨강, Tasks 줄은 ✕ 로 숨김 |
 | `progress-pane` | 공통 | 옆 패널 | 세션 시작 시 자동 표시. **작업 진행 바**(작업 목록 완료율 · 경과 시간 · 도구 호출 수 · 진행 중 단계, 1분 넘는 턴은 완료 토스트, haiku 요약 완료 기록) + **렌더 진행 바**(ffmpeg · HyperFrames · whisper · render*.py, 같은 종류 평균 대비 % 그라데이션 막대와 남은 시간 추정 — 첫 렌더는 움직이는 막대, 끝나면 토스트). 패널이 안 보이면 진행 중일 때만 상태줄 한 줄 요약. `/progress` 로 직접 열기 |
 | `hf-band` | 공통 | 입력창 위 | **Higgsfield 크레딧 · 이번 세션 생성 요청 · 대기 작업 수**, 작업 완료 시 토스트 (새로고침 · 비우기 · 숨기기 버튼) |
 | `ai-tell` | 공통 | 옆 패널 · 토스트 | `.md` / `.txt` 저장 시 한글 **AI 티 점수**(humanize-korean 규칙 26개, 한글 1000자당 가중 신호 수, 4 미만 낮음 · 8 이상 높음). `/aitell` 로 패널, `/aitell 경로` 로 특정 파일 검사 |
@@ -953,6 +953,7 @@ curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-mods
 
 참고:
 - 5시간 · 7일 한도 줄은 구독(Pro/Max) 계정에서만 표시됩니다. 첫 응답 전에는 터미널은 `대기 중`, 데스크톱은 지난 세션 값에 `· 이전 값` 표시.
+- VS Code 확장의 채팅 패널에서는 mod 훅은 실행되지만 화면(막대 · 패널)은 그려지지 않습니다 ([공식 문서](https://code.claude.com/docs/en/plugins/mods/overview#where-mods-run)). VS Code 에서 보려면 내장 터미널에서 `claude` 를 실행하세요.
 - 패널 자동 표시는 터미널 폭 144칸 이상일 때만 뜹니다. 좁으면 `/progress` 로 여세요.
 - `hf-band` 는 Higgsfield MCP(claude.ai 커넥터)가 연결돼 있어야 크레딧이 나옵니다.
 - 터미널과 데스크톱 앱은 같은 `~/.claude/settings.json` 을 읽습니다. 한쪽에서 mods 경로를 빼면 다른 쪽도 빠지므로, 화면별로 다르게 보이게 하려면 경로가 아니라 mod 코드에서 `e.surface` 로 나누세요.
