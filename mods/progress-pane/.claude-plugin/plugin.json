@@ -1,6 +1,1 @@
-{
-  "name": "progress-pane",
-  "version": "0.1.0",
-  "description": "1분 이상 걸리는 작업에 진행 바 패널 자동 표시 (/progress)",
-  "types": "./types/index.d.ts"
-}
+{ "name": "progress-pane", "version": "0.1.0", "description": "제작 단계와 렌더 진행을 한 창에 자동으로 표시", "types": "./types/index.d.ts" }

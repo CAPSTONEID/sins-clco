@@ -1,0 +1,1 @@
+{ "name": "ai-tell", "version": "0.1.0", "description": "한글 카피 파일 저장 시 AI 티 패턴 점수를 계산해 창과 알림으로 표시", "types": "./types/index.d.ts" }

@@ -2,18 +2,29 @@
 # Claude Code mods 설치
 #   usage-band         : 터미널(CLI) 입력창 위 사용량 게이지
 #   task-progress-band : 데스크톱·VS Code 입력창 위 Tasks·컨텍스트·5시간·7일 그라디언트 막대
-#   progress-pane      : 1분 넘는 작업 진행 바 패널 (/progress)
+#   progress-pane      : 제작 단계(기획→업로드) + 렌더 진행 패널 (/progress)
+#   hf-band            : 입력창 위 Higgsfield 크레딧·생성 대기 띠
+#   ai-tell            : .md/.txt 저장 시 한글 AI 티 점수 (/aitell)
 # 입력창 위 막대는 화면 종류로 나눠 그리므로 셋을 함께 켜도 겹치지 않는다
 set -euo pipefail
 
 REPO_RAW="${SINS_REPO_RAW:-https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main}"
 MODS_DIR="$HOME/.claude/mods"
-MODS=(usage-band task-progress-band progress-pane)
+MODS=(usage-band task-progress-band progress-pane hf-band ai-tell)
 FILES=(.claude-plugin/plugin.json hooks/hooks.json hooks/register.tsx types/index.d.ts)
+
+# mod 별로 register.tsx 가 import 하는 추가 파일
+extra_files() {
+  case "$1" in
+    progress-pane) echo hooks/render.ts hooks/stage.ts ;;
+    hf-band | ai-tell) echo hooks/lib.ts ;;
+  esac
+}
 
 for m in "${MODS[@]}"; do
   echo "📦 $m 설치 중..."
-  for f in "${FILES[@]}"; do
+  # shellcheck disable=SC2046
+  for f in "${FILES[@]}" $(extra_files "$m"); do
     mkdir -p "$MODS_DIR/$m/$(dirname "$f")"
     curl -fsSL "$REPO_RAW/mods/$m/$f" -o "$MODS_DIR/$m/$f"
   done
@@ -38,7 +49,7 @@ dirs = [d for d in env.get('CLAUDE_CODE_PLUGIN_DIRS', '').split(':') if d]
 
 # 세 mod 모두 등록 (~ 표기·절대경로 어느 쪽으로 이미 있어도 중복 없음)
 have = {os.path.expanduser(d).rstrip('/') for d in dirs}
-for m in ('usage-band', 'task-progress-band', 'progress-pane'):
+for m in ('usage-band', 'task-progress-band', 'progress-pane', 'hf-band', 'ai-tell'):
     d = os.path.expanduser(f'~/.claude/mods/{m}')
     if d not in have:
         dirs.append(d)
@@ -56,4 +67,4 @@ fi
 echo ""
 echo "✅ mods 설치 완료! Claude Code 를 새 세션으로 여세요."
 echo "   입력창 위 막대: 터미널 = usage-band, 데스크톱·VS Code = task-progress-band"
-echo "   /progress = 진행 바 패널"
+echo "   /progress = 제작 단계·렌더 패널, /aitell = AI 티 점수, 입력창 위 Higgsfield 띠"

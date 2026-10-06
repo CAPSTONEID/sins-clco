@@ -1,0 +1,1 @@
+{ "name": "hf-band", "version": "0.1.0", "description": "Higgsfield 남은 크레딧과 생성 대기 작업을 프롬프트 위 띠로 표시", "types": "./types/index.d.ts" }
