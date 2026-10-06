@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
-import type { Ctx, Limit, TaskStatus } from '../types'
+import type { Ctx, Limit, ModelInfo, TaskStatus } from '../types'
 
 const tasks = atom({ plugin: 'task-progress-band', key: 'tasks' } as const, {} as Record<string, TaskStatus>)
 const isHidden = atom({ plugin: 'task-progress-band', key: 'isHidden' } as const, false)
@@ -10,6 +10,20 @@ const context = atom({ plugin: 'task-progress-band', key: 'context' } as const, 
 const now = atom({ plugin: 'task-progress-band', key: 'now' } as const, 0)
 // 이번 세션에서 엔진이 사용량을 한 번이라도 알려줬는지. false면 지난 세션 값으로 그리는 중
 const isFresh = atom({ plugin: 'task-progress-band', key: 'isFresh' } as const, false)
+const model = atom({ plugin: 'task-progress-band', key: 'model' } as const, {} as ModelInfo)
+
+// 추론 단계 순서 (단계 표시용)
+const EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'] as const
+const EFFORT: Grad = ['#4f46e5', '#a855f7']
+
+// ponytail: usage-band 와 같은 함수. 플러그인끼리 import 못 해 복사함
+// 모델 id → 표시 이름: claude-opus-5-5 → Opus 5.5, claude-haiku-4-5-20251001 → Haiku 4.5
+export const prettyModel = (id: string) => {
+  const parts = id.replace(/\[.*\]$/, '').replace(/^claude-/, '').split('-').filter(p => !/^\d{8}$/.test(p))
+  const name = parts.filter(p => !/^\d+$/.test(p)).map(p => p[0]!.toUpperCase() + p.slice(1)).join(' ')
+  const ver = parts.filter(p => /^\d+$/.test(p)).join('.')
+  return [name || id, ver].filter(Boolean).join(' ')
+}
 
 // ponytail: 작업 막대는 세션 전체 하나. 목록별 막대는 작업 metadata에 묶음 키가 생기면 추가
 
@@ -85,6 +99,8 @@ export const register: Register = on => {
     const t = await $.clock.now()
     await update($, now, () => t)
     // 1분마다 다시 그려 초기화까지 남은 시간을 갱신한다 (리로드 시 이전 타이머는 엔진이 정리)
+    const id = await $.session.model()
+    await update($, model, m => ({ ...m, name: prettyModel(id) }))
     $.clock.every(60_000, () => void $.clock.now().then(t => update($, now, () => t)))
 
     return next(e)
@@ -105,6 +121,15 @@ export const register: Register = on => {
     }
 
     return next(e)
+  })
+
+  // 메인 루프 요청마다 실제 모델·추론 단계 반영 (서브에이전트 제외)
+  on('turn.step', async function* ($, e, next) {
+    if (!e.agentId) {
+      const name = prettyModel(e.model)
+      await update($, model, m => (m.name === name && m.effort === e.effort ? m : { name, effort: e.effort }))
+    }
+    return yield* next(e)
   })
 
   on('tool.call', { tool: 'TaskCreate' }, async ($, e, next) => {
@@ -210,7 +235,11 @@ export const register: Register = on => {
       })
     }
 
-    if (rows.length === 0) {
+    const m = await read($, model)
+    // 추론 단계 위치 (0~4), 숫자 effort 면 -1
+    const lvl = typeof m.effort === 'string' ? EFFORTS.indexOf(m.effort as (typeof EFFORTS)[number]) : -1
+
+    if (rows.length === 0 && m.name === undefined) {
       return next(e)
     }
 
@@ -228,6 +257,34 @@ export const register: Register = on => {
     // 열 폭은 모든 줄 공통: 라벨 | 막대(가변) | 퍼센트(오른쪽 정렬) | 메모 | 닫기
     return (
       <Box flexDirection="column" paddingX={1}>
+        {/* 모델 · 추론 단계 줄: 라벨 열은 다른 줄과 같은 폭 */}
+        {m.name !== undefined && (
+          <Box key="model" flexDirection="row" alignItems="center" gap={2}>
+            <Box width="14%" flexShrink={0}>
+              <Text color="#d97757">● </Text>
+              <Text wrap="truncate">Model</Text>
+            </Box>
+            <Box flexGrow={1} flexShrink={1} flexDirection="row" alignItems="center" gap={2}>
+              <Text bold>{m.name}</Text>
+              <Text dimColor>Effort</Text>
+              {m.effort === undefined ? (
+                <Text dimColor>—</Text>
+              ) : lvl < 0 ? (
+                <Text bold>{String(m.effort)}</Text>
+              ) : (
+                <Box flexDirection="row" alignItems="center">
+                  {EFFORTS.map((_, i) => (
+                    <Text key={`e${i}`} color={i <= lvl ? EFFORT[i < 2 ? 0 : 1] : undefined} dimColor={i > lvl}>
+                      {i <= lvl ? '■' : '□'}
+                    </Text>
+                  ))}
+                  <Text bold>{` ${EFFORTS[lvl]!.toUpperCase()}`}</Text>
+                  <Text dimColor>{` (${lvl + 1}/${EFFORTS.length})`}</Text>
+                </Box>
+              )}
+            </Box>
+          </Box>
+        )}
         {rows.map(row => (
           <Box key={row.key} flexDirection="row" alignItems="center" gap={2}>
             <Box width="14%" flexShrink={0}>

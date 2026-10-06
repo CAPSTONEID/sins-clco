@@ -83,6 +83,21 @@ for (const surface of ['desktop', 'vscode'] as const) {
     expect(drawn).toContain('초기화됨 · 이전 값')
     expect(drawn).not.toContain('55%')
   })
+
+  test(`model row shows name and effort level (${surface})`, async ($, on) => {
+    mock.clock(on, { now: 0 })
+    on('session.usage', () => ({ value: { startedAt: 0, context: { window: 200_000 }, rateLimits: [] } }) as never)
+    on('session.model', () => ({ value: 'claude-opus-5-5' }) as never)
+    on('session.start', (_$, e) => ({ cwd: e.cwd }))
+    await $.session.start({ cwd: '/tmp', surface, isInteractive: true } as never)
+
+    const drawn = JSON.stringify(
+      await (await $.ui.mount({ plugin: 'task-progress-band', surface, component: 'AbovePrompt', props: PROPS })).drawn(),
+    )
+    expect(drawn).toContain('Model')
+    expect(drawn).toContain('Opus 5.5')
+    expect(drawn).toContain('Effort')
+  })
 }
 
 // CLI(터미널)는 usage-band 몫: 이 모드는 그리지 않고 아래(엔진)로 넘긴다

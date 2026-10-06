@@ -1,9 +1,21 @@
 import { atom, read, update } from 'claude-code'
 import type { Register, SessionContextUsage, SessionRateLimit } from 'claude-code'
 
-import type { Gauge, Snapshot } from '../types'
+import type { Gauge, ModelInfo, Snapshot } from '../types'
 
 const snap = atom({ plugin: 'usage-band', key: 'snap' } as const, {} as Snapshot)
+const model = atom({ plugin: 'usage-band', key: 'model' } as const, {} as ModelInfo)
+
+// 추론 단계 순서 (단계 표시용)
+const EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'] as const
+
+// 모델 id → 표시 이름: claude-opus-5-5 → Opus 5.5, claude-haiku-4-5-20251001 → Haiku 4.5
+export const prettyModel = (id: string) => {
+  const parts = id.replace(/\[.*\]$/, '').replace(/^claude-/, '').split('-').filter(p => !/^\d{8}$/.test(p))
+  const name = parts.filter(p => !/^\d+$/.test(p)).map(p => p[0]!.toUpperCase() + p.slice(1)).join(' ')
+  const ver = parts.filter(p => /^\d+$/.test(p)).join('.')
+  return [name || id, ver].filter(Boolean).join(' ')
+}
 
 // 게이지 막대 칸 수 (25/50/75% 눈금 포함)
 const BAR = 32
@@ -54,7 +66,18 @@ export const register: Register = on => {
     const r = await next(e)
     const u = await $.session.usage()
     await update($, snap, () => toSnap(u.context, u.rateLimits))
+    const id = await $.session.model()
+    await update($, model, m => ({ ...m, name: prettyModel(id) }))
     return r
+  })
+
+  // 메인 루프 요청마다 실제 모델·추론 단계 반영 (서브에이전트 제외)
+  on('turn.step', async function* ($, e, next) {
+    if (!e.agentId) {
+      const name = prettyModel(e.model)
+      await update($, model, m => (m.name === name && m.effort === e.effort ? m : { name, effort: e.effort }))
+    }
+    return yield* next(e)
   })
 
   // 턴 종료·한도 변동 시 엔진이 밀어주는 값으로 갱신
@@ -65,8 +88,11 @@ export const register: Register = on => {
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     const s = await read($, snap)
+    const m = await read($, model)
     // CLI(터미널) 전용: 데스크톱·VS Code 는 task-progress-band 가 그린다
-    if (e.surface !== 'terminal' || e.props.hasSurvey || !ROWS.some(r => s[r.key])) return next(e)
+    if (e.surface !== 'terminal' || e.props.hasSurvey || (!ROWS.some(r => s[r.key]) && !m.name)) return next(e)
+    // 추론 단계 위치 (1~5), 문자열 아닌 숫자 effort 면 -1
+    const lvl = typeof m.effort === 'string' ? EFFORTS.indexOf(m.effort as (typeof EFFORTS)[number]) : -1
 
     const now = await $.clock.now()
     const { Box, Text } = $.ui.resolve(e)
@@ -77,6 +103,33 @@ export const register: Register = on => {
         <Text dimColor>{'─'.repeat(Math.max(10, e.props.bodyColumns - 2))}</Text>
         {/* 아래 입력창 앞 엔진 여백(1줄)과 맞추는 빈 줄 */}
         <Text> </Text>
+        {/* 모델 · 추론 단계 줄 */}
+        <Box flexDirection="row">
+          <Box width={14}>
+            <Text color="#d97757">● </Text>
+            <Text>Model</Text>
+          </Box>
+          <Box width={20}>
+            <Text bold>{m.name ?? '-'}</Text>
+          </Box>
+          <Text>Effort </Text>
+          {m.effort === undefined ? (
+            <Text dimColor>-</Text>
+          ) : lvl < 0 ? (
+            <Text bold>{String(m.effort)}</Text>
+          ) : (
+            // Fragment 는 세로로 쌓여 깨짐 → 가로 Box 로 묶음
+            <Box flexDirection="row">
+              {EFFORTS.map((_, i) => (
+                <Text key={`e${i}`} color={i <= lvl ? mix([79, 70, 229], [168, 85, 247], i / 4) : undefined} dimColor={i > lvl}>
+                  {i <= lvl ? '■' : '□'}
+                </Text>
+              ))}
+              <Text bold>{` ${EFFORTS[lvl]!.toUpperCase()}`}</Text>
+              <Text dimColor>{` (${lvl + 1}/${EFFORTS.length})`}</Text>
+            </Box>
+          )}
+        </Box>
         {ROWS.map(row => {
           const g = s[row.key]
           const pct = g?.percent ?? 0
