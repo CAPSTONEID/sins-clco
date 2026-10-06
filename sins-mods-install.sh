@@ -2,7 +2,7 @@
 # Claude Code mods 설치
 #   usage-band         : 터미널(CLI) 입력창 위 사용량 게이지
 #   task-progress-band : 데스크톱·VS Code 입력창 위 Tasks·컨텍스트·5시간·7일 그라디언트 막대
-#   progress-pane      : 제작 단계(기획→업로드) + 렌더 진행 패널 (/progress)
+#   progress-pane      : 작업 진행 바 + 제작 단계 + 렌더 진행 패널 (/progress)
 #   hf-band            : 입력창 위 Higgsfield 크레딧·생성 대기 띠
 #   ai-tell            : .md/.txt 저장 시 한글 AI 티 점수 (/aitell)
 # 입력창 위 막대는 화면 종류로 나눠 그리므로 셋을 함께 켜도 겹치지 않는다
@@ -16,7 +16,7 @@ FILES=(.claude-plugin/plugin.json hooks/hooks.json hooks/register.tsx types/inde
 # mod 별로 register.tsx 가 import 하는 추가 파일
 extra_files() {
   case "$1" in
-    progress-pane) echo hooks/render.ts hooks/stage.ts ;;
+    progress-pane) echo hooks/render.ts hooks/stage.ts hooks/run.ts ;;
     hf-band | ai-tell) echo hooks/lib.ts ;;
   esac
 }
