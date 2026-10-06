@@ -916,3 +916,31 @@ curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-conf
 - `~/CLAUDE.md` — 역할 페르소나, caveman mode, 작업 하네스 원칙
 - `~/.claude/settings.json` — SessionStart hook (세션 시작 시 caveman full 자동 활성화)
 - `~/.grok/rules/sins-persona.md` — Grok이 설치돼 있으면 같은 페르소나를 홈 룰로 복사 (Grok은 `~/CLAUDE.md` 를 스캔하지 않고 `~/.grok/rules/` 를 항상 읽습니다. caveman 규칙이 페르소나 본문에 있어 훅 없이 상시 적용)
+
+---
+
+## Claude Code mods (터미널 입력창 위 사용량 게이지 · 진행 바 패널)
+
+Claude Code CLI 화면 자체를 꾸미는 mod 2개를 새 기기에 설치합니다.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-mods-install.sh | bash
+```
+
+설치 후 터미널에서 `claude` 를 새로 실행하면 적용됩니다.
+
+| mod | 위치 | 내용 |
+|-----|------|------|
+| `usage-band` | 입력창 위 | 구분선 + **컨텍스트 · 5시간 한도 · 7일 한도** 그라데이션 게이지 (25/50/75% 눈금, 토큰 수, 초기화까지 남은 시간) |
+| `progress-pane` | 옆 패널 | 한 턴이 **1분을 넘기면** 진행 바 패널 자동 표시 (작업 목록 완료율 · 경과 시간 · 도구 호출 수 · 단계 목록), 끝나면 완료 토스트. `/progress` 로 직접 열기 |
+
+적용 내용:
+- `~/.claude/mods/usage-band/`, `~/.claude/mods/progress-pane/` — mod 파일 (원본: 이 저장소 `mods/`)
+- `~/.claude/settings.json` — env `CLAUDE_CODE_PLUGIN_DIRS` 에 두 경로 추가 (기존 값 유지, 첫 실행 때 `settings.json.bak-sins-mods` 백업, 재실행해도 중복 없음)
+- 같은 입력창 위 영역을 그리는 `task-progress-band` 가 등록돼 있으면 **등록만 해제** (폴더는 남김)
+
+참고:
+- 5시간 · 7일 한도 줄은 구독(Pro/Max) 계정에서만 표시됩니다. 첫 응답 전에는 `대기 중`.
+- 진행 바 패널 자동 표시는 터미널 폭 144칸 이상일 때만 뜹니다. 좁으면 `/progress` 로 여세요.
+- 제거: `rm -rf ~/.claude/mods/usage-band ~/.claude/mods/progress-pane` 후 `CLAUDE_CODE_PLUGIN_DIRS` 에서 두 경로 삭제.
+- 수정 후 검사: `claude plugin validate mods/<이름>` · `claude plugin test mods/<이름>`
