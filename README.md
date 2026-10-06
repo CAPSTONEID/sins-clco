@@ -96,7 +96,7 @@ curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-skil
 curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-skill-all-install.sh | bash -s -- claude
 ```
 
-### Claude Code mods (입력창 위 사용량 막대 · 진행 바 패널)
+### Claude Code mods (사용량 막대 · 제작 진행 패널 · Higgsfield 띠 · AI 티 점수)
 
 터미널(CLI)과 데스크톱 앱 · VS Code 에서 서로 다른 막대가 나옵니다.
 
@@ -104,7 +104,7 @@ curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-skil
 curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-mods-install.sh | bash
 ```
 
-자세한 내용은 [Claude Code mods](#claude-code-mods-입력창-위-사용량-막대--진행-바-패널) 섹션을 참고하세요.
+자세한 내용은 [Claude Code mods](#claude-code-mods-사용량-막대--제작-진행-패널--higgsfield-띠--ai-티-점수) 섹션을 참고하세요.
 
 ### Codex
 
@@ -929,9 +929,9 @@ curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-conf
 
 ---
 
-## Claude Code mods (입력창 위 사용량 막대 · 진행 바 패널)
+## Claude Code mods (사용량 막대 · 제작 진행 패널 · Higgsfield 띠 · AI 티 점수)
 
-Claude Code 화면 자체를 꾸미는 mod 3개를 새 기기에 설치합니다. 입력창 위 막대는 **화면 종류에 따라 다른 mod 가 그립니다** — 터미널(CLI)은 `usage-band`, 데스크톱 앱 · VS Code 는 `task-progress-band`. 셋을 함께 켜도 겹치지 않습니다.
+Claude Code 화면 자체를 꾸미는 mod 5개를 새 기기에 설치합니다. 입력창 위 막대는 **화면 종류에 따라 다른 mod 가 그립니다** — 터미널(CLI)은 `usage-band`, 데스크톱 앱 · VS Code 는 `task-progress-band`. 셋을 함께 켜도 겹치지 않습니다.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-mods-install.sh | bash
@@ -943,15 +943,18 @@ curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-mods
 |-----|------|------|------|
 | `usage-band` | 터미널(CLI) | 입력창 위 | 구분선 + **컨텍스트 · 5시간 한도 · 7일 한도** 그라데이션 게이지 (25/50/75% 눈금, 토큰 수, 초기화까지 남은 시간) |
 | `task-progress-band` | 데스크톱 · VS Code | 입력창 위 | **Tasks(작업 완료율) · 컨텍스트 · 5시간 한도 · 7일 한도** 둥근 그라디언트 막대 (광택 · 점무늬 · 눈금, 토큰 수, 초기화까지 남은 시간). 한도 75% · 90%(컨텍스트 70% · 85%)를 넘으면 주황 · 빨강, Tasks 줄은 ✕ 로 숨김 |
-| `progress-pane` | 공통 | 옆 패널 | 한 턴이 **1분을 넘기면** 진행 바 패널 자동 표시 (작업 목록 완료율 · 경과 시간 · 도구 호출 수 · 단계 목록), 끝나면 완료 토스트. `/progress` 로 직접 열기 |
+| `progress-pane` | 공통 | 옆 패널 | 세션 시작 시 자동 표시. **제작 단계**(기획→대본→컷편집→렌더→썸네일→업로드, ◀ 이전 · 다음 ▶ 버튼, 파일 저장·PalmierPro·ffmpeg·이미지 생성·발행 호출로 자동 전진) + **렌더 진행**(ffmpeg · HyperFrames · whisper · render*.py 경과 시간, 같은 종류 평균으로 남은 시간 추정, 끝나면 토스트). 패널이 안 보이면 상태줄 한 줄 요약. `/progress 대본` · `project 이름` · `clear` |
+| `hf-band` | 공통 | 입력창 위 | **Higgsfield 크레딧 · 이번 세션 생성 요청 · 대기 작업 수**, 작업 완료 시 토스트 (새로고침 · 비우기 · 숨기기 버튼) |
+| `ai-tell` | 공통 | 옆 패널 · 토스트 | `.md` / `.txt` 저장 시 한글 **AI 티 점수**(humanize-korean 규칙 26개, 한글 1000자당 가중 신호 수, 4 미만 낮음 · 8 이상 높음). `/aitell` 로 패널, `/aitell 경로` 로 특정 파일 검사 |
 
 적용 내용:
-- `~/.claude/mods/usage-band/`, `~/.claude/mods/task-progress-band/`, `~/.claude/mods/progress-pane/` — mod 파일 (원본: 이 저장소 `mods/`)
-- `~/.claude/settings.json` — env `CLAUDE_CODE_PLUGIN_DIRS` 에 세 경로 추가 (기존 값 유지, 첫 실행 때 `settings.json.bak-sins-mods` 백업, 재실행해도 중복 없음)
+- `~/.claude/mods/` 아래 `usage-band/`, `task-progress-band/`, `progress-pane/`, `hf-band/`, `ai-tell/` — mod 파일 (원본: 이 저장소 `mods/`)
+- `~/.claude/settings.json` — env `CLAUDE_CODE_PLUGIN_DIRS` 에 다섯 경로 추가 (기존 값 유지, 첫 실행 때 `settings.json.bak-sins-mods` 백업, 재실행해도 중복 없음)
 
 참고:
 - 5시간 · 7일 한도 줄은 구독(Pro/Max) 계정에서만 표시됩니다. 첫 응답 전에는 터미널은 `대기 중`, 데스크톱은 지난 세션 값에 `· 이전 값` 표시.
-- 진행 바 패널 자동 표시는 터미널 폭 144칸 이상일 때만 뜹니다. 좁으면 `/progress` 로 여세요.
+- 패널 자동 표시는 터미널 폭 144칸 이상일 때만 뜹니다. 좁으면 `/progress` 로 여세요.
+- `hf-band` 는 Higgsfield MCP(claude.ai 커넥터)가 연결돼 있어야 크레딧이 나옵니다.
 - 터미널과 데스크톱 앱은 같은 `~/.claude/settings.json` 을 읽습니다. 한쪽에서 mods 경로를 빼면 다른 쪽도 빠지므로, 화면별로 다르게 보이게 하려면 경로가 아니라 mod 코드에서 `e.surface` 로 나누세요.
-- 제거: `rm -rf ~/.claude/mods/usage-band ~/.claude/mods/task-progress-band ~/.claude/mods/progress-pane` 후 `CLAUDE_CODE_PLUGIN_DIRS` 에서 세 경로 삭제.
+- 제거: `rm -rf ~/.claude/mods/{usage-band,task-progress-band,progress-pane,hf-band,ai-tell}` 후 `CLAUDE_CODE_PLUGIN_DIRS` 에서 해당 경로 삭제.
 - 수정 후 검사: `claude plugin validate mods/<이름>` · `claude plugin test mods/<이름>`

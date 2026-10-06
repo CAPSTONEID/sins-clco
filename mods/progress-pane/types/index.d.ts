@@ -1,18 +1,13 @@
-export type Task = { id: string; subject: string; status: 'pending' | 'in_progress' | 'completed' }
-export type Run = {
-  id: string
-  prompt: string
-  label?: string
-  startedAt: number
-  endedAt?: number
-  now: number
-  tools: number
-  lastTool: string
-  tasks: Task[]
-}
+export type RenderJob = { pid: number; kind: string; command: string; seconds: number }
 
 declare module 'claude-code' {
   interface PluginState {
-    'progress-pane': { run: Run | null; history: Run[] }
+    'progress-pane': {
+      jobs: RenderJob[]
+      history: Record<string, number[]>
+      // 현재 프로젝트 이름과 프로젝트별 단계 번호
+      project: string
+      stages: Record<string, number>
+    }
   }
 }
