@@ -22,9 +22,6 @@ declare module 'claude-code' {
       // 렌더 진행
       jobs: RenderJob[]
       renderHistory: Record<string, number[]>
-      // 제작 단계: 현재 프로젝트 이름과 프로젝트별 단계 번호
-      project: string
-      stages: Record<string, number>
     }
   }
 }
