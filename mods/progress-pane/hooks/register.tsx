@@ -4,7 +4,6 @@ import type { EngineInterface, Register, Timer } from 'claude-code'
 import type { RenderJob, Run, Task } from '../types'
 import { average, fmt, parsePs } from './render'
 import { BAR, dur, fallback, mix } from './run'
-import { STAGES, detect, project } from './stage'
 
 const PANE = 'progress'
 const TITLE = '진행 상황'
@@ -16,9 +15,6 @@ const runs = atom({ plugin: 'progress-pane', key: 'runs' } as const, [] as Run[]
 // 렌더 진행: 지금 돌고 있는 렌더, 종류별 과거 소요 시간(초, $.store 'render-history' 에도 저장)
 const jobs = atom({ plugin: 'progress-pane', key: 'jobs' } as const, [] as RenderJob[])
 const renderHistory = atom({ plugin: 'progress-pane', key: 'renderHistory' } as const, {} as Record<string, number[]>)
-// 제작 단계
-const current = atom({ plugin: 'progress-pane', key: 'project' } as const, '')
-const stages = atom({ plugin: 'progress-pane', key: 'stages' } as const, {} as Record<string, number>)
 
 // 끝난 작업을 haiku로 15자 안팎 한 줄 설명으로 요약해 기록에 붙임
 async function summarize($: EngineInterface, r: Run) {
@@ -39,53 +35,29 @@ function setTasks($: EngineInterface, fn: (l: Task[]) => Task[]) {
   return update($, run, r => (r ? { ...r, tasks: fn(r.tasks) } : r))
 }
 
-// 단계 저장 + 상태줄 갱신
-async function setStage($: EngineInterface, name: string, stage: number | undefined): Promise<void> {
-  const saved = await update($, stages, all => {
-    const copy = { ...all }
-    if (stage === undefined) delete copy[name]
-    else copy[name] = Math.max(0, Math.min(STAGES.length - 1, stage))
-    return copy
-  })
-  await $.store.set('stages', saved)
-  await refreshStatus($)
-}
-
 // 창이 화면에 보이면 상태줄은 비우고, 안 보이면 한 줄 요약
 async function refreshStatus($: EngineInterface): Promise<void> {
   const isShown = (await $.ui.panes()).some(p => p.id === PANE && p.isPlaced)
   if (isShown) return $.ui.status(undefined)
-  const name = await read($, current)
-  const stage = (await read($, stages))[name]
   const r = await read($, run)
   const list = await read($, jobs)
-  const parts = [`${name} ${stage === undefined ? '단계 미지정' : `▶${STAGES[stage]}`}`]
+  const parts: string[] = []
   if (r && !r.endedAt) {
     const done = r.tasks.filter(t => t.status === 'completed').length
     parts.push(`작업 ${r.tasks.length ? `${done}/${r.tasks.length}` : '진행 중'} ${dur(r.now - r.startedAt)}`)
   }
   if (list.length > 0) parts.push(`렌더 ${list.length}건 ${fmt(Math.max(...list.map(j => j.seconds)))}`)
-  $.ui.status(`${parts.join(' · ')} · /progress`)
+  $.ui.status(parts.length > 0 ? `${parts.join(' · ')} · /progress` : undefined)
 }
 
 export const register: Register = on => {
-  let root = ''
   let tick: Timer | undefined
 
   on('session.start', async ($, e, next) => {
-    await $.command.register({
-      name: 'progress',
-      description: '진행 상황 창 열기 (/progress 대본 처럼 단계 지정, project <이름>, clear)',
-      argumentHint: '[단계|project 이름|clear]',
-    })
-    root = await $.session.cwd()
+    await $.command.register({ name: 'progress', description: '진행 상황 창 열기' })
 
     const savedHistory = (await $.store.get('render-history')) as Record<string, number[]> | undefined
-    const savedStages = (await $.store.get('stages')) as Record<string, number> | undefined
-    const savedProject = (await $.store.get('project')) as string | undefined
     if (savedHistory) await update($, renderHistory, () => savedHistory)
-    if (savedStages) await update($, stages, () => savedStages)
-    await update($, current, () => savedProject ?? project(root, root))
 
     // 명령어 없이 자동으로 엶 — 좁은 터미널(144칸 미만)에선 넓어질 때까지 대기, 그동안 상태줄 요약
     void $.ui.open({ id: PANE, title: TITLE })
@@ -121,21 +93,7 @@ export const register: Register = on => {
     return next(e)
   })
 
-  on('command.run', { command: 'progress' }, async ($, e) => {
-    const args = e.args.trim()
-    const name = await read($, current)
-
-    if (args.startsWith('project ')) {
-      const picked = args.slice(8).trim()
-      await update($, current, () => picked)
-      await $.store.set('project', picked)
-    } else if (args === 'clear') {
-      await setStage($, name, undefined)
-    } else if (args !== '') {
-      const i = STAGES.indexOf(args as (typeof STAGES)[number])
-      if (i < 0) return { text: `단계 이름은 ${STAGES.join(', ')} 중 하나입니다.` }
-      await setStage($, name, i)
-    }
+  on('command.run', { command: 'progress' }, async $ => {
     await $.ui.open({ id: PANE, title: TITLE })
     await refreshStatus($)
     return { text: '진행 상황 창을 열었습니다.' }
@@ -176,32 +134,12 @@ export const register: Register = on => {
     return r
   })
 
-  // 도구 호출: 진행 바 집계 + 프로젝트 전환·단계 자동 전진(뒤로는 자동으로 안 감)
+  // 도구 호출 집계 (메인 스레드만). 실패해도 도구 실행은 그대로 통과
   on('tool.call', async ($, e, next) => {
     const ran = await next(e)
-    if (e.agentId) return ran
-    await update($, run, r => (r ? { ...r, tools: r.tools + 1, lastTool: e.tool } : r))
-    if (ran.deny !== undefined || ran.isError) return ran
-
-    const input = e as unknown as { file_path?: string; command?: string }
-    if (input.file_path && root) {
-      const p = project(root, input.file_path)
-      if (p !== (await read($, current))) {
-        await update($, current, () => p)
-        await $.store.set('project', p)
-        await refreshStatus($)
-      }
-    }
-
-    const stage = detect(String(e.tool), input.file_path ?? '', input.command ?? '')
-    if (stage < 0) return ran
-    const name = await read($, current)
-    if (stage > ((await read($, stages))[name] ?? -1)) {
-      await setStage($, name, stage)
-      $.ui.toast(`단계 → ${STAGES[stage]} (${name})`)
-    }
+    if (!e.agentId) await update($, run, r => (r ? { ...r, tools: r.tools + 1, lastTool: e.tool } : r))
     return ran
-  }).catch(($, e, next) => next(e)) // 표시가 실패해도 도구 호출은 그대로
+  }).catch(($, e, next) => next(e))
 
   // 할 일 목록 추적: TodoWrite / TaskCreate / TaskUpdate
   on('tool.call', { tool: 'TodoWrite' }, async ($, e, next) => {
@@ -233,11 +171,9 @@ export const register: Register = on => {
   }).catch(($, e, next) => next(e))
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
-    const { Box, Button, Text } = $.ui.resolve(e)
+    const { Box, Text } = $.ui.resolve(e)
     const r = await read($, run)
     const hist = await read($, runs)
-    const name = await read($, current)
-    const stage = (await read($, stages))[name]
     const list = await read($, jobs)
     const past = await read($, renderHistory)
     const width = Math.max(20, (e.props.bodyColumns ?? 40) - 2)
@@ -278,27 +214,6 @@ export const register: Register = on => {
       <Box flexDirection="column">
         <Text bold>작업 진행</Text>
         {work}
-
-        <Box marginTop={1}>
-          <Text bold>제작 단계 · {name}</Text>
-        </Box>
-        <Box flexWrap="wrap">
-          {STAGES.map((s, i) => (
-            <Text
-              key={`s${i}`}
-              color={i === stage ? 'cyan' : undefined}
-              bold={i === stage}
-              dimColor={stage === undefined || i > stage}
-            >
-              {stage !== undefined && i < stage ? `${s} ✓` : i === stage ? `▶${s}` : s}
-              {'  '}
-            </Text>
-          ))}
-        </Box>
-        <Box>
-          <Button key="back" label="◀ 이전" onPress={() => setStage($, name, (stage ?? 1) - 1)} />
-          <Button key="next" label="다음 ▶" variant="primary" onPress={() => setStage($, name, (stage ?? -1) + 1)} />
-        </Box>
 
         <Box marginTop={1}>
           <Text bold>렌더</Text>
