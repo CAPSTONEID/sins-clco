@@ -89,7 +89,7 @@ export const register: Register = on => {
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     const s = await read($, snap)
     const m = await read($, model)
-    // CLI(터미널) 전용: 데스크톱·VS Code 는 task-progress-band 가 그린다
+    // CLI(터미널) 전용: 데스크톱 앱은 task-progress-band 가 그린다. VS Code 확장 채팅 패널은 mod 화면을 그리지 않음 (VS Code 내장 터미널의 claude 는 usage-band)
     if (e.surface !== 'terminal' || e.props.hasSurvey || (!ROWS.some(r => s[r.key]) && !m.name)) return next(e)
     // 추론 단계 위치 (1~5), 문자열 아닌 숫자 effort 면 -1
     const lvl = typeof m.effort === 'string' ? EFFORTS.indexOf(m.effort as (typeof EFFORTS)[number]) : -1

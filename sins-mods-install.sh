@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Claude Code mods 설치
 #   usage-band         : 터미널(CLI) 입력창 위 사용량 게이지
-#   task-progress-band : 데스크톱·VS Code 입력창 위 Tasks·컨텍스트·5시간·7일 그라디언트 막대
+#   task-progress-band : 데스크톱 앱(Code 탭) 입력창 위 Tasks·컨텍스트·5시간·7일 그라디언트 막대
 #   progress-pane      : 작업 진행 바 + 렌더 진행 패널 (/progress)
 #   hf-band            : 입력창 위 Higgsfield 크레딧·생성 대기 띠
 #   ai-tell            : .md/.txt 저장 시 한글 AI 티 점수 (/aitell)
@@ -66,5 +66,6 @@ fi
 
 echo ""
 echo "✅ mods 설치 완료! Claude Code 를 새 세션으로 여세요."
-echo "   입력창 위 막대: 터미널 = usage-band, 데스크톱·VS Code = task-progress-band"
+echo "   입력창 위 막대: 터미널 = usage-band, 데스크톱 앱 = task-progress-band"
+echo "   (VS Code 확장 채팅 패널은 mod 화면 미지원 — VS Code 내장 터미널의 claude 는 usage-band)"
 echo "   /progress = 작업 진행·렌더 패널, /aitell = AI 티 점수, 입력창 위 Higgsfield 띠"
