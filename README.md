@@ -96,6 +96,14 @@ curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-skil
 curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-skill-all-install.sh | bash -s -- claude
 ```
 
+### Claude Code mods (입력창 위 사용량 게이지 · 진행 바 패널)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-mods-install.sh | bash
+```
+
+자세한 내용은 [Claude Code mods](#claude-code-mods-터미널-입력창-위-사용량-게이지--진행-바-패널) 섹션을 참고하세요.
+
 ### Codex
 
 ```bash
