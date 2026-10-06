@@ -96,13 +96,15 @@ curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-skil
 curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-skill-all-install.sh | bash -s -- claude
 ```
 
-### Claude Code mods (입력창 위 사용량 게이지 · 진행 바 패널)
+### Claude Code mods (입력창 위 사용량 막대 · 진행 바 패널)
+
+터미널(CLI)과 데스크톱 앱 · VS Code 에서 서로 다른 막대가 나옵니다.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-mods-install.sh | bash
 ```
 
-자세한 내용은 [Claude Code mods](#claude-code-mods-터미널-입력창-위-사용량-게이지--진행-바-패널) 섹션을 참고하세요.
+자세한 내용은 [Claude Code mods](#claude-code-mods-입력창-위-사용량-막대--진행-바-패널) 섹션을 참고하세요.
 
 ### Codex
 
@@ -927,28 +929,29 @@ curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-conf
 
 ---
 
-## Claude Code mods (터미널 입력창 위 사용량 게이지 · 진행 바 패널)
+## Claude Code mods (입력창 위 사용량 막대 · 진행 바 패널)
 
-Claude Code CLI 화면 자체를 꾸미는 mod 2개를 새 기기에 설치합니다.
+Claude Code 화면 자체를 꾸미는 mod 3개를 새 기기에 설치합니다. 입력창 위 막대는 **화면 종류에 따라 다른 mod 가 그립니다** — 터미널(CLI)은 `usage-band`, 데스크톱 앱 · VS Code 는 `task-progress-band`. 셋을 함께 켜도 겹치지 않습니다.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-mods-install.sh | bash
 ```
 
-설치 후 터미널에서 `claude` 를 새로 실행하면 적용됩니다.
+설치 후 Claude Code 를 새 세션으로 열면 적용됩니다 (이미 열린 세션은 그대로).
 
-| mod | 위치 | 내용 |
-|-----|------|------|
-| `usage-band` | 입력창 위 | 구분선 + **컨텍스트 · 5시간 한도 · 7일 한도** 그라데이션 게이지 (25/50/75% 눈금, 토큰 수, 초기화까지 남은 시간) |
-| `progress-pane` | 옆 패널 | 한 턴이 **1분을 넘기면** 진행 바 패널 자동 표시 (작업 목록 완료율 · 경과 시간 · 도구 호출 수 · 단계 목록), 끝나면 완료 토스트. `/progress` 로 직접 열기 |
+| mod | 화면 | 위치 | 내용 |
+|-----|------|------|------|
+| `usage-band` | 터미널(CLI) | 입력창 위 | 구분선 + **컨텍스트 · 5시간 한도 · 7일 한도** 그라데이션 게이지 (25/50/75% 눈금, 토큰 수, 초기화까지 남은 시간) |
+| `task-progress-band` | 데스크톱 · VS Code | 입력창 위 | **Tasks(작업 완료율) · 컨텍스트 · 5시간 한도 · 7일 한도** 둥근 그라디언트 막대 (광택 · 점무늬 · 눈금, 토큰 수, 초기화까지 남은 시간). 한도 75% · 90%(컨텍스트 70% · 85%)를 넘으면 주황 · 빨강, Tasks 줄은 ✕ 로 숨김 |
+| `progress-pane` | 공통 | 옆 패널 | 한 턴이 **1분을 넘기면** 진행 바 패널 자동 표시 (작업 목록 완료율 · 경과 시간 · 도구 호출 수 · 단계 목록), 끝나면 완료 토스트. `/progress` 로 직접 열기 |
 
 적용 내용:
-- `~/.claude/mods/usage-band/`, `~/.claude/mods/progress-pane/` — mod 파일 (원본: 이 저장소 `mods/`)
-- `~/.claude/settings.json` — env `CLAUDE_CODE_PLUGIN_DIRS` 에 두 경로 추가 (기존 값 유지, 첫 실행 때 `settings.json.bak-sins-mods` 백업, 재실행해도 중복 없음)
-- 같은 입력창 위 영역을 그리는 `task-progress-band` 가 등록돼 있으면 **등록만 해제** (폴더는 남김)
+- `~/.claude/mods/usage-band/`, `~/.claude/mods/task-progress-band/`, `~/.claude/mods/progress-pane/` — mod 파일 (원본: 이 저장소 `mods/`)
+- `~/.claude/settings.json` — env `CLAUDE_CODE_PLUGIN_DIRS` 에 세 경로 추가 (기존 값 유지, 첫 실행 때 `settings.json.bak-sins-mods` 백업, 재실행해도 중복 없음)
 
 참고:
-- 5시간 · 7일 한도 줄은 구독(Pro/Max) 계정에서만 표시됩니다. 첫 응답 전에는 `대기 중`.
+- 5시간 · 7일 한도 줄은 구독(Pro/Max) 계정에서만 표시됩니다. 첫 응답 전에는 터미널은 `대기 중`, 데스크톱은 지난 세션 값에 `· 이전 값` 표시.
 - 진행 바 패널 자동 표시는 터미널 폭 144칸 이상일 때만 뜹니다. 좁으면 `/progress` 로 여세요.
-- 제거: `rm -rf ~/.claude/mods/usage-band ~/.claude/mods/progress-pane` 후 `CLAUDE_CODE_PLUGIN_DIRS` 에서 두 경로 삭제.
+- 터미널과 데스크톱 앱은 같은 `~/.claude/settings.json` 을 읽습니다. 한쪽에서 mods 경로를 빼면 다른 쪽도 빠지므로, 화면별로 다르게 보이게 하려면 경로가 아니라 mod 코드에서 `e.surface` 로 나누세요.
+- 제거: `rm -rf ~/.claude/mods/usage-band ~/.claude/mods/task-progress-band ~/.claude/mods/progress-pane` 후 `CLAUDE_CODE_PLUGIN_DIRS` 에서 세 경로 삭제.
 - 수정 후 검사: `claude plugin validate mods/<이름>` · `claude plugin test mods/<이름>`

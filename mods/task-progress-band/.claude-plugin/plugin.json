@@ -1,0 +1,6 @@
+{
+  "name": "task-progress-band",
+  "version": "0.1.0",
+  "description": "데스크톱·VS Code 입력창 위 Tasks·컨텍스트·5시간·7일 그라디언트 막대 (터미널은 usage-band)",
+  "types": "./types/index.d.ts"
+}
