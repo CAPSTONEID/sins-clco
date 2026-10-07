@@ -15,8 +15,14 @@ export const dur = (ms: number) => {
   return m ? `${m}분 ${s % 60}초` : `${s}초`
 }
 
-// 요약 전 임시 설명: 프롬프트 첫 줄 20자
-export const fallback = (text: string) => {
-  const line = text.trim().split('\n')[0] ?? ''
-  return line.length > 20 ? `${line.slice(0, 20)}…` : line || '작업'
+// 기본 최대 글자 수(… 앞까지)
+export const TITLE_MAX = 20
+
+// max 글자까지 남기고 잘렸으면 … 표시 (이모지·한글도 한 글자로 셈)
+export const clip = (text: string, max = TITLE_MAX) => {
+  const chars = [...text]
+  return chars.length > max ? `${chars.slice(0, max).join('')}…` : text
 }
+
+// 요약 전 임시 설명: 프롬프트 첫 줄
+export const fallback = (text: string) => clip(text.trim().split('\n')[0] ?? '') || '작업'
