@@ -1,1 +1,1 @@
-{ "name": "progress-pane", "version": "0.1.0", "description": "작업 진행 바와 렌더 진행을 한 창에 자동으로 표시", "types": "./types/index.d.ts" }
+{ "name": "progress-pane", "version": "0.1.0", "description": "작업 진행 바·렌더 진행·에이전트·서브에이전트 관제(종료·삭제)를 한 창에 자동으로 표시", "types": "./types/index.d.ts" }
