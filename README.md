@@ -35,6 +35,7 @@ SINS 프로젝트용 Claude Code, Codex, Hermes, Grok 스킬 패키지입니다.
 | `sins-lenis.skill` | `/sins-lenis` | HTML `</head>` 직전에 Lenis 부드러운 스크롤 스니펫(CSS·JS·`new Lenis({ autoRaf: true })`) 삽입, 이미 있으면 중복 삽입 없이 알림 (unpkg CDN·버전 1.3.23 핀 고정) |
 | `sins-fluent-korean.skill` | `/sins-fluent-korean` | 한국어 응답에서 조사·어미를 생략하지 않고 문장을 서술어로 완성하게 하여, 전보체 기계 한국어를 막는 문체 지침. 코드·주석·인용문은 제외. 원문 MIT: snflkd/fluent-korean |
 | `sins-palmierpro-cutedit.skill` | `/sins-palmierpro-cutedit` | PalmierPro MCP로 **현재 열려있는 프로젝트 타임라인을 직접 읽고 컷편집**. **단어를 지우는 게 아니라 말을 다듬는 작업**이므로 모든 삭제는 문장·문단 맥락 판정(룰 H)을 통과해야 한다 — 판단 단위는 단어/문장/문단 세 겹, 확정 전 **컷 후 남을 문장을 실제로 읽어 성분 결손·지시 대상·접속 대상을 검증**, 지시어(`이`·`이러한`)·접속사(`그래서`·`다만`)·열거 번호(`두번째는`)가 앞을 붙잡고 있으면 반복이라도 보류, **5초 이상 구간을 지운 뒤엔 문맥 재판정**(큰 컷은 뒷문장을 고아로 만들거나 없던 중복을 만든다), 문단 여는 담화표지(`자`·`그럼`·`마지막으로`)는 군소리가 아니라 구조 표지라 유지. 무음 삭제는 **완료 기준 4개**(실무음 0.6초↑ 0곳 · 타임라인 갭 0 · 무발화 클립 0 · 10프레임 미만 파편 0)를 충족할 때까지 문턱을 1.0→0.6→0.35→0.25초로 낮춰가며 **최대 5회 루프**, 여백은 0.15초로 두어 모든 공백에 0.30초 호흡을 남긴다. **반복·버벅임 판정은 반드시 편집 전 베이스라인 기준**(룰 G) — ASR이 반복 테이크를 클립 경계에서 병합·오라벨링해서 편집 후 트랜스크립트에는 반복이 **사라져 보인다**. 트랜스크립트에 안 잡히는 버벅임은 **간격 이상 스캔**(G-2)으로 찾고 **베이스라인 프레임 역산**(G-3) + `ripple_delete_ranges`로 처리. 단어 룰은 인덱스로 모아 `remove_words` **한 번에** 반영, `cutAggressiveness`는 **`balanced` 기본** (`tight`는 앞 단어 끝음절을 먹는다 — 잘리면 `set_clip_properties` + `move_clips`로 복구). 승인 표에는 **`컷 후 남을 문장` 열을 반드시 병기**하고 확정/추정 표를 분리 |
+| `sins-hyp-video-creat.skill` | `/sins-hyp-video-creat` | **HyperFrames 앱 채팅창에서 호출**하는 컷편집 + 영상 제작 스킬 (MCP 없음 — `npx hyperframes` CLI·ffmpeg만 사용). `sins-palmierpro-cutedit`의 컷 룰(문맥 판정 H·베이스라인 반복 전수검사 G·군소리/버벅임/반복 발화/외국어 구간)을 그대로 쓰되, 원본을 자르지 않는 **비파괴 편집** — 원본 1회 Whisper 전사(소스 시각, 단어 start·end 포함)로 모든 판정을 하고 컷은 `cuts.json` 하나에 모아 `scripts/cutlist.py build`로 `<video>` 클립(data-start/data-duration/data-media-start)을 재생성한다. 무음은 **트랜스크립트 공백 × ffmpeg silencedetect 교차**로 확정분/의심분(숨은 발화)을 분리하고, Whisper가 군소리를 지워 적는 함정(룰 W)은 숨은 발화 스캔으로 보완. 승인 표는 `컷 후 남을 문장` 병기·확정/추정 분리. **컷 확정 후 다음 단계로 컷 내레이션을 입력으로 `/sins-video-consource` 옵션 2**(페이퍼 콜라주·맥 파인더창·네오 브루탈리즘·다이내믹 타일 창, 롱폼 2K + 숏폼 2편)를 이어서 실행 |
 | `sins-mycontentsmake.skill` | `/sins-mycontentsmake` | 유튜브 영상 콘텐츠 자산(썸네일 프롬프트·제목·스크립트·영상설명/캡션/태그·썸네일이미지·카드뉴스)을 한 번에 제작해 노션 하위 **6페이지**로 발행하는 통합 워크플로우 (작업 전 노션 부모 링크 강제 확보→6페이지 생성(번호 이모지=아이콘)→스크립트 먼저 작성 후 나머지 병렬 팬아웃→최종 글 검수는 `/humanize-korean`). **슬라이드 페이지는 생성하지 않음**. **제목 12–20자, 썸네일 제목 6–12자**. **카드뉴스(6)는 빈 페이지+빈 코드블럭만 생성**(하위 스킬 자동 호출 안 함). **해시태그·키워드 태그 생성 금지** |
 
 ## 함께 설치되는 외부 오픈소스 스킬
@@ -864,6 +865,66 @@ Cursor는 `~/.cursor/mcp.json` 에 동일 URL을 등록합니다.
 
 편집 대상은 **현재 열려있는 프로젝트**입니다. 파일 경로를 넘기지 않습니다.
 
+### sins-hyp-video-creat (HyperFrames 컷편집 + 영상 제작)
+
+Claude Code:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-hyp-video-creat.skill \
+  -o /tmp/sins-hyp-video-creat.skill
+mkdir -p ~/.claude/skills/sins-hyp-video-creat
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-hyp-video-creat.skill').extractall(os.path.expanduser('~/.claude/skills/sins-hyp-video-creat'))
+PY
+```
+
+Codex:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-hyp-video-creat.skill \
+  -o /tmp/sins-hyp-video-creat.skill
+mkdir -p ~/.codex/skills/sins-hyp-video-creat
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-hyp-video-creat.skill').extractall(os.path.expanduser('~/.codex/skills/sins-hyp-video-creat'))
+PY
+```
+
+Hermes:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-hyp-video-creat.skill \
+  -o /tmp/sins-hyp-video-creat.skill
+mkdir -p ~/.hermes/skills/sins-hyp-video-creat
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-hyp-video-creat.skill').extractall(os.path.expanduser('~/.hermes/skills/sins-hyp-video-creat'))
+PY
+```
+
+Grok:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-hyp-video-creat.skill \
+  -o /tmp/sins-hyp-video-creat.skill
+mkdir -p ~/.grok/skills/sins-hyp-video-creat
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-hyp-video-creat.skill').extractall(os.path.expanduser('~/.grok/skills/sins-hyp-video-creat'))
+PY
+```
+
+**사전 준비 — MCP 연결 없음**
+
+HyperFrames 앱 채팅창에서 `/sins-hyp-video-creat`를 입력해 실행합니다. 대상은 **현재 열려있는 HyperFrames 프로젝트**입니다.
+
+| 필요 | 확인 |
+|------|------|
+| HyperFrames CLI | `npx hyperframes doctor` |
+| ffmpeg / ffprobe | `ffmpeg -version` |
+| 2부 영상 제작 | `/sins-video-consource` 설치 (옵션 2 규칙을 읽어 실행) |
+
 ## 설치 확인
 
 Claude Code:
@@ -911,6 +972,7 @@ Codex에서는 `@` 파일 참조로 스킬을 불러옵니다.
 | 스킬 | 추가 요구사항 |
 |------|---------------|
 | `/sins-palmierpro-cutedit` | [PalmierPro](https://github.com/palmier-io/palmier-pro) 실행 중 + MCP 등록 (macOS 26 Tahoe · Apple Silicon) |
+| `/sins-hyp-video-creat` | [HyperFrames](https://github.com/heygen-com/hyperframes) CLI + ffmpeg · 2부 영상 제작은 `/sins-video-consource` 필요 |
 
 ---
 
