@@ -36,7 +36,7 @@ MODEL = "jev-latest"
 
 # 라우팅 레인 — 레인 ID: (모델, effort, 설명)
 LANES = {
-    "SMALL": ("Haiku 4.5", "low", "짧은 단일 산출물, 정해진 규칙 적용만 필요"),
+    "SMALL": ("Haiku 5.5", "low", "짧은 단일 산출물, 정해진 규칙 적용만 필요"),
     "MEDIUM": ("Sonnet 5.5", "medium", "산출물 여러 개, 규칙 적용 위주, 창작 판단 적음"),
     "HIGH": ("Opus 5.5", "medium", "산출물 다수, 시각·창작 판단 많음, 긴 입력"),
     "ESCALATE": ("Fable 5.1", "high", "반복 실패, 새 설계, 판단 불확실"),
