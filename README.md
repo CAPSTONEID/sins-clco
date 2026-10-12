@@ -26,7 +26,7 @@ SINS 프로젝트용 Claude Code, Codex, Hermes, Grok 스킬 패키지입니다.
 | `sins-marketing-team.skill` | `/sins-marketing-team` | 마케팅 전략 팀 구성 및 실행 |
 | `sins-sidenote-pass.skill` | `/sins-sidenote-pass` | SideNotes 고정 폴더에 새 메모 저장 및 기본 접기 처리 |
 | `sins-video-consource.skill` | `/sins-video-consource` | 대본·오디오·영상·PPTX로 스크립트 / 영상 / 스크립트+HTML을 제작한다. 영상은 페이퍼 콜라주·맥 파인더창·네오 브루탈리즘·다이내믹 타일 창 중 선택하고 사용자 지정 60/30/10 컬러를 유지한다. 본문은 문서·아이콘 설명·흐름도·비교·수치·타임라인 등 13종에서 다양하게 구성하며 커서 동선을 변주한다. 연결선은 노드 중심에 정렬하고 문서는 단일 구분선과 세로 목록을 기본으로 검수한다. 롱폼 2560×1440, 숏폼 1080×1920 2편. 전사 자막은 기본 생략하되 사용자의 명시적 요청이 우선한다. 실제 렌더 프레임과 재생을 검수한다. |
-| `sins-wiki-pass.skill` | `/sins-wiki-pass` | Notion 위키 DB(`LLM Wiki Index`)에만 저장 (옵시디언 쓰기 없음, 수동 발동, 타입 6종 + 카테고리 8종 고정 선택, 제목에 `영상 - `·`프롬프트 - ` 등 종류 프리픽스 자동) |
+| `sins-wiki-pass.skill` | `/sins-wiki-pass` | Notion 위키 DB(`LLM Wiki Index`)에만 저장 (옵시디언 쓰기 없음, 수동 발동, 타입 6종 + 카테고리 8종 고정 선택, 제목에 `영상 - `·`프롬프트 - ` 등 종류 프리픽스 자동, 저장 후 원본 링크 캡처(없으면 제목 카드)를 본문 맨 위 이미지로 삽입 + URL 속성 채움, 제목은 프리픽스·공백 포함 29자 이내로 자동 점검) |
 | `sins-llmwiki-auto.skill` | `/sins-llmwiki-auto` | 질문·답변·업무·제작 내용을 **자동으로** LLM 위키에 정리·기록하는 상시 발동 정책 (sins-wiki-pass 연동) |
 | `sins-loopass-setup.skill` | `/sins-loopass-setup` | 루프 엔지니어링(자율 AI 에이전트 루프)을 6단계 인터뷰로 설계·세팅하는 위저드 (트리거→행동→검증→정지조건→아키텍처→산출, 단계별 스킬·MCP 추천 + 실행 가능한 루프 스킬 자동 생성) |
 | `sins-higgsfield.skill` | `/sins-higgsfield` | 힉스필드(Higgsfield) MCP로 이미지·영상을 9스텝 선택카드로 단계별 생성 (유형→참고이미지→프롬프트→보강→모델/Soul 캐릭터→화면비→퀄리티→영상 길이·오디오→갯수→get_cost 비용확인→확정, 하네스 없는 순수 위저드) |
