@@ -11,7 +11,8 @@ const EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'] as const
 
 // 모델 id → 표시 이름: claude-opus-5-5 → Opus 5.5, claude-haiku-4-5-20251001 → Haiku 4.5
 export const prettyModel = (id: string) => {
-  const parts = id.replace(/\[.*\]$/, '').replace(/^claude-/, '').split('-').filter(p => !/^\d{8}$/.test(p))
+  // 빈 세그먼트(claude--opus 등)는 버림: p[0] 이 undefined 라 toUpperCase 에서 던지는 것 방지
+  const parts = id.replace(/\[.*\]$/, '').replace(/^claude-/, '').split('-').filter(p => p && !/^\d{8}$/.test(p))
   const name = parts.filter(p => !/^\d+$/.test(p)).map(p => p[0]!.toUpperCase() + p.slice(1)).join(' ')
   const ver = parts.filter(p => /^\d+$/.test(p)).join('.')
   return [name || id, ver].filter(Boolean).join(' ')
@@ -35,9 +36,11 @@ const mix = (a: readonly number[], b: readonly number[], t: number) =>
   '#' + a.map((v, i) => Math.round(v + ((b[i] ?? v) - v) * t).toString(16).padStart(2, '0')).join('')
 
 // 초기화까지 남은 시간 → "1일 19시간" / "4시간 46분"
-const until = (iso: string | undefined, now: number) => {
-  if (!iso) return ''
-  const min = Math.max(0, Math.round((Date.parse(iso) - now) / 60000))
+export const until = (iso: string | undefined, now: number) => {
+  // 파싱 실패(잘못된 날짜 문자열 등)면 NaN분 대신 빈 문자열
+  const t = iso ? Date.parse(iso) : NaN
+  if (!Number.isFinite(t)) return ''
+  const min = Math.max(0, Math.round((t - now) / 60000))
   const d = Math.floor(min / 1440)
   const h = Math.floor((min % 1440) / 60)
   const m = min % 60
@@ -68,6 +71,12 @@ export const register: Register = on => {
     await update($, snap, () => toSnap(u.context, u.rateLimits))
     const id = await $.session.model()
     await update($, model, m => ({ ...m, name: prettyModel(id) }))
+    // 1분마다 다시 읽어 그림 → 턴 사이에도 "N분 후 초기화" 카운트다운이 흐름
+    // ponytail: 한도 값은 이 세션의 API 응답 기준, 다른 세션(하이퍼프레임 등) 사용분은 이 세션이 다음 요청을 보내야 반영
+    $.clock.every(60_000, async () => {
+      const u = await $.session.usage()
+      await update($, snap, () => toSnap(u.context, u.rateLimits))
+    })
     return r
   })
 

@@ -14,14 +14,18 @@ export const parseAgents = (json: string, self: string): Session[] => {
   }
   if (!Array.isArray(list)) return []
   return list.flatMap((a: Record<string, unknown>) => {
-    if (typeof a?.id !== 'string') return []
+    // 대화형 세션은 id·state 없이 sessionId·status 만 나옴 → 그걸로 대체
+    const id = typeof a?.id === 'string' ? a.id : typeof a?.sessionId === 'string' ? a.sessionId : undefined
+    if (!id) return []
     const cwd = typeof a.cwd === 'string' ? a.cwd : ''
-    const state = typeof a.state === 'string' ? a.state : '?'
+    const state = typeof a.state === 'string' ? a.state : typeof a.status === 'string' ? a.status : '?'
     return [
       {
-        id: a.id,
-        name: typeof a.name === 'string' && a.name !== a.id ? a.name : '(이름 없음)',
-        dir: cwd.split('/').pop() || cwd,
+        id,
+        pid: typeof a.pid === 'number' ? a.pid : undefined,
+        name: typeof a.name === 'string' && a.name.trim() !== '' && a.name !== id ? a.name : '(이름 없음)',
+        // 끝 슬래시가 있어도 마지막 폴더 이름만
+        dir: cwd.split('/').filter(Boolean).pop() || cwd,
         kind: typeof a.kind === 'string' ? a.kind : '',
         state,
         startedAt: typeof a.startedAt === 'number' ? a.startedAt : 0,
@@ -34,9 +38,20 @@ export const parseAgents = (json: string, self: string): Session[] => {
 
 // 시작 후 경과 — "방금" / "12분" / "3시간 5분" / "2일"
 export const age = (ms: number): string => {
+  if (!Number.isFinite(ms)) return '?'
   const m = Math.floor(Math.max(0, ms) / 60000)
   if (m < 1) return '방금'
   if (m < 60) return `${m}분`
   const h = Math.floor(m / 60)
   return h < 24 ? `${h}시간 ${m % 60}분` : `${Math.floor(h / 24)}일`
 }
+
+// 숨긴 세션 id 목록 기준으로 [보이는 세션, 숨긴 세션] 분리. 이 세션은 항상 보이는 쪽
+export const splitHidden = (rows: Session[], hidden: string[]): [Session[], Session[]] => [
+  rows.filter(x => x.isSelf || !hidden.includes(x.id)),
+  rows.filter(x => !x.isSelf && hidden.includes(x.id)),
+]
+
+// 목록에 있으면 빼고, 없으면 넣음
+export const toggle = (list: string[], id: string): string[] =>
+  list.includes(id) ? list.filter(x => x !== id) : [...list, id]

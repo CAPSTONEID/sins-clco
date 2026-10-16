@@ -137,7 +137,7 @@ export const register: Register = on => {
 
     if (ran.deny === undefined && ran.isError !== true) {
       const id = ran.result.task.id
-      await update($, tasks, map => ({ ...map, [id]: 'pending' }))
+      await update($, tasks, map => ({ ...map, [id]: 'pending' as TaskStatus }))
       await update($, isHidden, () => false)
     }
 
@@ -150,6 +150,9 @@ export const register: Register = on => {
     if (ran.deny === undefined && ran.isError !== true && e.status !== undefined) {
       const { status, taskId } = e
       await update($, tasks, map => {
+        // 모르는 id 는 무시: 없는 작업을 유령 항목으로 만들지 않는다
+        if (!(taskId in map)) return map
+
         const { [taskId]: _gone, ...rest } = map
 
         return status === 'deleted' ? rest : { ...rest, [taskId]: status }
@@ -163,9 +166,13 @@ export const register: Register = on => {
     const ran = await next(e)
 
     if (ran.deny === undefined && ran.isError !== true) {
-      const map: Record<string, TaskStatus> = {}
-      e.todos.forEach((todo, i) => (map[`t${i}`] = todo.status))
-      await update($, tasks, () => map)
+      // TodoWrite 는 자기 항목('todo:' 접두사)만 통째로 교체: TaskCreate/TaskUpdate 항목은 유지
+      const todos: Record<string, TaskStatus> = {}
+      e.todos.forEach((todo, i) => (todos[`todo:${i}`] = todo.status))
+      await update($, tasks, map => ({
+        ...Object.fromEntries(Object.entries(map).filter(([k]) => !k.startsWith('todo:'))),
+        ...todos,
+      }))
       await update($, isHidden, () => false)
     }
 

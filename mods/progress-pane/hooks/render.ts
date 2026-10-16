@@ -65,4 +65,4 @@ export const average = (list: number[] | undefined): number | undefined =>
 // 평균 소요 시간 대비 진행률(%) — 기록 없으면 undefined, 끝나기 전엔 99 에서 멈춤
 // ponytail: 실제 진행률이 아니라 과거 평균 기준 추정치
 export const percent = (seconds: number, avg: number | undefined): number | undefined =>
-  avg === undefined || avg <= 0 ? undefined : Math.min(99, Math.floor((seconds / avg) * 100))
+  avg === undefined || avg <= 0 ? undefined : Math.min(99, Math.floor((seconds * 100) / avg))

@@ -26,5 +26,8 @@ test('ps 출력에서 렌더 프로세스만 추리고 경과 시간을 초로 �
   // 평균 대비 진행률: 기록 없으면 undefined, 평균 넘어도 99 에서 멈춤
   expect(percent(30, 120)).toBe(25)
   expect(percent(500, 120)).toBe(99)
+  // 부동소수점 오차로 1% 낮게 나오지 않음 (29/100*100 = 28.999…)
+  expect(percent(29, 100)).toBe(29)
+  expect(percent(57, 100)).toBe(57)
   expect(percent(30, undefined)).toBeUndefined()
 })
