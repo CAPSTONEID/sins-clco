@@ -31,3 +31,16 @@ test('대상 작업 전 상태로: 그 뒤 작업 포함, 경로마다 가장 �
   expect(again?.ids).toEqual(['B', 'A'])
   expect(planRollback(hist, 'zzz')).toBeUndefined()
 })
+
+test('사본 없는 파일(1MB 초과 등)은 나중 작업 사본으로 덮지 않고 건너뜀', async () => {
+  // A 가 큰 파일을 고침(사본 없음), 그 뒤 B 가 같은 파일을 고침(사본 있음)
+  const hist = [
+    run('B', [{ path: '/p/big.bin', snap: '/s/B-big' }]),
+    run('A', [{ path: '/p/big.bin', snap: null, skip: true }]),
+  ]
+  const plan = planRollback(hist, 'A')
+  expect([...(plan?.restore ?? [])]).toEqual([])
+  expect(plan?.skipped).toEqual(['/p/big.bin'])
+  // B 만 되돌리면 B 사본으로 정상 복원
+  expect([...(planRollback(hist, 'B')?.restore ?? [])]).toEqual([['/p/big.bin', '/s/B-big']])
+})

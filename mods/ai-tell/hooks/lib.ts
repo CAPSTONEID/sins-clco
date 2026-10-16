@@ -16,7 +16,8 @@ const RULES: [string, string, number, RegExp, number][] = [
   ['A-20', '~되고/지고 있다', 1, /[되지]고 있[다습]/g, 3],
   ['A-21', '단순한 X를 넘어', 1, /단순[한히] [^.\n]{1,25}넘어/g, 1],
   ['A-24', '더 이상 ~않다', 1, /더 이상 [^.\n]{0,20}(않|아니|없)/g, 2],
-  ['C-5', '이모지', 2, /\p{Extended_Pictographic}/gu, 3],
+  // 이모지 표시형만 셈(©™®✔ 제외). 국기·ZWJ·피부톤·VS16 조합은 하나로 묶음
+  ['C-5', '이모지', 2, /\p{RI}{2}|\p{Emoji_Presentation}(?:\u200D\p{Emoji_Presentation}|\uFE0F|\p{Emoji_Modifier})*/gu, 3],
   ['C-8', '~가 아니라 대구', 2, /(것이|[가이]) 아니라/g, 2],
   ['C-11', '연결어미 뒤 쉼표', 2, /(고|며|지만|면서|아서|어서)\s*,/g, 3],
   ['D-1', '결산 표현(따라서·결론적으로)', 2, /결론적으로|따라서|이를 통해|그러므로|요약하면|정리하자면/g, 4],
@@ -33,11 +34,12 @@ const RULES: [string, string, number, RegExp, number][] = [
 ]
 
 // 코드 블록·HTML 태그·URL 은 빼고 셈
-const clean = (text: string): string =>
+// ponytail: 들여쓰기 코드 블록은 안 지움(산문 목록도 들여쓰므로) — 그 안의 한글은 그대로 셈
+export const clean = (text: string): string =>
   text
-    .replace(/```[\s\S]*?```/g, ' ')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/https?:\/\/\S+/g, ' ')
+    .replace(/```[\s\S]*?```|~~~[\s\S]*?~~~/g, ' ')
+    .replace(/<\/?[A-Za-z][\w-]*(?:\s[^<>\n]*)?\/?>/g, ' ') // 태그 모양만: 낱개 `<`(x<y)·부등식(3<5, 7>2)은 그대로 둠
+    .replace(/https?:\/\/[^\s)\]<>"'가-힣]+/g, ' ') // 공백·괄호·꺾쇠·따옴표·한글에서 멈춤
 
 export const hangul = (text: string): number => (text.match(/[가-힣]/g) ?? []).length
 

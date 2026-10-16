@@ -2,19 +2,19 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
 import type { Report } from '../types'
-import { hangul, score } from './lib'
+import { clean, hangul, score } from './lib'
 
 const PANE = 'ai-tell'
 const last = atom({ plugin: 'ai-tell', key: 'last' } as const, null as Report | null)
 // 검사 대상: 글 파일만
 const TEXT_FILE = /\.(md|txt)$/i
-// 한글 300자 미만은 점수가 흔들려서 건너뜀
+// 한글 300자 미만은 점수가 흔들려서 건너뜀 (score 와 같은 clean 본문 기준)
 const MIN_CHARS = 300
 
 // 파일을 읽어 점수 계산 → 상태 갱신·알림, 한글이 적으면 undefined
 async function check($: EngineInterface, path: string, isQuiet: boolean): Promise<Report | undefined> {
   const text = await $.fs.read(path)
-  if (typeof text !== 'string' || hangul(text) < MIN_CHARS) return undefined
+  if (typeof text !== 'string' || hangul(clean(text)) < MIN_CHARS) return undefined
   const report = score(path, text)
   await update($, last, () => report)
   if (!isQuiet || report.grade !== '낮음') {

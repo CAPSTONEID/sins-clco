@@ -26,6 +26,43 @@ for (const surface of ['desktop', 'vscode'] as const) {
     expect(done).toContain('Done')
   })
 
+  test(`TodoWrite keeps TaskCreate tasks instead of replacing them (${surface})`, async ($, on) => {
+    let n = 0
+    on('tool.call', { tool: 'TaskCreate' }, () => ({ result: { task: { id: String(++n), subject: 's' } } }) as never)
+    on('tool.call', { tool: 'TodoWrite' }, () => ({ result: {} }) as never)
+
+    const drawn = async () => JSON.stringify(
+      await (await $.ui.mount({ plugin: 'task-progress-band', surface, component: 'AbovePrompt', props: PROPS })).drawn(),
+    )
+    const todo = (status: 'pending' | 'completed') => ({ content: 'x', activeForm: 'x', status })
+
+    await $.tool.call({ tool: 'TaskCreate', subject: 'a', description: 'a' })
+    await $.tool.call({ tool: 'TaskCreate', subject: 'b', description: 'b' })
+    await $.tool.call({ tool: 'TodoWrite', todos: [todo('completed'), todo('completed')] })
+    // TaskCreate 2건(pending) + todo 2건(completed) = 2/4. 예전엔 todo 만 남아 Done 으로 보였다
+    const mixed = await drawn()
+    expect(mixed).toContain('2/4 완료')
+    expect(mixed).not.toContain('Done')
+
+    // TodoWrite 를 다시 쓰면 todo 항목만 교체되고 TaskCreate 항목은 그대로
+    await $.tool.call({ tool: 'TodoWrite', todos: [todo('pending')] })
+    expect(await drawn()).toContain('0/3 완료')
+  })
+
+  test(`TaskUpdate on an unknown id is ignored (${surface})`, async ($, on) => {
+    on('tool.call', { tool: 'TaskCreate' }, () => ({ result: { task: { id: '1', subject: 's' } } }) as never)
+    on('tool.call', { tool: 'TaskUpdate' }, () => ({ result: { success: true, taskId: '9', updatedFields: ['status'] } }) as never)
+
+    const drawn = async () => JSON.stringify(
+      await (await $.ui.mount({ plugin: 'task-progress-band', surface, component: 'AbovePrompt', props: PROPS })).drawn(),
+    )
+
+    await $.tool.call({ tool: 'TaskCreate', subject: 'a', description: 'a' })
+    await $.tool.call({ tool: 'TaskUpdate', taskId: '9', status: 'completed' })
+    // 없는 id 9 는 유령 항목이 되지 않는다: 여전히 0/1
+    expect(await drawn()).toContain('0/1 완료')
+  })
+
   test(`usage rows show 5h and 7d percent with time to reset (${surface})`, async ($, on) => {
     const t = Date.UTC(2026, 9, 6, 12)
     mock.clock(on, { now: t })
