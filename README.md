@@ -37,6 +37,9 @@ SINS 프로젝트용 Claude Code, Codex, Hermes, Grok 스킬 패키지입니다.
 | `sins-palmierpro-cutedit.skill` | `/sins-palmierpro-cutedit` | PalmierPro MCP로 **현재 열려있는 프로젝트 타임라인을 직접 읽고 컷편집**. **단어를 지우는 게 아니라 말을 다듬는 작업**이므로 모든 삭제는 문장·문단 맥락 판정(룰 H)을 통과해야 한다 — 판단 단위는 단어/문장/문단 세 겹, 확정 전 **컷 후 남을 문장을 실제로 읽어 성분 결손·지시 대상·접속 대상을 검증**, 지시어(`이`·`이러한`)·접속사(`그래서`·`다만`)·열거 번호(`두번째는`)가 앞을 붙잡고 있으면 반복이라도 보류, **5초 이상 구간을 지운 뒤엔 문맥 재판정**(큰 컷은 뒷문장을 고아로 만들거나 없던 중복을 만든다), 문단 여는 담화표지(`자`·`그럼`·`마지막으로`)는 군소리가 아니라 구조 표지라 유지. 무음 삭제는 **완료 기준 4개**(실무음 0.6초↑ 0곳 · 타임라인 갭 0 · 무발화 클립 0 · 10프레임 미만 파편 0)를 충족할 때까지 문턱을 1.0→0.6→0.35→0.25초로 낮춰가며 **최대 5회 루프**, 여백은 0.15초로 두어 모든 공백에 0.30초 호흡을 남긴다. **반복·버벅임 판정은 반드시 편집 전 베이스라인 기준**(룰 G) — ASR이 반복 테이크를 클립 경계에서 병합·오라벨링해서 편집 후 트랜스크립트에는 반복이 **사라져 보인다**. 트랜스크립트에 안 잡히는 버벅임은 **간격 이상 스캔**(G-2)으로 찾고 **베이스라인 프레임 역산**(G-3) + `ripple_delete_ranges`로 처리. 단어 룰은 인덱스로 모아 `remove_words` **한 번에** 반영, `cutAggressiveness`는 **`balanced` 기본** (`tight`는 앞 단어 끝음절을 먹는다 — 잘리면 `set_clip_properties` + `move_clips`로 복구). 승인 표에는 **`컷 후 남을 문장` 열을 반드시 병기**하고 확정/추정 표를 분리 |
 | `sins-hyp-video-creat.skill` | `/sins-hyp-video-creat` | **HyperFrames 앱 채팅창에서 호출**하는 컷편집 + 영상 제작 스킬 (MCP 없음 — `npx hyperframes` CLI·ffmpeg만 사용). `sins-palmierpro-cutedit`의 컷 룰(문맥 판정 H·베이스라인 반복 전수검사 G·군소리/버벅임/반복 발화/외국어 구간)을 그대로 쓰되, 원본을 자르지 않는 **비파괴 편집** — 원본 1회 Whisper 전사(소스 시각, 단어 start·end 포함)로 모든 판정을 하고 컷은 `cuts.json` 하나에 모아 `scripts/cutlist.py build`로 `<video>` 클립(data-start/data-duration/data-media-start)을 재생성한다. 무음은 **트랜스크립트 공백 × ffmpeg silencedetect 교차**로 확정분/의심분(숨은 발화)을 분리하고, Whisper가 군소리를 지워 적는 함정(룰 W)은 숨은 발화 스캔으로 보완. 승인 표는 `컷 후 남을 문장` 병기·확정/추정 분리. **컷 확정 후 다음 단계로 컷 내레이션을 입력으로 `/sins-video-consource` 옵션 2**(페이퍼 콜라주·맥 파인더창·네오 브루탈리즘·다이내믹 타일 창, 롱폼 2K + 숏폼 2편)를 이어서 실행 |
 | `sins-mycontentsmake.skill` | `/sins-mycontentsmake` | 유튜브 영상 콘텐츠 자산(썸네일 프롬프트·제목·스크립트·영상설명/캡션/태그·썸네일이미지·카드뉴스)을 한 번에 제작해 노션 하위 **6페이지**로 발행하는 통합 워크플로우 (작업 전 노션 부모 링크 강제 확보→6페이지 생성(번호 이모지=아이콘)→스크립트 먼저 작성 후 나머지 병렬 팬아웃→최종 글 검수는 `/humanize-korean`). **슬라이드 페이지는 생성하지 않음**. **제목 12–20자, 썸네일 제목 6–12자**. **카드뉴스(6)는 빈 페이지+빈 코드블럭만 생성**(하위 스킬 자동 호출 안 함). **해시태그·키워드 태그 생성 금지** |
+| `sins-plan.skill` | `/sins-plan` | 광고 대행사용 **마케팅 기획 논의** 워크플로우. 첨부자료(PDF·PPT·엑셀·워드·이미지·URL·노션·구글 드라이브·캡슐노트 녹음)를 읽고 요약 → 빠진 정보 질문 → (선택) 시장조사·고객 반응 조사(서브에이전트 병렬) → 방향안 2~3개 제시·선택 → 기획 브리프(`plans/<…>/brief.md`) 확정까지 진행. 모든 주장에 `[자료]`·`[조사]`·`[가설]` 표시. 확정 후 캐러셀이면 새 세션에서 `/sins-autoca`, 릴스·영상이면 `/sins-vplanma`를 자동 실행 |
+| `sins-autoca.skill` | `/sins-autoca` | 광고 대행사용 **캐러셀(카드뉴스) 자동 제작** 워크플로우. 메인 에이전트가 선택 카드 3장(기획·디자인·레이아웃/이미지)으로 모든 선택을 한 번에 받고, 원고·윤문(humanize 3종)·디자인·이미지(힉스필드, 배경은 recraft 벡터)·HTML 렌더·Figma 전송·최종 검수(최대 3회)를 각각 다른 서브에이전트가 수행. 통일/변경 디자인(변경 강도 1~5), 본문 마침표 줄바꿈 |
+| `sins-vplanma.skill` | `/sins-vplanma` | 광고 대행사용 **영상 스토리보드 → 영상 생성** 워크플로우. 페르소나·기획 방향 → 영상 스타일(톤앤매너·화면비·컷 수·길이) 선택 → 힉스필드로 인물 레퍼런스·엘리먼트 등록 후 키 비주얼·컷 이미지 생성 → HTML 스토리보드 시트(히어로·번호 컷 그리드·브랜드 패널) 렌더 → 컷 단위 검수·수정 → 확정 컷을 시작 프레임으로 컷별 영상 생성·가편집본. 크레딧 단계는 비용 확인 후 진행 |
 
 ## 함께 설치되는 외부 오픈소스 스킬
 
@@ -925,6 +928,182 @@ HyperFrames 앱 채팅창에서 `/sins-hyp-video-creat`를 입력해 실행합�
 | ffmpeg / ffprobe | `ffmpeg -version` |
 | 2부 영상 제작 | `/sins-video-consource` 설치 (옵션 2 규칙을 읽어 실행) |
 
+### sins-plan (마케팅 기획 논의 → 캐러셀·영상 인계)
+
+Claude Code:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-plan.skill \
+  -o /tmp/sins-plan.skill
+mkdir -p ~/.claude/skills/sins-plan
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-plan.skill').extractall(os.path.expanduser('~/.claude/skills/sins-plan'))
+PY
+```
+
+Codex:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-plan.skill \
+  -o /tmp/sins-plan.skill
+mkdir -p ~/.codex/skills/sins-plan
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-plan.skill').extractall(os.path.expanduser('~/.codex/skills/sins-plan'))
+PY
+```
+
+Hermes:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-plan.skill \
+  -o /tmp/sins-plan.skill
+mkdir -p ~/.hermes/skills/sins-plan
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-plan.skill').extractall(os.path.expanduser('~/.hermes/skills/sins-plan'))
+PY
+```
+
+Grok:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-plan.skill \
+  -o /tmp/sins-plan.skill
+mkdir -p ~/.grok/skills/sins-plan
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-plan.skill').extractall(os.path.expanduser('~/.grok/skills/sins-plan'))
+PY
+```
+
+**사전 준비**
+
+| 필요 | 용도 |
+|------|------|
+| `insane-search` 스킬 · `YOUTUBE_API_KEY` | 시장조사·고객 반응 조사 (선택) |
+| 노션·구글 드라이브·캡슐노트 커넥터, pptx·xlsx·docx·pdf 스킬 | 자료 종류별 읽기 (선택) |
+| `/sins-autoca`, `/sins-vplanma` | 확정한 기획을 캐러셀·영상으로 이어갈 때 |
+
+새 세션 자동 실행은 Claude 데스크톱 앱(Code 탭)에서 동작합니다. 터미널에서는 실행할 명령을 대신 보여줍니다.
+### sins-autoca (캐러셀 자동 제작)
+
+Claude Code:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-autoca.skill \
+  -o /tmp/sins-autoca.skill
+mkdir -p ~/.claude/skills/sins-autoca
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-autoca.skill').extractall(os.path.expanduser('~/.claude/skills/sins-autoca'))
+PY
+```
+
+Codex:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-autoca.skill \
+  -o /tmp/sins-autoca.skill
+mkdir -p ~/.codex/skills/sins-autoca
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-autoca.skill').extractall(os.path.expanduser('~/.codex/skills/sins-autoca'))
+PY
+```
+
+Hermes:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-autoca.skill \
+  -o /tmp/sins-autoca.skill
+mkdir -p ~/.hermes/skills/sins-autoca
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-autoca.skill').extractall(os.path.expanduser('~/.hermes/skills/sins-autoca'))
+PY
+```
+
+Grok:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-autoca.skill \
+  -o /tmp/sins-autoca.skill
+mkdir -p ~/.grok/skills/sins-autoca
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-autoca.skill').extractall(os.path.expanduser('~/.grok/skills/sins-autoca'))
+PY
+```
+
+**사전 준비**
+
+| 필요 | 확인 |
+|------|------|
+| 힉스필드 MCP | 이미지 생성 (배경 recraft 벡터 + 본문 이미지) |
+| Figma MCP | 편집 가능한 레이어로 전송 (없으면 PNG까지) |
+| `python3` + `playwright`(Chromium), macOS `sips`, `curl` | HTML → PNG 렌더, 이미지 변환 |
+| `/humanize-korean` + humanize 에이전트 3종 | 원고·최종 문구 윤문 검수 |
+
+작업 폴더에 `core/`·`themes/`·`tones/`·`personas/`가 없으면 스킬의 `assets/`에서 자동으로 복사합니다.
+### sins-vplanma (영상 스토리보드 → 영상 생성)
+
+Claude Code:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-vplanma.skill \
+  -o /tmp/sins-vplanma.skill
+mkdir -p ~/.claude/skills/sins-vplanma
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-vplanma.skill').extractall(os.path.expanduser('~/.claude/skills/sins-vplanma'))
+PY
+```
+
+Codex:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-vplanma.skill \
+  -o /tmp/sins-vplanma.skill
+mkdir -p ~/.codex/skills/sins-vplanma
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-vplanma.skill').extractall(os.path.expanduser('~/.codex/skills/sins-vplanma'))
+PY
+```
+
+Hermes:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-vplanma.skill \
+  -o /tmp/sins-vplanma.skill
+mkdir -p ~/.hermes/skills/sins-vplanma
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-vplanma.skill').extractall(os.path.expanduser('~/.hermes/skills/sins-vplanma'))
+PY
+```
+
+Grok:
+
+```bash
+curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-vplanma.skill \
+  -o /tmp/sins-vplanma.skill
+mkdir -p ~/.grok/skills/sins-vplanma
+python3 - <<'PY'
+import os, zipfile
+zipfile.ZipFile('/tmp/sins-vplanma.skill').extractall(os.path.expanduser('~/.grok/skills/sins-vplanma'))
+PY
+```
+
+**사전 준비**
+
+| 필요 | 확인 |
+|------|------|
+| 힉스필드 MCP | 컷 이미지·엘리먼트·영상 생성 |
+| `python3` + `playwright`(Chromium), `curl`, macOS `sips` | 스토리보드 시트 렌더 |
+| `ffmpeg` (선택) | 가편집본 이어붙이기·영상 검수 |
 ## 설치 확인
 
 Claude Code:
@@ -973,6 +1152,8 @@ Codex에서는 `@` 파일 참조로 스킬을 불러옵니다.
 |------|---------------|
 | `/sins-palmierpro-cutedit` | [PalmierPro](https://github.com/palmier-io/palmier-pro) 실행 중 + MCP 등록 (macOS 26 Tahoe · Apple Silicon) |
 | `/sins-hyp-video-creat` | [HyperFrames](https://github.com/heygen-com/hyperframes) CLI + ffmpeg · 2부 영상 제작은 `/sins-video-consource` 필요 |
+| `/sins-autoca` | 힉스필드 MCP + Figma MCP · `playwright`(Chromium) · humanize-korean |
+| `/sins-vplanma` | 힉스필드 MCP · `playwright`(Chromium) · ffmpeg(선택) |
 
 ---
 
