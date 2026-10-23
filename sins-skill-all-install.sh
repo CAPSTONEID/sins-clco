@@ -294,6 +294,30 @@ install_external_skills() {
     fk_dir="$(clone_external_repo fluent-korean https://github.com/snflkd/fluent-korean.git)"
     mkdir -p "$HOME/.claude/output-styles"
     cp "$fk_dir"/plugins/fluent-korean/output-styles/*.md "$HOME/.claude/output-styles/"
+
+    # GEO-SEO — AI 검색(ChatGPT·Perplexity·Gemini·AI Overviews) 최적화 감사 스킬 묶음(/geo + geo-* 15개 + 에이전트 5개).
+    # upstream install.sh가 ~/.claude 경로에 스킬·에이전트를 깔고 Python 3.10+ 전용 venv(~/.claude/skills/geo/.venv)를 만든다.
+    # stdin을 /dev/null로 넘겨 Playwright 질문을 건너뛴다. 실패해도 나머지 설치는 계속한다.
+    geo_dir="$(clone_external_repo geo-seo-claude https://github.com/zubair-trabzada/geo-seo-claude.git)"
+    if bash "$geo_dir/install.sh" </dev/null >/dev/null 2>&1; then
+      echo "  ✅ GEO-SEO 설치 완료"
+    else
+      echo "  ⚠️ GEO-SEO 설치 실패(Python 3.10+ 필요). 계속 진행합니다."
+    fi
+
+    # Claude SEO — 종합 SEO 스킬 묶음(/seo + seo-* 하위 스킬 + 에이전트 19개, GEO·E-E-A-T·schema 포함).
+    # upstream install.sh가 고정 릴리스 태그를 직접 받아 ~/.claude 에 깔고 Python 3.11+ 전용 런타임을 만든다. 실패해도 계속한다.
+    claude_seo_dir="$(clone_external_repo claude-seo https://github.com/AgriciDaniel/claude-seo.git)"
+    if bash "$claude_seo_dir/install.sh" </dev/null >/dev/null 2>&1; then
+      echo "  ✅ Claude SEO 설치 완료"
+    else
+      echo "  ⚠️ Claude SEO 설치 실패(Python 3.11+ 필요). 계속 진행합니다."
+    fi
+
+    # Open SEO MCP Skills — Ryze MCP(Search Console·GA4·DataForSEO) 기반 SEO·GEO 스킬 8개.
+    # seo-audit 가 Claude SEO와 이름이 겹쳐 전부 ryze- 접두어로 복사한다. Ryze MCP 연결은 사용자가 따로 한다.
+    ryze_dir="$(clone_external_repo open-seo-mcp-skills https://github.com/Ryze-AI-Adgent/open-seo-mcp-skills.git)"
+    copy_all_skill_dirs "$ryze_dir" "skills" "ryze-"
   fi
 
   if [ "$TARGET" = "codex" ]; then
