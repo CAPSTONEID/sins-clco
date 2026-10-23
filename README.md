@@ -63,6 +63,9 @@ SINS 프로젝트용 Claude Code, Codex, Hermes, Grok 스킬 패키지입니다.
 | Insane Search | Claude 전용 | [fivetaku/insane-search](https://github.com/fivetaku/insane-search) |
 | oh-my-design | Claude / Codex | [kwakseongjae/oh-my-design](https://github.com/kwakseongjae/oh-my-design) |
 | Fluent Korean | Claude 전용 | [snflkd/fluent-korean](https://github.com/snflkd/fluent-korean) |
+| GEO-SEO | Claude 전용 | [zubair-trabzada/geo-seo-claude](https://github.com/zubair-trabzada/geo-seo-claude) |
+| Claude SEO | Claude 전용 | [AgriciDaniel/claude-seo](https://github.com/AgriciDaniel/claude-seo) |
+| Open SEO MCP Skills | Claude 전용 | [Ryze-AI-Adgent/open-seo-mcp-skills](https://github.com/Ryze-AI-Adgent/open-seo-mcp-skills) |
 
 > **oh-my-design 채널 차이** — 286개 실제 기업 디자인 레퍼런스 기반 디자인 시스템 스킬 29개 + 서브에이전트 20개. 자체 `oh-my-design-cli` npx 설치를 사용하며 Claude·Codex 채널을 따로 설치합니다. Claude는 `--agent claude-code`로 스킬 `~/.claude/skills`, 에이전트 `~/.claude/agents`, 데이터 `~/.claude/data`에 설치하고, Codex는 `--agent codex`로 스킬 `~/.agents/skills`, 에이전트 `~/.codex/agents`, 데이터 `~/.codex/data`에 설치합니다(각 도구의 정규 경로). `npx`(Node.js)가 필요하며 없으면 자동으로 건너뜁니다. 건너뛰려면 `SINS_SKIP_OMD=1`. Hermes·Grok는 `oh-my-design-cli` 채널이 없어 대상에서 제외됩니다.
 
@@ -71,6 +74,12 @@ SINS 프로젝트용 Claude Code, Codex, Hermes, Grok 스킬 패키지입니다.
 > **Emil Kowalski Skills** — UI 애니메이션·모션·디자인 엔지니어링 스킬 13개(`animate`·`animate-expo`·`animation-vocabulary`·`apple-design`·`ask-sonner`·`emil-design-eng`·`find-animation-opportunities`·`improve-animations`·`mobile-native`·`pick-ui-library`·`prototype`·`review-animations`·`write-swift`). Vaul·Sonner 제작자 Emil Kowalski의 UI 폴리시·애니메이션 철학을 담은 스킬로, `skills/`에서 그대로 복사합니다. Hermes는 대상에서 제외됩니다.
 
 > **Fluent Korean 설치 형태** — 스킬이 아니라 Claude Code의 **output-style**입니다. `~/.claude/output-styles/` 에 `fluent-korean.md`(코딩 지침 유지판)와 `fluent-korean-not-coding.md`(코딩 지침 미유지판) 2종을 복사하며, 설치한 뒤 `/output-style` 에서 골라 켭니다. 조사와 어미의 생략을 금지하고, 명사구로 문장을 끝내지 못하게 하며, 비유적 어휘와 엠대시(—)를 자제시켜 한국어 응답의 의미를 명확하게 만듭니다. 코드·주석·변수명·커밋 메시지·로그 문자열·인용문은 적용 대상에서 제외됩니다. **`caveman` 과는 문장 생성 규칙이 정면으로 충돌하므로 두 가지를 동시에 켜지 마세요.** 플러그인 형태로 관리하고 싶다면 `/plugin marketplace add snflkd/fluent-korean` → `/plugin install fluent-korean@fluent-korean` 을 사용합니다(두 프롬프트로 분리 실행). output-style은 Claude Code 전용 개념이라 Codex·Grok·Hermes는 대상에서 제외됩니다.
+
+> **GEO-SEO** — AI 검색(ChatGPT·Claude·Perplexity·Gemini·Google AI Overviews) 노출을 높이는 GEO 감사 스킬입니다. 메인 `/geo`(`audit`·`quick`·`citability`·`crawlers`·`llmstxt`·`brands`·`platforms`·`schema`·`technical`·`content`·`report`·`report-pdf`)와 하위 스킬 15개(`geo-*`), `~/.claude/agents/` 서브에이전트 5개를 설치합니다. upstream `install.sh`를 그대로 실행하며, Python 의존성은 시스템 Python을 건드리지 않고 `~/.claude/skills/geo/.venv`에 따로 설치합니다. **Python 3.10 이상이 필요**하며, 없으면 경고만 내고 나머지 설치를 계속합니다. 스크린샷용 Playwright 브라우저는 설치하지 않으니 필요하면 `~/.claude/skills/geo/.venv/bin/python3 -m playwright install chromium`을 따로 실행하세요. 경로가 `~/.claude`에 고정돼 있어 Claude 전용입니다.
+
+> **Claude SEO** — 기술 SEO·E-E-A-T·schema·GEO·로컬·이커머스까지 다루는 종합 SEO 스킬입니다. 메인 `/seo`와 `seo-*` 하위 스킬, `~/.claude/agents/` 서브에이전트 19개를 설치합니다. upstream `install.sh`가 고정 릴리스 태그를 직접 받아 설치하고, Python 런타임을 `~/.claude/skills/seo/` 아래에 따로 만듭니다. **Python 3.11 이상이 필요**하며, 없으면 경고만 내고 나머지 설치를 계속합니다. 수동 설치라 훅은 적용되지 않으니, 훅까지 쓰려면 `/plugin install claude-seo@agricidaniel-claude-seo` 정규 플러그인 설치를 사용하세요. Claude 전용입니다.
+
+> **Open SEO MCP Skills** — 내 Search Console·GA4·광고 데이터로 SEO·GEO를 분석하는 스킬 8개(`ai-visibility`·`backlink-check`·`competitor-gap`·`content-brief`·`keyword-research`·`rank-tracking`·`seo-audit`·`seo-vs-ads`)입니다. `seo-audit`가 Claude SEO 스킬과 이름이 겹치므로 **모든 폴더에 `ryze-` 접두어**를 붙여 복사합니다(예: `ryze-seo-audit`). 데이터는 Ryze MCP로 가져오므로 따로 연결해야 합니다. Claude Code에서는 `claude mcp add ryze --transport http https://connector.get-ryze.ai/mcp`를 실행하거나, Claude 설정의 Connectors에서 같은 URL을 추가한 뒤 Google 계정으로 로그인하세요. Claude 전용입니다.
 
 > **Humanize Korean 모드 차이** — Claude는 light·standard·heavy 전체 경로를 설치합니다(스킬 `humanize-korean`·`humanize`·`humanize-scan`·`humanize-redo` 4개 + `~/.claude/agents/` 런타임 서브에이전트 4개: `humanize-monolith`·`humanize-diagnostician`·`humanize-finalizer`·`korean-ai-tell-taxonomist`). 이전 버전이 설치한 은퇴·개발용 에이전트 파일은 자동으로 정리합니다. Codex와 Grok은 Codex용 `humanize-korean` 1개를 설치하며, 진단·윤문·finalize 역할을 협업 에이전트가 있으면 독립 실행하고 없으면 순차 실행합니다. Hermes는 대상에서 제외됩니다.
 
