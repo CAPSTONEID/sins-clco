@@ -4,6 +4,6 @@ export type ModelInfo = { name?: string; effort?: string | number }
 
 declare module 'claude-code' {
   interface PluginState {
-    'usage-band': { snap: Snapshot; model: ModelInfo }
+    'usage-band': { snap: Snapshot; model: ModelInfo; beside: boolean }
   }
 }

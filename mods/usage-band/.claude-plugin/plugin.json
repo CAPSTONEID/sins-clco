@@ -2,5 +2,16 @@
   "name": "usage-band",
   "version": "0.1.0",
   "description": "프롬프트 위에 컨텍스트·5시간·7일 한도 게이지 표시",
-  "types": "./types/index.d.ts"
+  "types": "./types/index.d.ts",
+  "dependencies": [
+    "progress-pane"
+  ],
+  "userConfig": {
+    "progressBeside": {
+      "type": "boolean",
+      "title": "작업·렌더 진행 옆에 표시",
+      "description": "프롬프트 위 게이지 오른쪽에 작업·렌더 진행 상황을 함께 표시합니다.",
+      "default": true
+    }
+  }
 }

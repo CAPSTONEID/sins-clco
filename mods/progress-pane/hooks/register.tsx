@@ -234,8 +234,7 @@ export const register: Register = on => {
     const savedHidden = (await $.store.get('hidden-agents')) as string[] | undefined
     if (savedHidden) await update($, hidden, () => savedHidden)
 
-    // 명령어 없이 자동으로 엶 — 좁은 터미널(144칸 미만)에선 넓어질 때까지 대기, 그동안 상태줄 요약
-    void $.ui.open({ id: PANE, title: TITLE })
+    // 옆 패널은 자동으로 열지 않음 — 진행 상황은 usage-band 게이지 옆 칸에 표시, 창은 /progress 로 수동 열기
 
     self = await $.session.id().catch(() => '')
     // ponytail: 3일 지난 세션의 스냅샷 폴더 정리, 세션이 3일 넘게 이어지면 그 세션 롤백도 사라짐
@@ -425,7 +424,7 @@ export const register: Register = on => {
     // 펼친 전체 내용 — 공백 대신 상자 여백으로 들여씀(데스크톱 글꼴에선 공백이 거의 안 보임)
     const detail = (key: string, full: string, short: string) =>
       short !== full && opened.includes(key) ? (
-        <Box paddingLeft="xl">
+        <Box paddingLeft={4}>
           <Text color="cyan">{`‣ ${full.slice(0, 1000)}`}</Text>
         </Box>
       ) : null
@@ -434,7 +433,7 @@ export const register: Register = on => {
     // 작업 진행 바: 할 일 목록 있으면 완료 비율, 없으면 움직이는 6칸 블록
     const controls = (key: string, verb = '종료') =>
       asking === `${key}#${verb}` ? (
-        <Box key={`${key}-c`} flexDirection="row" columnGap="sm">
+        <Box key={`${key}-c`} flexDirection="row" columnGap={1}>
           <Button key={`${key}-ok`} variant="primary" onPress={() => void stop($, key)}>{`정말 ${verb}`}</Button>
           <Button key={`${key}-no`} onPress={() => void update($, confirm, () => null)}>취소</Button>
         </Box>
@@ -451,7 +450,7 @@ export const register: Register = on => {
       const live = LIVE.has(a.status)
       return (
         // 들여쓰기는 공백 대신 상자 여백 — 데스크톱 글꼴에선 공백이 좁아 거의 안 보임
-        <Box key={key} flexDirection="column" rowGap="xs" paddingLeft="xl">
+        <Box key={key} flexDirection="column" rowGap={0} paddingLeft={4}>
           <Box flexDirection="row">
             <Text color={live ? 'cyan' : undefined} dimColor={!live}>
               {a.status === 'running' ? '► ' : live ? '● ' : '○ '}
@@ -462,7 +461,7 @@ export const register: Register = on => {
               <Text dimColor>{`  । ${shortModel(meta[a.id]!.model)} · ${meta[a.id]!.effort ?? '기본'}`}</Text>
             )}
             {live && (
-              <Box marginLeft="sm">
+              <Box marginLeft={1}>
                 {controls(key)}
               </Box>
             )}
@@ -483,7 +482,7 @@ export const register: Register = on => {
     // 서브에이전트 목록 — 첫 행 위와 행 사이에 옅은 점선(서브에이전트 들여쓰기에 맞춤)
     const subRows = () =>
       subs.flatMap(a => [
-        <Box key={`ga:${a.id}`} paddingLeft="xl">
+        <Box key={`ga:${a.id}`} paddingLeft={4}>
           <Text color="subtle" dimColor wrap="truncate">{'┄'.repeat(Math.max(0, width - 2))}</Text>
         </Box>,
         sub(a),
@@ -497,7 +496,7 @@ export const register: Register = on => {
       // 대화형 세션은 pid 로만 종료 가능 — pid 없으면 종료 버튼 숨김
       const canStop = self !== '' && (x.isEnded || x.kind !== 'interactive' || x.pid !== undefined)
       return (
-        <Box key={key} flexDirection="column" rowGap="xs">
+        <Box key={key} flexDirection="column" rowGap={0}>
           <Box flexDirection="row">
             <Text color={x.isSelf ? 'cyan' : x.state === 'blocked' ? 'yellow' : undefined} dimColor={x.isEnded || isHidden}>
               {x.isEnded ? '☑︎ ' : busy ? '► ' : '◼︎ '}
@@ -511,7 +510,7 @@ export const register: Register = on => {
               : title(key, x.name, clip(x.name, 28))}
             {/* 제목 옆 작은 버튼(글자형·흐리게): 종료/삭제 · 숨기기/보이기 */}
             {!x.isSelf && self !== '' && (
-              <Box flexDirection="row" columnGap="sm" marginLeft="sm">
+              <Box flexDirection="row" columnGap={1} marginLeft={1}>
                 {canStop && controls(key, x.isEnded ? '삭제' : '종료')}
                 <Button key={`${key}-h`} plain dimColor onPress={() => void toggleHidden($, x.id)}>
                   {isHidden ? ICON.보이기 : ICON.숨기기}
@@ -551,7 +550,7 @@ export const register: Register = on => {
         return <Text key={`c${i}`} dimColor>░</Text>
       }
       work = (
-        <Box flexDirection="column" rowGap="xs">
+        <Box flexDirection="column" rowGap={0}>
           <Box flexDirection="row">
             <Text bold color="cyan">▶ </Text>
             {title(`r:${r.id}`, r.prompt.trim(), fallback(r.prompt))}
@@ -575,8 +574,10 @@ export const register: Register = on => {
     return (
       // 왼쪽 디바이더와 붙지 않게 전체 2칸 들여쓰기
       <Box flexDirection="column" paddingLeft={2}>
+        {/* 탭 위 구분 실선 */}
+        <Text dimColor wrap="truncate">{'─'.repeat(width)}</Text>
         {/* 탭: 지금 보는 탭은 primary(강조색), 다른 탭은 흐리게 */}
-        <Box flexDirection="row" marginBottom={1}>
+        <Box flexDirection="row">
           <Button
             key="tab-now"
             variant={view === 'now' ? 'primary' : undefined}
@@ -597,7 +598,7 @@ export const register: Register = on => {
         </Box>
 
         {view === 'now' && (
-        <Box flexDirection="column" rowGap="sm">
+        <Box flexDirection="column" rowGap={0}>
         {/* 탭과 작업 진행 구분 실선 */}
         <Text dimColor wrap="truncate">{'─'.repeat(width)}</Text>
         <Text bold>작업 진행</Text>
@@ -626,7 +627,7 @@ export const register: Register = on => {
                 ? `${fmt(job.seconds)} 경과 · 남은 시간 약 ${fmt(avg - job.seconds)} (평균 ${fmt(avg)})`
                 : `${fmt(job.seconds)} 경과 · 평균 ${fmt(avg)} 초과`
           return (
-            <Box key={`j${job.pid}`} flexDirection="column" rowGap="xs">
+            <Box key={`j${job.pid}`} flexDirection="column" rowGap={0}>
               <Text bold color="cyan">▶ {job.kind}</Text>
               <Box flexDirection="row">
                 {Array.from({ length: BAR }, (_, i) => cell(i))}
@@ -655,10 +656,14 @@ export const register: Register = on => {
           <Text dimColor wrap="truncate">{'─'.repeat(width)}</Text>
         </Box>
         {/* 펼쳤을 때 제목과 첫 에이전트 사이 간격 */}
-        <Box marginBottom={opened.includes(HIDDEN_SEC) ? 'md' : undefined}>
-          <Button key="sec-hidden" plain onPress={() => void update($, expanded, l => toggle(l, HIDDEN_SEC))}>
-            <Text bold>{`숨겨진 에이전트 (${stashed.length})`}</Text>
-          </Button>
+        <Box marginBottom={opened.includes(HIDDEN_SEC) ? 1 : undefined}>
+          {/* ponytail: Button 은 label 문자열만 받음(자식 Text 거부) → 굵기 빠짐, bold prop 생기면 복구 */}
+          <Button
+            key="sec-hidden"
+            plain
+            label={`숨겨진 에이전트 (${stashed.length})`}
+            onPress={() => void update($, expanded, l => toggle(l, HIDDEN_SEC))}
+          />
         </Box>
         {opened.includes(HIDDEN_SEC) && stashed.length === 0 && <Text dimColor>숨긴 에이전트 없음</Text>}
         {opened.includes(HIDDEN_SEC) && guided(stashed, true)}
@@ -666,11 +671,11 @@ export const register: Register = on => {
         )}
 
         {view === 'history' && (
-        <Box flexDirection="column" rowGap="sm">
+        <Box flexDirection="column" rowGap={0}>
         {hist.length === 0 && <Text dimColor>완료 기록 없음</Text>}
         {hist.map(x => (
           // 1줄: ✔ 작업 설명 / 2줄: 소요 시간 · 도구 수 · 단계 수
-          <Box key={x.id} flexDirection="column" rowGap="xs">
+          <Box key={x.id} flexDirection="column" rowGap={0}>
             <Box flexDirection="row">
               <Text color={mix(0)}>✔ </Text>
               {title(`h:${x.id}`, x.prompt.trim(), x.label ? clip(x.label, 30) : fallback(x.prompt), true)}
