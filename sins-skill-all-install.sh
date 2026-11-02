@@ -350,6 +350,10 @@ install_external_skills() {
   hyperframes_dir="$(clone_external_repo hyperframes https://github.com/heygen-com/hyperframes.git)"
   copy_all_skill_dirs "$hyperframes_dir" "skills" ""
 
+  # Watch (claude-video) — Claude / Codex / Grok 공용. 영상 URL·파일을 프레임+자막으로 읽는 /watch 스킬(yt-dlp·ffmpeg 필요)
+  claude_video_dir="$(clone_external_repo claude-video https://github.com/bradautomates/claude-video.git)"
+  copy_all_skill_dirs "$claude_video_dir" "skills" ""
+
   # Ponytail — Claude / Codex 공용. YAGNI·최소 구현 강제 슬래시 명령 스킬 묶음(6개)
   # 참고: 번들은 슬래시 명령 스킬만 복사한다. 상시 발동(always-on) 라이프사이클 훅은
   #       /plugin(Claude) · codex plugin(Codex) 정규 설치로만 연결된다.
