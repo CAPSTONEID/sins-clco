@@ -9,6 +9,7 @@ const run = atom({ plugin: 'progress-pane', key: 'run' } as const, null)
 const jobs = atom({ plugin: 'progress-pane', key: 'jobs' } as const, [])
 // 옆 칸 표시 여부: 옵션 기본값 위에 /usage-band 로 정한 값($.store)이 우선
 const beside = atom({ plugin: 'usage-band', key: 'beside' } as const, true)
+const agents = atom({ plugin: 'progress-pane', key: 'agents' } as const, [])
 const model = atom({ plugin: 'usage-band', key: 'model' } as const, {} as ModelInfo)
 
 // 추론 단계 순서 (단계 표시용)
@@ -136,7 +137,7 @@ export const register: Register = (on, options) => {
     const lvl = typeof m.effort === 'string' ? EFFORTS.indexOf(m.effort as (typeof EFFORTS)[number]) : -1
 
     const now = await $.clock.now()
-    const { Box, Text } = $.ui.resolve(e)
+    const { Box, Text, Button } = $.ui.resolve(e)
     // 옆 칸: 줄 수가 4줄(Model + 게이지 3)과 같음. 터미널이 좁으면 생략
     const isBeside = await read($, beside)
     const r = isBeside ? await read($, run) : null
@@ -145,7 +146,11 @@ export const register: Register = (on, options) => {
     const BAR = isSide ? BAR_NARROW : BAR_WIDE
     const total = r?.tasks.length ?? 0
     const done = r?.tasks.filter(t => t.status === 'completed').length ?? 0
-    const job = list[0]
+    // 일하는 서브에이전트: 여러 개여도 아래 줄로 쌓지 않고 ' ।। ' 로 이어 한 줄에 (넘치면 잘림)
+    const live = isBeside ? (await read($, agents)).filter(a => a.status === 'running') : []
+    const SEP = ' ।। '
+    const subs = live.map(a => `sub ${a.description.slice(0, 12)}`)
+    const renders = list.map(j => `렌더 ${j.kind} ${clock(j.seconds)}`)
     const side = [
       r ? (
         <Text key="s0" bold color="cyan" wrap="truncate">{`▶ ${r.label ?? (r.prompt.trim().split('\n')[0] ?? '작업').slice(0, 18)}`}</Text>
@@ -157,13 +162,13 @@ export const register: Register = (on, options) => {
       ) : (
         <Text key="s1"> </Text>
       ),
-      r ? (
-        <Text key="s2" dimColor wrap="truncate">{`⏱ ${dur(r.now - r.startedAt)} · 도구 ${r.tools}회`}</Text>
+      r || subs.length ? (
+        <Text key="s2" dimColor wrap="truncate">{[r ? `⏱ ${dur(r.now - r.startedAt)} · 도구 ${r.tools}회` : '', ...subs].filter(Boolean).join(SEP)}</Text>
       ) : (
         <Text key="s2"> </Text>
       ),
-      job ? (
-        <Text key="s3" color="yellow" wrap="truncate">{`렌더 ${job.kind} ${clock(job.seconds)}${list.length > 1 ? ` 외 ${list.length - 1}` : ''}`}</Text>
+      renders.length ? (
+        <Text key="s3" color="blue" wrap="truncate">{renders.join(SEP)}</Text>
       ) : (
         <Text key="s3" dimColor>렌더 없음</Text>
       ),
@@ -172,7 +177,12 @@ export const register: Register = (on, options) => {
     return (
       <Box flexDirection="column" paddingX={1}>
         {/* 위 스피너·팁 줄과 분리하는 구분선 */}
-        <Text dimColor>{'─'.repeat(Math.max(10, e.props.bodyColumns - 2))}</Text>
+        {/* 오른쪽 끝 [‣] 버튼: 누르면 /progress 로 옆 패널 열기 (엔진의 [-] 자리를 피해 5칸 안쪽) */}
+        <Box flexDirection="row">
+          <Text dimColor>{'─'.repeat(Math.max(10, e.props.bodyColumns - 2 - 6))}</Text>
+          <Text> </Text>
+          <Button plain label="[‣]" onPress={() => void $.command.run({ command: 'progress' }).catch(() => undefined)} />
+        </Box>
         {/* 아래 입력창 앞 엔진 여백(1줄)과 맞추는 빈 줄 */}
         <Text> </Text>
         <Box flexDirection="row">
@@ -237,7 +247,8 @@ export const register: Register = (on, options) => {
                   <Text key={`v${i}`} dimColor>│</Text>
                 ))}
               </Box>
-              <Box flexDirection="column">
+              {/* 폭을 정해 줘야 긴 줄이 아래로 넘치지 않고 잘림: 터미널 폭 - 게이지 열 - 여백 */}
+              <Box flexDirection="column" width={Math.max(SIDE_MIN, e.props.bodyColumns - GAUGE_W - 9)}>
               {side}
               </Box>
             </Box>
