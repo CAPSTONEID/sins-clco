@@ -55,6 +55,8 @@ SINS 프로젝트용 Claude Code, Codex, Hermes, Grok 스킬 패키지입니다.
 | UI/UX Pro Max | Claude 전용 | [nextlevelbuilder/ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) |
 | HyperFrames | Claude / Codex / Grok | [heygen-com/hyperframes](https://github.com/heygen-com/hyperframes) |
 | Watch (claude-video) | Claude / Codex / Grok | [bradautomates/claude-video](https://github.com/bradautomates/claude-video) |
+| Clone Website | Claude / Codex / Grok | [JCodesMore/ai-website-cloner-template](https://github.com/JCodesMore/ai-website-cloner-template) |
+| Hypit | Claude / Codex / Grok | [hypit-ai/hypit](https://github.com/hypit-ai/hypit) |
 | gstack | Claude / Codex / Grok | [garrytan/gstack](https://github.com/garrytan/gstack) |
 | Superpowers | Claude / Codex / Grok | [obra/superpowers](https://github.com/obra/superpowers) |
 | Ponytail | Claude / Codex / Grok | [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) |

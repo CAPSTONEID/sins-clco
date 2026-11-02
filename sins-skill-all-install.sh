@@ -354,6 +354,16 @@ install_external_skills() {
   claude_video_dir="$(clone_external_repo claude-video https://github.com/bradautomates/claude-video.git)"
   copy_all_skill_dirs "$claude_video_dir" "skills" ""
 
+  # Clone Website — Claude / Codex / Grok 공용. 웹사이트 URL을 로컬 코드로 재현하는 /clone-website 스킬
+  # 스킬이 template 저장소의 .agents/skills 안에 있어 그 경로만 복사한다.
+  clone_website_dir="$(clone_external_repo ai-website-cloner-template https://github.com/JCodesMore/ai-website-cloner-template.git)"
+  copy_all_skill_dirs "$clone_website_dir" ".agents/skills" ""
+
+  # Hypit — Claude / Codex / Grok 공용. AI 에이전트로 영상 제작·변형하는 /hypit 스킬
+  # 참고: 첫 사용 시 에이전트가 Hypit 실행 파일 준비를 안내한다. 라이선스는 Apache-2.0 변형(멀티테넌트·SaaS 제공 제한).
+  hypit_dir="$(clone_external_repo hypit https://github.com/hypit-ai/hypit.git)"
+  copy_all_skill_dirs "$hypit_dir" "skills" ""
+
   # Ponytail — Claude / Codex 공용. YAGNI·최소 구현 강제 슬래시 명령 스킬 묶음(6개)
   # 참고: 번들은 슬래시 명령 스킬만 복사한다. 상시 발동(always-on) 라이프사이클 훅은
   #       /plugin(Claude) · codex plugin(Codex) 정규 설치로만 연결된다.
