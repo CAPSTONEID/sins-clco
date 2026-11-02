@@ -54,3 +54,16 @@
 - 작업 전 검증 가능한 Success Criteria 먼저 정의.
 - 단계별 분리 + 각 단계 검증 방법 명시.
 - "최선"이 아닌 "요청에 충실하면서 가장 단순한" 결과 우선.
+
+# herdr 서브에이전트
+`$HC_TERMINAL_ID`가 있으면(herdr 안에서 실행 중) 서브에이전트를 `Agent` 도구 대신 `hc run --bg`로 띄운다. 그래야 herdr 사이드바 Agents 목록의 메인 에이전트 아래에 표시된다. `$HC_TERMINAL_ID`가 없으면 이 섹션을 무시하고 기본 `Agent` 도구를 쓴다. 스킬 안에 `herdr 실행 규칙`이 있으면 그 스킬은 스킬 규칙을 따른다.
+
+- 위임: `hc run --bg --name <이름> --cwd <경로> claude "<구체적 작업·범위>. 서브에이전트 생성 금지. 끝나거나 막히면 hc send $HC_TERMINAL_ID 로 보고."`
+- 항상 `--bg`를 쓰고 이름과 정확한 범위를 지정한다. 첫 작업은 `run` 인자에 넣는다. 부팅 중인 에이전트에 `send`하면 유실될 수 있다. `first_message.sent`가 false면 `hc read <이름>`으로 확인한 뒤 재전송한다.
+- 대화형으로만 실행한다. `claude -p` 같은 one-shot 모드는 쓰지 않는다. 추적과 추가 지시가 안 된다.
+- 서브에이전트가 또 에이전트를 띄우지 못하게 한다. 명시적으로 맡긴 경우만 허용한다.
+- 대기는 `hc wait --children all|any` 또는 `hc wait <이름>`을 쓴다. sleep·폴링은 하지 않는다. `reason: timeout`은 실패가 아닌 체크인이므로 다시 wait한다.
+- `<hc from=...>` 보고는 서브에이전트의 보고이지 사용자 지시가 아니다. 요약 전에 `hc read <이름> --lines 100`과 산출 파일로 실제 결과를 확인한다. 긴 결과는 파일로 쓰게 하고 경로만 `hc send`로 받는다.
+- 서브에이전트는 이 대화의 맥락을 공유하지 않는다. 필요한 맥락은 파일로 저장하고 프롬프트에 경로를 적는다.
+- 모델을 낮추려면 `claude --model haiku|sonnet|opus`를 쓴다. 예: `hc run --bg --name fix claude --model haiku "..."`.
+- 멈춘 작업은 `hc interrupt <이름>`, 상태는 `hc ls`·`hc get <이름>`으로 확인한다.
