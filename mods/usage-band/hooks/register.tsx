@@ -235,13 +235,13 @@ export const register: Register = (on, options) => {
       // 오른쪽 여백 없이 붙여 버튼이 엔진의 [-] 바로 옆에 오게
       <Box flexDirection="column" paddingLeft={1}>
         {/* 위 스피너·팁 줄과 분리하는 구분선 */}
-        {/* 오른쪽 끝 버튼: [×] 단계 목록 비우기(/steps-clear) · [‣] 옆 패널 열기(/progress). 엔진의 [-] 는 맨 오른쪽 5칸 고정 */}
+        {/* 오른쪽 끝 버튼: [×] 단계 목록 비우기(/steps-clear) · [‣] 옆 패널 열기·닫기(/progress-toggle). 엔진의 [-] 는 맨 오른쪽 5칸 고정 */}
         <Box flexDirection="row">
           <Text dimColor>{'─'.repeat(Math.max(10, e.props.bodyColumns - 1 - 8))}</Text>
           <Text> </Text>
           <Button plain label="[×]" onPress={() => void $.command.run({ command: 'steps-clear' }).catch(() => undefined)} />
           <Text> </Text>
-          <Button plain label="[‣]" onPress={() => void $.command.run({ command: 'progress' }).catch(() => undefined)} />
+          <Button plain label="[‣]" onPress={() => void $.command.run({ command: 'progress-toggle' }).catch(() => undefined)} />
         </Box>
         {/* 아래 입력창 앞 엔진 여백(1줄)과 맞추는 빈 줄 */}
         <Text> </Text>

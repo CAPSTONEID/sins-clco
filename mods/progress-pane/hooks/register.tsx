@@ -237,6 +237,7 @@ export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     await $.command.register({ name: 'progress', description: '진행 상황 창 열기' })
     await $.command.register({ name: 'steps-clear', description: '프롬프트 위 단계 목록 비우기' })
+    await $.command.register({ name: 'progress-toggle', description: '진행 상황 창 열기/닫기 전환' })
     const savedSteps = await $.store.get(await stepsKey($))
     if (Array.isArray(savedSteps)) await update($, steps, () => savedSteps as Task[])
     // 이 빌드엔 TodoWrite·TaskCreate 가 없어 단계 줄 데이터를 모델이 직접 보내는 도구를 등록
@@ -329,6 +330,15 @@ export const register: Register = on => {
   on('command.run', { command: 'steps-clear' }, async $ => {
     await saveSteps($, [])
     return { text: '단계 목록을 비웠습니다.' }
+  })
+
+  // 막대의 ‣ 버튼: 창이 열려 있으면 닫고, 없으면 연다
+  on('command.run', { command: 'progress-toggle' }, async $ => {
+    const isOpen = (await $.ui.panes()).some(p => p.id === PANE)
+    if (isOpen) await $.ui.close({ id: PANE })
+    else await $.ui.open({ id: PANE, title: TITLE })
+    await refreshStatus($)
+    return { text: isOpen ? '진행 상황 창을 닫았습니다.' : '진행 상황 창을 열었습니다.' }
   })
 
   on('command.run', { command: 'progress' }, async $ => {
