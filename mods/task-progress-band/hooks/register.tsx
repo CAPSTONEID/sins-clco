@@ -297,7 +297,7 @@ export const register: Register = on => {
     // 열 폭은 모든 줄 공통: 라벨 | 막대(가변) | 퍼센트(오른쪽 정렬) | 메모 | 닫기
     return (
       <Box flexDirection="column" paddingX={1}>
-        {/* 단계 줄(가로, ' । ' 구분) + 오른쪽 끝 이모지 버튼: ☒ 비우기 · ▶️ 진행 패널 열기·닫기 */}
+        {/* 단계 줄(가로, ' । ' 구분) + 오른쪽 끝 이모지 버튼: ❎ 비우기 · ▶️ 진행 패널 열기·닫기 */}
         <Box flexDirection="row" alignItems="center" gap={1} marginBottom={1}>
           <Box flexGrow={1} flexShrink={1} flexDirection="row" alignItems="center" flexWrap="wrap">
             {stepList.length === 0 ? (
@@ -316,8 +316,11 @@ export const register: Register = on => {
             )}
             {stepList.length > 0 && <Text bold>{`  ${stepList.filter(t => t.status === 'completed').length}/${stepList.length}`}</Text>}
           </Box>
-          <Button key="steps-clear" plain label="☒" onPress={() => void $.command.run({ command: 'steps-clear' }).catch(() => undefined)} />
-          <Button key="progress" plain label="▶️" onPress={() => void $.command.run({ command: 'progress-toggle' }).catch(() => undefined)} />
+          {/* 두 버튼은 간격 없이 붙여 한 묶음으로 */}
+          <Box flexDirection="row" alignItems="center" gap={0} flexShrink={0}>
+            <Button key="steps-clear" plain label="❎" onPress={() => void $.command.run({ command: 'steps-clear' }).catch(() => undefined)} />
+            <Button key="progress" plain label="▶️" onPress={() => void $.command.run({ command: 'progress-toggle' }).catch(() => undefined)} />
+          </Box>
         </Box>
         <Box flexDirection="row" gap={2}>
         <Box flexDirection="column" flexGrow={1} flexShrink={1}>
