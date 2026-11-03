@@ -46,6 +46,8 @@ declare module 'claude-code' {
     'progress-pane': {
       // 작업 진행 바: 지금 턴과 완료 기록
       run: Run | null
+      // 단계 목록(steps 도구) — 세션이 끝나도 유지, /steps-clear 로 비움
+      steps: Task[]
       runs: Run[]
       // 렌더 진행
       jobs: RenderJob[]

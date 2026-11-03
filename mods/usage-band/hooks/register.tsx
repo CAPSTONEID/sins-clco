@@ -11,6 +11,8 @@ const jobs = atom({ plugin: 'progress-pane', key: 'jobs' } as const, [])
 const beside = atom({ plugin: 'usage-band', key: 'beside' } as const, true)
 const agents = atom({ plugin: 'progress-pane', key: 'agents' } as const, [])
 // 종류별 과거 렌더 소요 시간(초) — 진행률(%) 추정용
+// 단계 목록(progress-pane steps 도구) — 세션이 끝나도 유지, [×] 로 비움
+const stepList = atom({ plugin: 'progress-pane', key: 'steps' } as const, [])
 const renderHistory = atom({ plugin: 'progress-pane', key: 'renderHistory' } as const, {})
 const model = atom({ plugin: 'usage-band', key: 'model' } as const, {} as ModelInfo)
 
@@ -54,6 +56,43 @@ const clock = (sec: number) => `${Math.floor(sec / 60)}:${String(Math.floor(sec 
 export const renderPct = (seconds: number, past: number[] | undefined) => {
   const avg = past?.length ? past.reduce((a, b) => a + b, 0) / past.length : 0
   return avg > 0 ? Math.min(99, Math.floor((seconds * 100) / avg)) : undefined
+}
+
+// 터미널 칸 수: 한글·CJK 는 2칸
+const cells = (s: string) => [...s].reduce((n, c) => n + (c.codePointAt(0)! >= 0x1100 ? 2 : 1), 0)
+// cap 칸을 넘으면 잘라서 … 붙임
+const cut = (s: string, cap: number) => {
+  if (cells(s) <= cap) return s
+  let out = ''
+  for (const c of s) {
+    if (cells(out + c) > cap - 1) break
+    out += c
+  }
+  return out + '…'
+}
+
+// 단계 줄(가로 1줄): width 칸에 맞게 이름을 줄이고, 그래도 넘치면 진행 중 단계 주변만 남김
+// 한 단계 = 아이콘·공백 2칸 + 이름, 단계 사이 ' । ' 3칸, 앞뒤 생략 표시 2칸
+type Step = { subject: string; status: string }
+export const fitSteps = (tasks: readonly Step[], width: number) => {
+  const size = (list: readonly Step[], cap: number) =>
+    list.reduce((n, t) => n + 2 + cells(cut(t.subject, cap)), 0) + 3 * Math.max(0, list.length - 1)
+  const pick = (list: readonly Step[], cap: number) => list.map(t => ({ text: cut(t.subject, cap), status: t.status }))
+  for (const cap of [20, 14, 10]) {
+    if (size(tasks, cap) <= width) return { items: pick(tasks, cap), before: false, after: false }
+  }
+  const cap = 10
+  const at = Math.max(0, [tasks.findIndex(t => t.status === 'in_progress'), tasks.findIndex(t => t.status === 'pending'), tasks.length - 1].find(i => i >= 0) ?? 0)
+  let lo = at
+  let hi = at
+  const fits = (a: number, b: number) => size(tasks.slice(a, b + 1), cap) + (a > 0 ? 2 : 0) + (b < tasks.length - 1 ? 2 : 0) <= width
+  // 앞(완료) 1개, 뒤(남은) 1개씩 번갈아 넓힘
+  for (let grew = true; grew; ) {
+    grew = false
+    if (lo > 0 && fits(lo - 1, hi)) (lo--, (grew = true))
+    if (hi < tasks.length - 1 && fits(lo, hi + 1)) (hi++, (grew = true))
+  }
+  return { items: pick(tasks.slice(lo, hi + 1), cap), before: lo > 0, after: hi < tasks.length - 1 }
 }
 
 // 토큰 수를 349K / 1.0M 형태로
@@ -155,6 +194,10 @@ export const register: Register = (on, options) => {
     const BAR = isSide ? BAR_NARROW : BAR_WIDE
     const total = r?.tasks.length ?? 0
     const done = r?.tasks.filter(t => t.status === 'completed').length ?? 0
+    // 단계 줄: 옆 칸 설정과 무관하게 단계 목록이 있으면 표시
+    const tasks = await read($, stepList)
+    const count = `  ${tasks.filter(t => t.status === 'completed').length}/${tasks.length}`
+    const fit = fitSteps(tasks, e.props.bodyColumns - 1 - cells(count) - 4)
     // 일하는 서브에이전트: 여러 개여도 아래 줄로 쌓지 않고 ' ।। ' 로 이어 한 줄에 (넘치면 잘림)
     const live = isBeside ? (await read($, agents)).filter(a => a.status === 'running') : []
     const SEP = ' ।। '
@@ -189,16 +232,37 @@ export const register: Register = (on, options) => {
     ]
 
     return (
-      <Box flexDirection="column" paddingX={1}>
+      // 오른쪽 여백 없이 붙여 버튼이 엔진의 [-] 바로 옆에 오게
+      <Box flexDirection="column" paddingLeft={1}>
         {/* 위 스피너·팁 줄과 분리하는 구분선 */}
-        {/* 오른쪽 끝 [‣] 버튼: 누르면 /progress 로 옆 패널 열기 (엔진의 [-] 자리를 피해 5칸 안쪽) */}
+        {/* 오른쪽 끝 버튼: [×] 단계 목록 비우기(/steps-clear) · [‣] 옆 패널 열기(/progress). 엔진의 [-] 는 맨 오른쪽 5칸 고정 */}
         <Box flexDirection="row">
-          <Text dimColor>{'─'.repeat(Math.max(10, e.props.bodyColumns - 2 - 6))}</Text>
+          <Text dimColor>{'─'.repeat(Math.max(10, e.props.bodyColumns - 1 - 8))}</Text>
+          <Text> </Text>
+          <Button plain label="[×]" onPress={() => void $.command.run({ command: 'steps-clear' }).catch(() => undefined)} />
           <Text> </Text>
           <Button plain label="[‣]" onPress={() => void $.command.run({ command: 'progress' }).catch(() => undefined)} />
         </Box>
         {/* 아래 입력창 앞 엔진 여백(1줄)과 맞추는 빈 줄 */}
         <Text> </Text>
+        {tasks.length > 0 && (
+          // 가로 1줄, ' । ' 로 구분: 완료 ✔ 흐리게 · 진행 중 ◐ 청록 굵게 · 대기 ◌
+          <Box flexDirection="row" marginBottom={1}>
+            {fit.before && <Text dimColor>… </Text>}
+            {fit.items.flatMap((it, i) => [
+              ...(i > 0 ? [<Text key={`l${i}`} dimColor>{' । '}</Text>] : []),
+              it.status === 'completed' ? (
+                <Text key={`t${i}`} dimColor>{`✔ ${it.text}`}</Text>
+              ) : it.status === 'in_progress' ? (
+                <Text key={`t${i}`} bold color="#1fb5c9">{`◐ ${it.text}`}</Text>
+              ) : (
+                <Text key={`t${i}`}>{`◌ ${it.text}`}</Text>
+              ),
+            ])}
+            {fit.after && <Text dimColor> …</Text>}
+            <Text bold>{count}</Text>
+          </Box>
+        )}
         <Box flexDirection="row">
           <Box flexDirection="column">
             {/* 모델 · 추론 단계 줄 */}

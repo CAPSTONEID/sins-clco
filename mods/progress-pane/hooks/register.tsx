@@ -14,6 +14,15 @@ const HISTORY_MAX = 30
 // 작업 진행 바: 지금 턴, 완료 기록(최신이 앞, 세션 동안 유지)
 const run = atom({ plugin: 'progress-pane', key: 'run' } as const, null as Run | null)
 const runs = atom({ plugin: 'progress-pane', key: 'runs' } as const, [] as Run[])
+// 단계 목록(steps 도구): 턴·세션이 끝나도 유지, [×](/steps-clear)로만 비움. 프로젝트 폴더별로 $.store 에 저장
+// ponytail: 같은 폴더의 다른 세션과 저장 칸을 공유 — 동시 작업이 잦으면 세션 id 를 키에 섞기
+const steps = atom({ plugin: 'progress-pane', key: 'steps' } as const, [] as Task[])
+const stepsKey = async ($: EngineInterface) => `steps:${await $.session.root()}`
+async function saveSteps($: EngineInterface, list: Task[]) {
+  await update($, steps, () => list)
+  const k = await stepsKey($)
+  await (list.length ? $.store.set(k, list) : $.store.delete(k))
+}
 // 렌더 진행: 지금 돌고 있는 렌더, 종류별 과거 소요 시간(초, $.store 'render-history' 에도 저장)
 const jobs = atom({ plugin: 'progress-pane', key: 'jobs' } as const, [] as RenderJob[])
 const renderHistory = atom({ plugin: 'progress-pane', key: 'renderHistory' } as const, {} as Record<string, number[]>)
@@ -227,6 +236,33 @@ export const register: Register = on => {
 
   on('session.start', async ($, e, next) => {
     await $.command.register({ name: 'progress', description: '진행 상황 창 열기' })
+    await $.command.register({ name: 'steps-clear', description: '프롬프트 위 단계 목록 비우기' })
+    const savedSteps = await $.store.get(await stepsKey($))
+    if (Array.isArray(savedSteps)) await update($, steps, () => savedSteps as Task[])
+    // 이 빌드엔 TodoWrite·TaskCreate 가 없어 단계 줄 데이터를 모델이 직접 보내는 도구를 등록
+    await $.tool.register({
+      name: 'steps',
+      description:
+        '여러 단계 작업의 진행 단계를 프롬프트 위 단계 목록(한 단계 한 줄, ✔ 완료 · ◐ 진행 중 · ◌ 대기)에 표시한다. 3단계 이상 작업을 시작할 때 전체 단계를 보내고, 단계가 시작·완료될 때마다 전체 목록을 상태와 함께 다시 보낸다. 단계 이름은 2~8자 한국어 명사구.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          steps: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                subject: { type: 'string' },
+                status: { type: 'string', enum: ['pending', 'in_progress', 'completed'] },
+              },
+              required: ['subject', 'status'],
+            },
+          },
+        },
+        required: ['steps'],
+      },
+      isDeferred: false,
+    })
 
     const savedHistory = (await $.store.get('render-history')) as Record<string, number[]> | undefined
     if (savedHistory) await update($, renderHistory, () => savedHistory)
@@ -288,6 +324,11 @@ export const register: Register = on => {
     // ponytail: 세션 동안 쌓임(서브에이전트 수백 개면 끝난 것 정리 추가)
     if (id && 'model' in r && r.model) await update($, subMeta, m => ({ ...m, [id]: { model: r.model, effort } }))
     return r
+  })
+
+  on('command.run', { command: 'steps-clear' }, async $ => {
+    await saveSteps($, [])
+    return { text: '단계 목록을 비웠습니다.' }
   })
 
   on('command.run', { command: 'progress' }, async $ => {
@@ -386,6 +427,46 @@ export const register: Register = on => {
           : l.map(t => (t.id === e.taskId ? { ...t, subject: e.subject ?? t.subject, status: st ?? t.status } : t)),
       )
     return ran
+  }).catch(($, e, next) => next(e))
+
+  // 단계 도구: 받은 전체 목록으로 할 일 목록 교체 (메인 루프만)
+  // 엔진은 매처 없는 tool.call 을 모듈당 하나만 받음 → 매처 사용. 등록 도구 이름이 타입에 없어 e 는 직접 형 지정
+  on('tool.call', { tool: 'mcp__progress-pane__steps' }, async ($, ev) => {
+    const e = ev as unknown as { agentId?: string; steps?: { subject?: unknown; status?: unknown }[] }
+    const list = e.steps
+    if (!Array.isArray(list)) return { deny: 'steps 배열이 필요합니다' }
+    const ok = new Set(['pending', 'in_progress', 'completed'])
+    if (!e.agentId) {
+      const tasks = list.map((t, i) => ({
+        id: `step-${i}`,
+        subject: String(t.subject ?? ''),
+        status: (ok.has(String(t.status)) ? t.status : 'pending') as Task['status'],
+      }))
+      await setTasks($, () => tasks)
+      await saveSteps($, tasks)
+    }
+    return { result: `단계 ${list.length}개 표시` }
+  }).catch(($, e, next) => next(e))
+
+  // 시스템 프롬프트에 단계 도구 사용 규칙 추가 (그 도구가 있는 루프에만)
+  on('prompt.compose', async ($, e, next) => {
+    const r = await next(e)
+    if (!e.tools.includes('mcp__progress-pane__steps')) return r
+    return {
+      sections: [
+        ...r.sections,
+        {
+          id: 'progress-pane:steps',
+          scope: 'session',
+          text: [
+            '# 진행 단계 표시',
+            '3단계 이상으로 나뉘는 작업은 첫 도구 호출 전에 mcp__progress-pane__steps 로 전체 단계를 보낸다(첫 단계 in_progress, 나머지 pending).',
+            '단계가 끝나고 다음 단계로 넘어갈 때마다 전체 목록을 상태와 함께 다시 보낸다. 작업이 끝나면 모든 단계를 completed 로 보낸다.',
+            '단계 이름은 사용자가 알아볼 짧은 한국어 명사구로 쓴다. 질문 답변·한두 번 도구 호출로 끝나는 일에는 쓰지 않는다.',
+          ].join('\n'),
+        },
+      ],
+    }
   }).catch(($, e, next) => next(e))
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {

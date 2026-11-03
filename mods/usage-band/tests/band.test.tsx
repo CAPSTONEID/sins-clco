@@ -25,7 +25,7 @@ test('세 게이지가 터미널에 그려진다', async ($, on) => {
   await ui.unmount()
 })
 
-test('맨 위에 구분선이 있다 (오른쪽 [‣] 버튼 자리 6칸 제외)', async ($, on) => {
+test('맨 위에 구분선이 있다 (왼쪽 여백 1칸 + 오른쪽 [×] [‣] 버튼 자리 8칸 제외)', async ($, on) => {
   on('session.measure', (_, e) => ({ changed: e.changed }))
   mock.clock(on)
   await $.session.measure({
@@ -39,6 +39,6 @@ test('맨 위에 구분선이 있다 (오른쪽 [‣] 버튼 자리 6칸 제외)
     component: 'AbovePrompt',
     props: { hasSurvey: false, isWorking: false, maxRows: 10, bodyColumns: 40 } as never,
   })
-  expect(await ui.find({ type: 'Text', text: /^─{32}$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^─{31}$/ })).toBeDefined()
   await ui.unmount()
 })

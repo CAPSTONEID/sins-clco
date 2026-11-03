@@ -1,5 +1,5 @@
 import { expect, test } from 'claude-code/testing'
-import { prettyModel, renderPct, until } from '../hooks/register'
+import { fitSteps, prettyModel, renderPct, until } from '../hooks/register'
 
 test('모델 id → 표시 이름', async () => {
   expect(prettyModel('claude-opus-5-5')).toBe('Opus 5.5')
@@ -27,4 +27,16 @@ test('렌더 진행률: 과거 평균 대비 %, 기록 없으면 undefined, 최�
   expect(renderPct(900, [600])).toBe(99)
   expect(renderPct(30, undefined)).toBeUndefined()
   expect(renderPct(30, [])).toBeUndefined()
+})
+
+test('단계 줄(가로): 넓으면 전부, 좁으면 진행 중 주변만 남기고 앞뒤 생략', async () => {
+  const t = (subject: string, status: string) => ({ subject, status })
+  const tasks = [t('리서치', 'completed'), t('기획', 'completed'), t('디자인', 'in_progress'), t('렌더', 'pending'), t('업로드', 'pending')]
+  const wide = fitSteps(tasks, 200)
+  expect(wide.items.map(i => i.text)).toEqual(['리서치', '기획', '디자인', '렌더', '업로드'])
+  expect(wide.before || wide.after).toBe(false)
+  const narrow = fitSteps(tasks, 24)
+  expect(narrow.items.some(i => i.status === 'in_progress')).toBe(true)
+  expect(narrow.before && narrow.after).toBe(true)
+  expect(fitSteps([t('아주아주아주긴단계이름입니다요', 'pending')], 200).items[0]!.text).toBe('아주아주아주긴단계…')
 })
