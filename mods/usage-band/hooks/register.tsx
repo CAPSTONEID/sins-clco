@@ -10,6 +10,8 @@ const jobs = atom({ plugin: 'progress-pane', key: 'jobs' } as const, [])
 // 옆 칸 표시 여부: 옵션 기본값 위에 /usage-band 로 정한 값($.store)이 우선
 const beside = atom({ plugin: 'usage-band', key: 'beside' } as const, true)
 const agents = atom({ plugin: 'progress-pane', key: 'agents' } as const, [])
+// 종류별 과거 렌더 소요 시간(초) — 진행률(%) 추정용
+const renderHistory = atom({ plugin: 'progress-pane', key: 'renderHistory' } as const, {})
 const model = atom({ plugin: 'usage-band', key: 'model' } as const, {} as ModelInfo)
 
 // 추론 단계 순서 (단계 표시용)
@@ -46,6 +48,13 @@ const dur = (ms: number) => {
   return sec >= 60 ? `${Math.floor(sec / 60)}분 ${sec % 60}초` : `${sec}초`
 }
 const clock = (sec: number) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`
+
+// 같은 종류 과거 평균 대비 진행률 — 기록 없으면 undefined, 끝나기 전엔 99 에서 멈춤
+// ponytail: progress-pane render.ts 의 average·percent 와 같은 계산(플러그인 간 import 불가라 복제)
+export const renderPct = (seconds: number, past: number[] | undefined) => {
+  const avg = past?.length ? past.reduce((a, b) => a + b, 0) / past.length : 0
+  return avg > 0 ? Math.min(99, Math.floor((seconds * 100) / avg)) : undefined
+}
 
 // 토큰 수를 349K / 1.0M 형태로
 const fmt = (n: number) => (n >= 1e6 ? `${(n / 1e6).toFixed(1)}M` : `${Math.round(n / 1e3)}K`)
@@ -150,7 +159,12 @@ export const register: Register = (on, options) => {
     const live = isBeside ? (await read($, agents)).filter(a => a.status === 'running') : []
     const SEP = ' ।। '
     const subs = live.map(a => `sub ${a.description.slice(0, 12)}`)
-    const renders = list.map(j => `렌더 ${j.kind} ${clock(j.seconds)}`)
+    const past = list.length ? await read($, renderHistory) : {}
+    // 렌더 시간 ‣ 진행률: "렌더 hyperframes 8:59 ‣ 42%" (기록 없으면 시간만)
+    const renders = list.map(j => {
+      const pct = renderPct(j.seconds, past[j.kind])
+      return `렌더 ${j.kind} ${clock(j.seconds)}${pct === undefined ? '' : ` ‣ ${pct}%`}`
+    })
     const side = [
       r ? (
         <Text key="s0" bold color="cyan" wrap="truncate">{`▶ ${r.label ?? (r.prompt.trim().split('\n')[0] ?? '작업').slice(0, 18)}`}</Text>

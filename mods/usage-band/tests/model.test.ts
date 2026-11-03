@@ -1,5 +1,5 @@
 import { expect, test } from 'claude-code/testing'
-import { prettyModel, until } from '../hooks/register'
+import { prettyModel, renderPct, until } from '../hooks/register'
 
 test('모델 id → 표시 이름', async () => {
   expect(prettyModel('claude-opus-5-5')).toBe('Opus 5.5')
@@ -19,4 +19,12 @@ test('초기화 시각 파싱 실패 시 NaN 대신 빈 문자열', async () => 
   expect(until('not-a-date', now)).toBe('')
   expect(until(undefined, now)).toBe('')
   expect(until('2026-10-16T04:46:00Z', now)).toBe('4시간 46분 후 초기화')
+})
+
+test('렌더 진행률: 과거 평균 대비 %, 기록 없으면 undefined, 최대 99', async () => {
+  expect(renderPct(30, [60, 60])).toBe(50)
+  expect(renderPct(539, [600])).toBe(89)
+  expect(renderPct(900, [600])).toBe(99)
+  expect(renderPct(30, undefined)).toBeUndefined()
+  expect(renderPct(30, [])).toBeUndefined()
 })
