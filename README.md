@@ -1,19 +1,21 @@
-# SINS AI SKILL & TOOL
+<p align="center">
+  <a href="https://www.youtube.com/@%EC%8B%A4%EB%AC%B4%EC%9E%90"><img src="docs/banner.png" alt="실무자 YouTube 채널아트" width="100%"></a>
+</p>
 
-제가 주로 쓰는 AI 툴을 보다 효과적으로 사용하기 위해서 직접 제작한 스킬과 여러 툴이 담겨 있는 공간입니다.  
-(제 3자가 만든 스킬 및 플러그인 일부 포함)
+<h1 align="center">SINS AI SKILL &amp; TOOL</h1>
 
----
+<p align="center">
+  제가 주로 쓰는 AI 툴을 보다 효과적으로 사용하기 위해서 직접 제작한 스킬과 여러 툴이 담겨 있는 공간입니다.<br>
+  (제 3자가 만든 스킬 및 플러그인 일부 포함)
+</p>
 
-📧 Mail : [project@capstone.id](mailto:project@capstone.id)
-
-🤳 Instagram : [instagram.com/id.capstone](https://www.instagram.com/id.capstone)
-
-🌐 Homepage : [capstone.id](https://www.capstone.id)
-
-🧵 Threads : [threads.com/@id.capstone](https://www.threads.com/@id.capstone)
-
-▶️ YouTube : [youtube.com/@실무자](https://www.youtube.com/@실무자)
+<p align="center">
+  <a href="https://www.youtube.com/@%EC%8B%A4%EB%AC%B4%EC%9E%90"><img src="https://img.shields.io/badge/YouTube-%EC%8B%A4%EB%AC%B4%EC%9E%90-FF0000?style=for-the-badge&logo=youtube&logoColor=white" alt="YouTube 실무자"></a>
+  <a href="https://www.instagram.com/id.capstone"><img src="https://img.shields.io/badge/Instagram-id.capstone-E4405F?style=for-the-badge&logo=instagram&logoColor=white" alt="Instagram id.capstone"></a>
+  <a href="https://www.threads.com/@id.capstone"><img src="https://img.shields.io/badge/Threads-@id.capstone-000000?style=for-the-badge&logo=threads&logoColor=white" alt="Threads @id.capstone"></a>
+  <a href="https://www.capstone.id"><img src="https://img.shields.io/badge/Homepage-capstone.id-FFC72C?style=for-the-badge&logo=googlechrome&logoColor=black" alt="Homepage capstone.id"></a>
+  <a href="mailto:project@capstone.id"><img src="https://img.shields.io/badge/Mail-project@capstone.id-222222?style=for-the-badge&logo=maildotru&logoColor=white" alt="Mail project@capstone.id"></a>
+</p>
 
 ---
 
