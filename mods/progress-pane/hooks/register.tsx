@@ -14,7 +14,7 @@ const HISTORY_MAX = 30
 // 작업 진행 바: 지금 턴, 완료 기록(최신이 앞, 세션 동안 유지)
 const run = atom({ plugin: 'progress-pane', key: 'run' } as const, null as Run | null)
 const runs = atom({ plugin: 'progress-pane', key: 'runs' } as const, [] as Run[])
-// 단계 목록(steps 도구): 턴·세션이 끝나도 유지, [×](/steps-clear)로만 비움. 프로젝트 폴더별로 $.store 에 저장
+// 단계 목록(steps 도구): 턴·세션이 끝나도 유지, [×](/steps-clear)로 비움. 다 끝난 목록은 다음 입력 때 비움. 프로젝트 폴더별로 $.store 에 저장
 // ponytail: 같은 폴더의 다른 세션과 저장 칸을 공유 — 동시 작업이 잦으면 세션 id 를 키에 섞기
 const steps = atom({ plugin: 'progress-pane', key: 'steps' } as const, [] as Task[])
 const stepsKey = async ($: EngineInterface) => `steps:${await $.session.root()}`
@@ -33,6 +33,8 @@ export function timeSteps(prev: readonly Task[], list: readonly Task[], now: num
     return { ...t, ...(startedAt !== undefined && { startedAt }), ...(endedAt !== undefined && { endedAt }) }
   })
 }
+// 모든 단계가 완료된 목록 — 다음 입력이 오면 새 작업으로 보고 비움 (진행 중인 목록은 다음 턴까지 이어감)
+export const isAllDone = (list: readonly Task[]) => list.length > 0 && list.every(t => t.status === 'completed')
 async function saveSteps($: EngineInterface, list: Task[]) {
   await update($, steps, () => list)
   const k = await stepsKey($)
@@ -371,6 +373,7 @@ export const register: Register = on => {
     // 서브에이전트 턴은 메인 작업 진행을 덮어쓰지 않음 (turn.complete 와 같은 기준)
     if (e.agentId) return next(e)
     tick?.cancel()
+    if (isAllDone(await read($, steps))) await saveSteps($, [])
     const now = await $.clock.now()
     const prev = await read($, run)
     if (prev && !prev.endedAt && prev.tools > 0)
