@@ -1,4 +1,4 @@
-# SINS Claude & Codex & Hermes & Grok 스킬 패키지
+# SINS AI SKILL & TIP
 
 SINS 프로젝트용 Claude Code, Codex, Hermes, Grok 스킬 패키지입니다.
 
