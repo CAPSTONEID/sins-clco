@@ -314,10 +314,12 @@ export const register: Register = (on, options) => {
     const cave = cavemanFrom(e.text, e.command)
     // ponytail 은 자기 hook 이 파일을 먼저 고치므로 다시 읽기만 함
     const pt = await readPonytail($)
+    // humanize 도 파일이 기준: 다른 세션에서 바꿨거나 시작 때 못 읽었어도 표시가 파일(=모델이 받는 상태)을 따라감
+    const hz = await readHumanize($)
     // 배지 갱신 실패가 입력 처리를 막지 않게 오류는 버림
     await update($, modes, x => {
       const caveman = cave === null ? x.caveman : cave
-      return x.caveman === caveman && x.ponytail === pt ? x : { ...x, caveman, ponytail: pt }
+      return x.caveman === caveman && x.ponytail === pt && x.humanize === hz ? x : { ...x, caveman, ponytail: pt, humanize: hz }
     }).catch(() => undefined)
     return r
   })
