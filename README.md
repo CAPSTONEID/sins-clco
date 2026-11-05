@@ -36,9 +36,12 @@ SINS 프로젝트용 Claude Code, Codex, Hermes, Grok 스킬 패키지입니다.
 | `/sins-autoca` | 캐러셀(카드뉴스) 원고·디자인·이미지·HTML 렌더를 서브에이전트로 자동 제작. |
 | `/sins-vplanma` | 영상 스토리보드를 만들고 확정 컷으로 힉스필드 영상 생성. |
 
-## 함께 설치되는 외부 오픈소스 스킬
+## 함께 설치되는 외부 스킬
 
 전체 설치 때 SINS 스킬과 함께 설치됩니다. Hermes는 자체 번들이 있어 건너뜁니다.
+
+<details>
+<summary>외부 스킬 목록 (22개) 펼치기</summary>
 
 | 이름 | 대상 | 출처 |
 |------|------|------|
@@ -64,6 +67,8 @@ SINS 프로젝트용 Claude Code, Codex, Hermes, Grok 스킬 패키지입니다.
 | GEO-SEO | Claude 전용 | [zubair-trabzada/geo-seo-claude](https://github.com/zubair-trabzada/geo-seo-claude) |
 | Claude SEO | Claude 전용 | [AgriciDaniel/claude-seo](https://github.com/AgriciDaniel/claude-seo) |
 | Open SEO MCP Skills | Claude 전용 | [Ryze-AI-Adgent/open-seo-mcp-skills](https://github.com/Ryze-AI-Adgent/open-seo-mcp-skills) |
+
+</details>
 
 ## 설치
 
