@@ -2,7 +2,7 @@
 
 SINS 프로젝트용 Claude Code, Codex, Hermes, Grok 스킬 패키지입니다.
 
-각 대상은 자기 스킬 디렉터리에 **독립 복사**로 설치합니다. 심볼릭 링크로 Claude·Codex·Hermes·Grok 경로를 서로 잇지 않습니다.
+각 도구의 스킬 폴더에 따로 복사해 설치합니다(심볼릭 링크 없음).
 
 ---
 
@@ -20,30 +20,25 @@ SINS 프로젝트용 Claude Code, Codex, Hermes, Grok 스킬 패키지입니다.
 
 ## 포함된 스킬
 
-| 파일 | 명령어 | 설명 |
-|------|--------|------|
-| `sins-card-news-creator.skill` | `/sins-card-news-creator` | 인스타그램 카드뉴스의 11필드 **카드 JSON TXT·캡션 TXT·이미지 프롬프트 TXT** 제작. 카드 HTML은 만들지 않고 Figma 플러그인에서 렌더한다. 한글은 `/sins-fluent-korean`·`/humanize-korean`으로 검수한다. **별도로 요청한 유튜브 롱폼 썸네일**에는 한 줄·가운데 정렬, 내용에 맞는 실사·3D·두들, 극적인 분할 비교와 4종 폰트 선택을 적용한다. 카드뉴스·쇼츠의 기존 규칙은 유지한다. |
-| `sins-marketing-team.skill` | `/sins-marketing-team` | 마케팅 전략 팀 구성 및 실행 |
-| `sins-sidenote-pass.skill` | `/sins-sidenote-pass` | SideNotes 고정 폴더에 새 메모 저장 및 기본 접기 처리 |
-| `sins-video-consource.skill` | `/sins-video-consource` | 대본·오디오·영상·PPTX로 스크립트 / 영상 / 스크립트+HTML을 제작한다. 영상은 페이퍼 콜라주·리소그래프·맥 파인더창·다이내믹 타일 창·네오 브루탈리즘·노드 줌 프로세스 6종을 **계열(종이·인쇄 / 창·UI / 그래픽·구조) → 스타일** 두 단계로 선택하고 사용자 지정 60/30/10 컬러를 유지한다. 리소그래프는 별색·망점·판 어긋남 질감에 힉스필드 생성 일러스트를 넣고 말하는 부위로 줌인·줌아웃하며 설명한다. 이미지 줌 초점에는 동그라미·링 같은 원형 표시를 넣지 않는다. 본문은 문서·아이콘 설명·흐름도·비교·수치·타임라인 등 13종에서 다양하게 구성하며 커서 동선을 변주한다. 연결선은 노드 중심에 정렬하고 문서는 단일 구분선과 세로 목록을 기본으로 검수한다. 롱폼 2560×1440, 숏폼 1080×1920 2편. 대본만 있으면 일레븐랩스 내레이션을 **모델 `eleven_v4`·보이스 `My voice Clone`·유사도 0.90 고정**(묻지 않음, 실패 시 다른 모델·보이스로 대체 금지)으로 생성하고 글자 단위 타임스탬프로 장면 타이밍을 맞춘다. 전사 자막은 기본 생략하되 사용자의 명시적 요청이 우선한다. 실제 렌더 프레임과 재생을 검수한다. |
-| `sins-wiki-pass.skill` | `/sins-wiki-pass` | Notion 위키 DB(`LLM Wiki Index`)에만 저장 (옵시디언 쓰기 없음, 수동 발동, 타입 6종 + 카테고리 8종 고정 선택, 제목에 `영상 - `·`프롬프트 - ` 등 종류 프리픽스 자동, 저장 후 원본 링크 캡처(없으면 제목 카드)를 본문 맨 위 이미지로 삽입 + URL 속성 채움, 제목은 프리픽스·공백 포함 29자 이내로 자동 점검) |
-| `sins-llmwiki-auto.skill` | `/sins-llmwiki-auto` | 질문·답변·업무·제작 내용을 **자동으로** LLM 위키에 정리·기록하는 상시 발동 정책 (sins-wiki-pass 연동) |
-| `sins-loopass-setup.skill` | `/sins-loopass-setup` | 루프 엔지니어링(자율 AI 에이전트 루프)을 6단계 인터뷰로 설계·세팅하는 위저드 (트리거→행동→검증→정지조건→아키텍처→산출, 단계별 스킬·MCP 추천 + 실행 가능한 루프 스킬 자동 생성) |
-| `sins-higgsfield.skill` | `/sins-higgsfield` | 힉스필드(Higgsfield) MCP로 이미지·영상을 9스텝 선택카드로 단계별 생성 (유형→참고이미지→프롬프트→보강→모델/Soul 캐릭터→화면비→퀄리티→영상 길이·오디오→갯수→get_cost 비용확인→확정, 하네스 없는 순수 위저드) |
-| `sins-contents-thumbstyle-prompt.skill` | `/sins-contents-thumbstyle-prompt` | 제작 범위·스타일·구도·문구·서체·생성 설정을 사용자가 단계별로 선택하는 대화형 썸네일 워크플로우다. 영상 스킬에서 호출되어도 독립된 제작 모드로 처음부터 시작하며, 최종 확인 전에는 생성하지 않는다. 채널 기본은 **다크 네이비 스튜디오 배경 + 네온 포인트 1색(6색 자동 순환) + 매트 클레이 3D 채널 캐릭터 + 주제 오브제**다. 배경은 이미지 모델로 만들지 않고 HTML 템플릿(`assets/thumb-16x9.html`·`assets/thumb-9x16.html`)이 그리며, 오브제·캐릭터만 투명 컷아웃으로 생성해 배치한다. 16:9는 프리셋 P1 화면 주인공·P2 비교·P3 캐릭터 클로즈업·P4 전후 비교 + 하단 큰 타이틀 중 고르고, 타이틀은 흰 글자 + 검정 외곽선 + 강조 단어 포인트색, 서브 자막(선택)은 포인트색 불투명 박스(타이틀의 40%). 9:16은 Presentation 9Black 고정 좌표와 핸들 2개를 유지한다. `assets/render_thumb.py`가 렌더와 자동 검사(재생시간 영역·인스타 3:4 그리드 등)를 맡는다. |
-| `sins-yt-subtitles.skill` | `/sins-yt-subtitles` | SBV 자막을 유튜브용 VTT로 변환 (무조건 1줄·한 줄 목표 15자(공백 제외·단어 안 쪼갬)·마침표에서 자막 분리·쉼표에서 끊기 선호·가독성 우선, `[음악]`·`[박수]` 등 대괄호 효과음 태그·아웃트로(`오늘 영상은 여기까지입니다`~끝)·문장 첫머리 추임새(`자`) 자동 삭제, /humanize-korean 으로 오탈자만 2회 검수해 음성 싱크 보존, 결정론적 재분할 + difflib 재타이밍 + 최소 표시시간 보장) |
-| `sins-lenis.skill` | `/sins-lenis` | HTML `</head>` 직전에 Lenis 부드러운 스크롤 스니펫(CSS·JS·`new Lenis({ autoRaf: true })`) 삽입, 이미 있으면 중복 삽입 없이 알림 (unpkg CDN·버전 1.3.23 핀 고정) |
-| `sins-fluent-korean.skill` | `/sins-fluent-korean` | 한국어 응답에서 조사·어미를 생략하지 않고 문장을 서술어로 완성하게 하여, 전보체 기계 한국어를 막는 문체 지침. 코드·주석·인용문은 제외. 원문 MIT: snflkd/fluent-korean |
-| `sins-palmierpro-cutedit.skill` | `/sins-palmierpro-cutedit` | PalmierPro MCP로 **현재 열려있는 프로젝트 타임라인을 직접 읽고 컷편집**. **단어를 지우는 게 아니라 말을 다듬는 작업**이므로 모든 삭제는 문장·문단 맥락 판정(룰 H)을 통과해야 한다 — 판단 단위는 단어/문장/문단 세 겹, 확정 전 **컷 후 남을 문장을 실제로 읽어 성분 결손·지시 대상·접속 대상을 검증**, 지시어(`이`·`이러한`)·접속사(`그래서`·`다만`)·열거 번호(`두번째는`)가 앞을 붙잡고 있으면 반복이라도 보류, **5초 이상 구간을 지운 뒤엔 문맥 재판정**(큰 컷은 뒷문장을 고아로 만들거나 없던 중복을 만든다), 문단 여는 담화표지(`자`·`그럼`·`마지막으로`)는 군소리가 아니라 구조 표지라 유지. 무음 삭제는 **완료 기준 4개**(실무음 0.6초↑ 0곳 · 타임라인 갭 0 · 무발화 클립 0 · 10프레임 미만 파편 0)를 충족할 때까지 문턱을 1.0→0.6→0.35→0.25초로 낮춰가며 **최대 5회 루프**, 여백은 0.15초로 두어 모든 공백에 0.30초 호흡을 남긴다. **반복·버벅임 판정은 반드시 편집 전 베이스라인 기준**(룰 G) — ASR이 반복 테이크를 클립 경계에서 병합·오라벨링해서 편집 후 트랜스크립트에는 반복이 **사라져 보인다**. 트랜스크립트에 안 잡히는 버벅임은 **간격 이상 스캔**(G-2)으로 찾고 **베이스라인 프레임 역산**(G-3) + `ripple_delete_ranges`로 처리. 단어 룰은 인덱스로 모아 `remove_words` **한 번에** 반영, `cutAggressiveness`는 **`balanced` 기본** (`tight`는 앞 단어 끝음절을 먹는다 — 잘리면 `set_clip_properties` + `move_clips`로 복구). 승인 표에는 **`컷 후 남을 문장` 열을 반드시 병기**하고 확정/추정 표를 분리 |
-| `sins-hyp-video-creat.skill` | `/sins-hyp-video-creat` | **HyperFrames 앱 채팅창에서 호출**하는 컷편집 + 영상 제작 스킬 (MCP 없음 — `npx hyperframes` CLI·ffmpeg만 사용). `sins-palmierpro-cutedit`의 컷 룰(문맥 판정 H·베이스라인 반복 전수검사 G·군소리/버벅임/반복 발화/외국어 구간)을 그대로 쓰되, 원본을 자르지 않는 **비파괴 편집** — 원본 1회 Whisper 전사(소스 시각, 단어 start·end 포함)로 모든 판정을 하고 컷은 `cuts.json` 하나에 모아 `scripts/cutlist.py build`로 `<video>` 클립(data-start/data-duration/data-media-start)을 재생성한다. 무음은 **트랜스크립트 공백 × ffmpeg silencedetect 교차**로 확정분/의심분(숨은 발화)을 분리하고, Whisper가 군소리를 지워 적는 함정(룰 W)은 숨은 발화 스캔으로 보완. 승인 표는 `컷 후 남을 문장` 병기·확정/추정 분리. **컷 확정 후 다음 단계로 컷 내레이션을 입력으로 `/sins-video-consource` 옵션 2**(페이퍼 콜라주·맥 파인더창·네오 브루탈리즘·다이내믹 타일 창·노드 줌 프로세스, 롱폼 2K + 숏폼 2편)를 이어서 실행 |
-| `sins-mycontentsmake.skill` | `/sins-mycontentsmake` | 유튜브 영상 콘텐츠 자산(썸네일 프롬프트·제목·스크립트·영상설명/캡션/태그·썸네일이미지·카드뉴스)을 한 번에 제작해 노션 하위 **6페이지**로 발행하는 통합 워크플로우 (작업 전 노션 부모 링크 강제 확보→6페이지 생성(번호 이모지=아이콘)→스크립트 먼저 작성 후 나머지 병렬 팬아웃→최종 글 검수는 `/humanize-korean`). **슬라이드 페이지는 생성하지 않음**. **제목 12–20자, 썸네일 제목 6–12자**. **카드뉴스(6)는 빈 페이지+빈 코드블럭만 생성**(하위 스킬 자동 호출 안 함). **해시태그·키워드 태그 생성 금지** |
-| `sins-plan.skill` | `/sins-plan` | 광고 대행사용 **마케팅 기획 논의** 워크플로우. 첨부자료(PDF·PPT·엑셀·워드·이미지·URL·노션·구글 드라이브·캡슐노트 녹음)를 읽고 요약 → 빠진 정보 질문 → (선택) 시장조사·고객 반응 조사(서브에이전트 병렬) → 방향안 2~3개 제시·선택 → 기획 브리프(`plans/<…>/brief.md`) 확정까지 진행. 모든 주장에 `[자료]`·`[조사]`·`[가설]` 표시. 확정 후 캐러셀이면 새 세션에서 `/sins-autoca`, 릴스·영상이면 `/sins-vplanma`를 자동 실행 |
-| `sins-autoca.skill` | `/sins-autoca` | 광고 대행사용 **캐러셀(카드뉴스) 자동 제작** 워크플로우. 메인 에이전트가 선택 카드 3장(기획·디자인·레이아웃/이미지)으로 모든 선택을 한 번에 받고, 원고·윤문(humanize 3종)·디자인·이미지(힉스필드, 배경은 recraft 벡터)·HTML 렌더·Figma 전송·최종 검수(최대 3회)를 각각 다른 서브에이전트가 수행. 통일/변경 디자인(변경 강도 1~5), 본문 마침표 줄바꿈 |
-| `sins-vplanma.skill` | `/sins-vplanma` | 광고 대행사용 **영상 스토리보드 → 영상 생성** 워크플로우. 페르소나·기획 방향 → 영상 스타일(톤앤매너·화면비·컷 수·길이) 선택 → 힉스필드로 인물 레퍼런스·엘리먼트 등록 후 키 비주얼·컷 이미지 생성 → HTML 스토리보드 시트(히어로·번호 컷 그리드·브랜드 패널) 렌더 → 컷 단위 검수·수정 → 확정 컷을 시작 프레임으로 컷별 영상 생성·가편집본. 크레딧 단계는 비용 확인 후 진행 |
+| 명령어 | 설명 |
+|--------|------|
+| `/sins-card-news-creator` | 인스타그램 카드뉴스의 11필드 카드 JSON TXT·캡션 TXT·이미지 프롬프트 TXT 제작. |
+| `/sins-marketing-team` | 마케팅 전략 팀 구성 및 실행. |
+| `/sins-wiki-pass` | 내용을 Notion 위키 DB(LLM Wiki Index)에 정리해 저장. |
+| `/sins-higgsfield` | 힉스필드 MCP로 이미지·영상을 선택 카드 따라 단계별 생성. |
+| `/sins-contents-thumbstyle-prompt` | 스타일·구도·문구·서체를 단계별로 골라 유튜브 썸네일 제작. |
+| `/sins-yt-subtitles` | SBV 자막을 1줄·15자 기준 유튜브 VTT 자막으로 변환. |
+| `/sins-lenis` | HTML에 Lenis 부드러운 스크롤 스니펫 삽입. |
+| `/sins-palmierpro-cutedit` | PalmierPro 타임라인을 읽고 문맥을 살려 무음·군소리·반복 구간 컷편집. |
+| `/sins-hyp-video-creat` | HyperFrames에서 원본을 자르지 않는 비파괴 컷편집. |
+| `/sins-mycontentsmake` | 유튜브 콘텐츠 자산(썸네일 프롬프트·제목·스크립트·설명)을 만들어 노션 하위 페이지로 발행. |
+| `/sins-plan` | 첨부자료를 읽고 마케팅 기획 방향을 논의해 기획 브리프로 확정. |
+| `/sins-autoca` | 캐러셀(카드뉴스) 원고·디자인·이미지·HTML 렌더를 서브에이전트로 자동 제작. |
+| `/sins-vplanma` | 영상 스토리보드를 만들고 확정 컷으로 힉스필드 영상 생성. |
 
 ## 함께 설치되는 외부 오픈소스 스킬
 
-한 줄 설치와 수동 설치는 SINS 스킬 설치 후 아래 외부 스킬도 같이 설치합니다. (Hermes 대상은 gstack·superpowers·caveman 등을 자체 번들로 이미 제공하므로 외부 스킬 설치를 건너뛰고 SINS 스킬만 설치합니다.) Grok은 Claude와 `SKILL.md` 프론트매터 규격이 같아 같은 패키지를 **`~/.grok/skills/`에 독립 복사**합니다. Claude 경로와 심볼릭 링크로 공유하지 않습니다.
+전체 설치 때 SINS 스킬과 함께 설치됩니다. Hermes는 자체 번들이 있어 건너뜁니다.
 
 | 이름 | 대상 | 출처 |
 |------|------|------|
@@ -70,1106 +65,65 @@ SINS 프로젝트용 Claude Code, Codex, Hermes, Grok 스킬 패키지입니다.
 | Claude SEO | Claude 전용 | [AgriciDaniel/claude-seo](https://github.com/AgriciDaniel/claude-seo) |
 | Open SEO MCP Skills | Claude 전용 | [Ryze-AI-Adgent/open-seo-mcp-skills](https://github.com/Ryze-AI-Adgent/open-seo-mcp-skills) |
 
-> **oh-my-design 채널 차이** — 286개 실제 기업 디자인 레퍼런스 기반 디자인 시스템 스킬 29개 + 서브에이전트 20개. 자체 `oh-my-design-cli` npx 설치를 사용하며 Claude·Codex 채널을 따로 설치합니다. Claude는 `--agent claude-code`로 스킬 `~/.claude/skills`, 에이전트 `~/.claude/agents`, 데이터 `~/.claude/data`에 설치하고, Codex는 `--agent codex`로 스킬 `~/.agents/skills`, 에이전트 `~/.codex/agents`, 데이터 `~/.codex/data`에 설치합니다(각 도구의 정규 경로). `npx`(Node.js)가 필요하며 없으면 자동으로 건너뜁니다. 건너뛰려면 `SINS_SKIP_OMD=1`. Hermes·Grok는 `oh-my-design-cli` 채널이 없어 대상에서 제외됩니다.
+## 설치
 
-> **Ponytail 설치 범위** — YAGNI·표준 라이브러리 우선·최소 구현을 강제하는 "게으른 시니어 개발자" 모드. 번들은 슬래시 명령 스킬 6개(`ponytail`·`ponytail-audit`·`ponytail-help`·`ponytail-review`·`ponytail-gain`·`ponytail-debt`)만 `skills/`에서 복사합니다. **상시 발동(always-on) 라이프사이클 훅은 번들로 연결되지 않습니다** — 매 프롬프트 자동 활성화가 필요하면 정규 플러그인 설치를 쓰세요. Claude `/plugin marketplace add DietrichGebert/ponytail` → `/plugin install ponytail@ponytail`(두 프롬프트로 분리 실행), Codex `codex plugin marketplace add DietrichGebert/ponytail`, Grok `grok plugin marketplace add DietrichGebert/ponytail`. 훅 실행에는 `node`가 PATH에 있어야 합니다. Hermes는 대상에서 제외됩니다.
-
-> **Emil Kowalski Skills** — UI 애니메이션·모션·디자인 엔지니어링 스킬 13개(`animate`·`animate-expo`·`animation-vocabulary`·`apple-design`·`ask-sonner`·`emil-design-eng`·`find-animation-opportunities`·`improve-animations`·`mobile-native`·`pick-ui-library`·`prototype`·`review-animations`·`write-swift`). Vaul·Sonner 제작자 Emil Kowalski의 UI 폴리시·애니메이션 철학을 담은 스킬로, `skills/`에서 그대로 복사합니다. Hermes는 대상에서 제외됩니다.
-
-> **Fluent Korean 설치 형태** — 스킬이 아니라 Claude Code의 **output-style**입니다. `~/.claude/output-styles/` 에 `fluent-korean.md`(코딩 지침 유지판)와 `fluent-korean-not-coding.md`(코딩 지침 미유지판) 2종을 복사하며, 설치한 뒤 `/output-style` 에서 골라 켭니다. 조사와 어미의 생략을 금지하고, 명사구로 문장을 끝내지 못하게 하며, 비유적 어휘와 엠대시(—)를 자제시켜 한국어 응답의 의미를 명확하게 만듭니다. 코드·주석·변수명·커밋 메시지·로그 문자열·인용문은 적용 대상에서 제외됩니다. **`caveman` 과는 문장 생성 규칙이 정면으로 충돌하므로 두 가지를 동시에 켜지 마세요.** 플러그인 형태로 관리하고 싶다면 `/plugin marketplace add snflkd/fluent-korean` → `/plugin install fluent-korean@fluent-korean` 을 사용합니다(두 프롬프트로 분리 실행). output-style은 Claude Code 전용 개념이라 Codex·Grok·Hermes는 대상에서 제외됩니다.
-
-> **GEO-SEO** — AI 검색(ChatGPT·Claude·Perplexity·Gemini·Google AI Overviews) 노출을 높이는 GEO 감사 스킬입니다. 메인 `/geo`(`audit`·`quick`·`citability`·`crawlers`·`llmstxt`·`brands`·`platforms`·`schema`·`technical`·`content`·`report`·`report-pdf`)와 하위 스킬 15개(`geo-*`), `~/.claude/agents/` 서브에이전트 5개를 설치합니다. upstream `install.sh`를 그대로 실행하며, Python 의존성은 시스템 Python을 건드리지 않고 `~/.claude/skills/geo/.venv`에 따로 설치합니다. **Python 3.10 이상이 필요**하며, 없으면 경고만 내고 나머지 설치를 계속합니다. 스크린샷용 Playwright 브라우저는 설치하지 않으니 필요하면 `~/.claude/skills/geo/.venv/bin/python3 -m playwright install chromium`을 따로 실행하세요. 경로가 `~/.claude`에 고정돼 있어 Claude 전용입니다.
-
-> **Claude SEO** — 기술 SEO·E-E-A-T·schema·GEO·로컬·이커머스까지 다루는 종합 SEO 스킬입니다. 메인 `/seo`와 `seo-*` 하위 스킬, `~/.claude/agents/` 서브에이전트 19개를 설치합니다. upstream `install.sh`가 고정 릴리스 태그를 직접 받아 설치하고, Python 런타임을 `~/.claude/skills/seo/` 아래에 따로 만듭니다. **Python 3.11 이상이 필요**하며, 없으면 경고만 내고 나머지 설치를 계속합니다. 수동 설치라 훅은 적용되지 않으니, 훅까지 쓰려면 `/plugin install claude-seo@agricidaniel-claude-seo` 정규 플러그인 설치를 사용하세요. Claude 전용입니다.
-
-> **Open SEO MCP Skills** — 내 Search Console·GA4·광고 데이터로 SEO·GEO를 분석하는 스킬 8개(`ai-visibility`·`backlink-check`·`competitor-gap`·`content-brief`·`keyword-research`·`rank-tracking`·`seo-audit`·`seo-vs-ads`)입니다. `seo-audit`가 Claude SEO 스킬과 이름이 겹치므로 **모든 폴더에 `ryze-` 접두어**를 붙여 복사합니다(예: `ryze-seo-audit`). 데이터는 Ryze MCP로 가져오므로 따로 연결해야 합니다. Claude Code에서는 `claude mcp add ryze --transport http https://connector.get-ryze.ai/mcp`를 실행하거나, Claude 설정의 Connectors에서 같은 URL을 추가한 뒤 Google 계정으로 로그인하세요. Claude 전용입니다.
-
-> **Humanize Korean 모드 차이** — Claude는 light·standard·heavy 전체 경로를 설치합니다(스킬 `humanize-korean`·`humanize`·`humanize-scan`·`humanize-redo` 4개 + `~/.claude/agents/` 런타임 서브에이전트 4개: `humanize-monolith`·`humanize-diagnostician`·`humanize-finalizer`·`korean-ai-tell-taxonomist`). 이전 버전이 설치한 은퇴·개발용 에이전트 파일은 자동으로 정리합니다. Codex와 Grok은 Codex용 `humanize-korean` 1개를 설치하며, 진단·윤문·finalize 역할을 협업 에이전트가 있으면 독립 실행하고 없으면 순차 실행합니다. Hermes는 대상에서 제외됩니다.
-
-외부 스킬 설치를 건너뛰려면 다음처럼 실행합니다.
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-skill-all-install.sh | SINS_SKIP_EXTERNAL=1 bash -s -- claude
-```
-
-`oh-my-design`만 건너뛰려면 `SINS_SKIP_OMD=1` 을 사용합니다(나머지 외부 스킬은 그대로 설치).
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-skill-all-install.sh | SINS_SKIP_OMD=1 bash -s -- claude
-```
-
-`gstack`은 기본적으로 스킬 파일만 복사합니다. 브라우저 빌드와 Playwright 설치까지 포함한 gstack 자체 setup을 함께 실행하려면 다음처럼 명시합니다.
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-skill-all-install.sh | SINS_RUN_GSTACK_SETUP=1 bash -s -- claude
-```
-
-## 한 줄 설치
-
-### Claude Code
+### 전체 설치
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-skill-all-install.sh | bash -s -- claude
 ```
 
-### Claude Code mods (사용량 막대 · 작업 진행 패널 · Higgsfield 띠 · AI 티 점수)
+`claude` 자리에 `codex` · `hermes` · `grok` 을 넣으면 해당 도구에 설치됩니다. 옵션은 `bash` 앞에 붙입니다.
 
-터미널(CLI)과 데스크톱 앱(Code 탭)에서 서로 다른 막대가 나옵니다. VS Code 확장 채팅 패널은 mod 화면을 그리지 않습니다 (VS Code 내장 터미널에서 `claude` 를 실행하면 터미널 막대가 나옵니다).
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-mods-install.sh | bash
-```
-
-자세한 내용은 [Claude Code mods](#claude-code-mods-사용량-막대--작업-진행-패널--higgsfield-띠--ai-티-점수) 섹션을 참고하세요.
-
-### Codex
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-skill-all-install.sh | bash -s -- codex
-```
-
-### Hermes
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-skill-all-install.sh | bash -s -- hermes
-```
-
-### Grok
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-skill-all-install.sh | bash -s -- grok
-```
-
-> **Grok 설치 참고**
->
-> - **설치 위치는 `~/.grok/skills/`** 입니다. Claude·Codex·Hermes와 심볼릭 링크로 공유하지 않고, `grok` 대상으로 이 설치를 실행해 **독립 복사**합니다. 파일 변경은 재시작 없이 몇 초 안에 슬래시 메뉴에 반영됩니다. `grok inspect` 로 확인하세요.
-> - **Claude 호환 스캔은 설치를 대신하지 않습니다.** Grok이 기본값으로 `~/.claude/skills/` 를 함께 읽을 수는 있지만, SINS 스킬은 반드시 `~/.grok/skills/` 에 따로 둡니다. Claude 쪽과 섞이지 않게 하려면 `GROK_CLAUDE_SKILLS_ENABLED=false`.
-> - **MCP는 이관되지 않습니다.** 노션(`/sins-mycontentsmake`)·힉스필드(`/sins-contents-thumbstyle-prompt`·`/sins-higgsfield`)·Lazyweb(`/sins-video-consource`)·PalmierPro(`/sins-palmierpro-cutedit`)는 `grok mcp add` 로 따로 등록해야 동작합니다. 상태 확인은 `grok mcp list` · `grok mcp doctor`.
-> - **서브에이전트 구성은 다릅니다.** Claude의 `~/.claude/agents/*.md` 팀 에이전트는 그대로 쓰이지 않습니다. Grok은 `--agents` JSON 또는 자체 서브에이전트 정의를 씁니다. `/humanize-korean` 은 이 때문에 역할을 순차 실행하는 Codex용 패키지를 설치합니다.
-> - **이름이 겹치면** Grok이 `/user:이름` 처럼 스코프를 붙인 명령으로도 함께 노출합니다. (`grok inspect` 가 `[collides with ...]` 로 표시)
-
-## 수동 설치
-
-### Claude Code
-
-```bash
-git clone https://github.com/CAPSTONEID/sins-clco.git /tmp/sins-clco
-cd /tmp/sins-clco
-bash sins-skill-all-install.sh claude
-rm -rf /tmp/sins-clco
-echo "Claude Code 설치 완료"
-```
-
-### Codex
-
-```bash
-git clone https://github.com/CAPSTONEID/sins-clco.git /tmp/sins-clco
-cd /tmp/sins-clco
-bash sins-skill-all-install.sh codex
-rm -rf /tmp/sins-clco
-echo "Codex 설치 완료"
-```
-
-### Hermes
-
-```bash
-git clone https://github.com/CAPSTONEID/sins-clco.git /tmp/sins-clco
-cd /tmp/sins-clco
-bash sins-skill-all-install.sh hermes
-rm -rf /tmp/sins-clco
-echo "Hermes 설치 완료"
-```
-
-### Grok
-
-```bash
-git clone https://github.com/CAPSTONEID/sins-clco.git /tmp/sins-clco
-cd /tmp/sins-clco
-bash sins-skill-all-install.sh grok
-rm -rf /tmp/sins-clco
-echo "Grok 설치 완료"
-```
-
-## 개별 스킬 설치
-
-### Claude Code 준비
-
-```bash
-mkdir -p ~/.claude/skills
-```
-
-### Codex 준비
-
-```bash
-mkdir -p ~/.codex/skills
-```
-
-### Hermes 준비
-
-```bash
-mkdir -p ~/.hermes/skills
-```
-
-### Grok 준비
-
-```bash
-mkdir -p ~/.grok/skills
-```
-
-### sins-card-news-creator
-
-Claude Code:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-card-news-creator.skill \
-  -o /tmp/sins-card-news-creator.skill
-mkdir -p ~/.claude/skills/sins-card-news-creator
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-card-news-creator.skill').extractall(os.path.expanduser('~/.claude/skills/sins-card-news-creator'))
-PY
-```
-
-Codex:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-card-news-creator.skill \
-  -o /tmp/sins-card-news-creator.skill
-mkdir -p ~/.codex/skills/sins-card-news-creator
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-card-news-creator.skill').extractall(os.path.expanduser('~/.codex/skills/sins-card-news-creator'))
-PY
-```
-
-Hermes:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-card-news-creator.skill \
-  -o /tmp/sins-card-news-creator.skill
-mkdir -p ~/.hermes/skills/sins-card-news-creator
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-card-news-creator.skill').extractall(os.path.expanduser('~/.hermes/skills/sins-card-news-creator'))
-PY
-```
-
-Grok:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-card-news-creator.skill \
-  -o /tmp/sins-card-news-creator.skill
-mkdir -p ~/.grok/skills/sins-card-news-creator
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-card-news-creator.skill').extractall(os.path.expanduser('~/.grok/skills/sins-card-news-creator'))
-PY
-```
-
-### sins-marketing-team
-
-Claude Code:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-marketing-team.skill \
-  -o /tmp/sins-marketing-team.skill
-mkdir -p ~/.claude/skills/sins-marketing-team
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-marketing-team.skill').extractall(os.path.expanduser('~/.claude/skills/sins-marketing-team'))
-PY
-```
-
-Codex:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-marketing-team.skill \
-  -o /tmp/sins-marketing-team.skill
-mkdir -p ~/.codex/skills/sins-marketing-team
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-marketing-team.skill').extractall(os.path.expanduser('~/.codex/skills/sins-marketing-team'))
-PY
-```
-
-Hermes:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-marketing-team.skill \
-  -o /tmp/sins-marketing-team.skill
-mkdir -p ~/.hermes/skills/sins-marketing-team
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-marketing-team.skill').extractall(os.path.expanduser('~/.hermes/skills/sins-marketing-team'))
-PY
-```
-
-Grok:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-marketing-team.skill \
-  -o /tmp/sins-marketing-team.skill
-mkdir -p ~/.grok/skills/sins-marketing-team
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-marketing-team.skill').extractall(os.path.expanduser('~/.grok/skills/sins-marketing-team'))
-PY
-```
-
-### sins-sidenote-pass
-
-Claude Code:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-sidenote-pass.skill \
-  -o /tmp/sins-sidenote-pass.skill
-mkdir -p ~/.claude/skills/sins-sidenote-pass
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-sidenote-pass.skill').extractall(os.path.expanduser('~/.claude/skills/sins-sidenote-pass'))
-PY
-```
-
-Codex:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-sidenote-pass.skill \
-  -o /tmp/sins-sidenote-pass.skill
-mkdir -p ~/.codex/skills/sins-sidenote-pass
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-sidenote-pass.skill').extractall(os.path.expanduser('~/.codex/skills/sins-sidenote-pass'))
-PY
-```
-
-Hermes:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-sidenote-pass.skill \
-  -o /tmp/sins-sidenote-pass.skill
-mkdir -p ~/.hermes/skills/sins-sidenote-pass
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-sidenote-pass.skill').extractall(os.path.expanduser('~/.hermes/skills/sins-sidenote-pass'))
-PY
-```
-
-Grok:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-sidenote-pass.skill \
-  -o /tmp/sins-sidenote-pass.skill
-mkdir -p ~/.grok/skills/sins-sidenote-pass
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-sidenote-pass.skill').extractall(os.path.expanduser('~/.grok/skills/sins-sidenote-pass'))
-PY
-```
-
-### sins-video-consource
-
-영상에서 클릭·선택 강조는 **핵심 글자색만 승인 선택색으로 변경**합니다. 클릭으로 선택 박스·배경·테두리·그림자를 추가하지 않으며, 기존 창/카드의 구조선과 포인터 클릭 리플은 유지합니다. 실제 클릭 전후 화면과 글자 대비를 검수합니다. [공통 강조·스타일 규칙](skill-list-docs/video-style-profiles.md)을 참고하세요.
-
-**숏폼 대사 자막 (2026-11-05)**: 숏폼은 내레이션 대사 자막을 작은 크기로 항상 넣습니다(롱폼은 넣지 않음). 테마 보관소 6종 엔진이 빌드 때 자동으로 넣으며, 박스 없는 32px 글자를 화면 아래쪽(1080×1920 기준 y 1380)에 가운데 정렬합니다. 고유명사는 `work/caption_fix.json` 교정표로 바로잡습니다. 테마 보관소는 Dropbox(`📦 My Contents/theme - Never delete it/`)에 있어 이 저장소에는 포함되지 않습니다.
-
-**썸네일 세트 (2026-11-04)**: 영상을 다 만든 뒤 항상 썸네일 세트 제작 여부를 묻습니다. 세트는 **롱폼 16:9 3장(A/B 후보) + 숏폼 9:16 2장(short1·short2 커버)**으로 고정이며, 롱폼만 만든 경우에도 같은 세트를 만듭니다. 썸네일의 배경·캐릭터·타이틀·검수 규격은 영상 스킬에 따로 두지 않고 개편된 `/sins-contents-thumbstyle-prompt`(다크 네이비 + 네온 포인트 + 3D 채널 캐릭터 + 주제 오브제)를 그대로 따릅니다.
-
-페이퍼 콜라주의 단계·카드 번호는 **종이 위쪽**에 두고 카드와 함께 등장합니다. 롱폼·숏폼 썸네일은 반드시 `/sins-contents-thumbstyle-prompt`를 독립된 제작 모드로 시작합니다. 제작 범위(영상에서는 세트 고정) → 스타일 → 구도와 피사체 → 문구 → 서체 → 생성 설정과 최종 확인을 사용자가 단계별로 선택한 후에만 생성·합성합니다. 영상에서 고른 스타일·색·모델은 썸네일 설정으로 자동 승계하지 않습니다. [대화형 썸네일 선택 절차](skill-list-docs/thumbnail-style-confirmation.md)를 참고하세요.
-
-영상은 **페이퍼 콜라주·맥 파인더창·네오 브루탈리즘·다이내믹 타일 창·노드 줌 프로세스** 중 선택합니다. 노드 줌 프로세스(`node-zoom`)는 영상 전체를 손그림 노드와 화살표로 이어진 하나의 공정도로 보여 주고, 말하는 항목의 노드로 카메라가 줌인해 내용을 펼친 뒤 하나의 연속 곡선으로 다음 노드로 이동합니다. 노드는 롱폼 가로 일렬·숏폼 세로 일렬이며 노드 안은 여백을 넉넉히 둡니다. 전용 검증기 `scripts/verify-node-frame.js`로 초점 안착·제목 줄 수·화면 가장자리 잘림·안전영역을 검수합니다. [노드 줌 규칙](skill-list-docs/video-style-profiles.md#5-노드-줌-프로세스-node-zoom)을 참고하세요. 다이내믹 타일 창(`tile-motion`)은 브라우저형 창 1~4개가 16px 간격 타일로 깔리고, 새 창이 들어올 때 기존 창이 동시에 줄어들며 분할·승격·레일 강등·최대화로 크기가 계속 바뀝니다. 전용 검증기 `scripts/verify-tile-frame.js`로 간격·덮임률·활성 창·제목 위치를 검수합니다. [타일 창 규칙](skill-list-docs/video-style-profiles.md#4-다이내믹-타일-창-tile-motion)을 참고하세요. 페이퍼 콜라주는 봉투·문서·폴더·분기·교정 등 내용별 배치와 모션을 사용하며, 동일 배치·주동작의 3장면 연속 반복을 방지하고 실제 화면과 MP4로 검수합니다. 패키지에 `references/paper-motion-variety.md`와 종이 프레임 검증기가 포함되어 Claude Code·Codex·Hermes·Grok 설치에 동일하게 적용됩니다. 기존 사용자도 아래 명령으로 다시 설치하면 업데이트됩니다. [상세 디자인 규칙](skill-list-docs/video-paper-briefing.md)과 [장면·모션 변주](skill-list-docs/paper-motion-variety.md)를 참고하세요.
-
-Claude Code:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-video-consource.skill \
-  -o /tmp/sins-video-consource.skill
-mkdir -p ~/.claude/skills/sins-video-consource
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-video-consource.skill').extractall(os.path.expanduser('~/.claude/skills/sins-video-consource'))
-PY
-```
-
-Codex:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-video-consource.skill \
-  -o /tmp/sins-video-consource.skill
-mkdir -p ~/.codex/skills/sins-video-consource
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-video-consource.skill').extractall(os.path.expanduser('~/.codex/skills/sins-video-consource'))
-PY
-```
-
-Hermes:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-video-consource.skill \
-  -o /tmp/sins-video-consource.skill
-mkdir -p ~/.hermes/skills/sins-video-consource
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-video-consource.skill').extractall(os.path.expanduser('~/.hermes/skills/sins-video-consource'))
-PY
-```
-
-Grok:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-video-consource.skill \
-  -o /tmp/sins-video-consource.skill
-mkdir -p ~/.grok/skills/sins-video-consource
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-video-consource.skill').extractall(os.path.expanduser('~/.grok/skills/sins-video-consource'))
-PY
-```
-
-### sins-wiki-pass
-
-Notion `LLM Wiki Index`에만 저장한다. 옵시디언 vault에는 쓰지 않는다.
-
-Claude Code:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-wiki-pass.skill \
-  -o /tmp/sins-wiki-pass.skill
-mkdir -p ~/.claude/skills/sins-wiki-pass
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-wiki-pass.skill').extractall(os.path.expanduser('~/.claude/skills/sins-wiki-pass'))
-PY
-```
-
-Codex:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-wiki-pass.skill \
-  -o /tmp/sins-wiki-pass.skill
-mkdir -p ~/.codex/skills/sins-wiki-pass
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-wiki-pass.skill').extractall(os.path.expanduser('~/.codex/skills/sins-wiki-pass'))
-PY
-```
-
-Hermes:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-wiki-pass.skill \
-  -o /tmp/sins-wiki-pass.skill
-mkdir -p ~/.hermes/skills/sins-wiki-pass
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-wiki-pass.skill').extractall(os.path.expanduser('~/.hermes/skills/sins-wiki-pass'))
-PY
-```
-
-Grok:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-wiki-pass.skill \
-  -o /tmp/sins-wiki-pass.skill
-mkdir -p ~/.grok/skills/sins-wiki-pass
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-wiki-pass.skill').extractall(os.path.expanduser('~/.grok/skills/sins-wiki-pass'))
-PY
-```
-
-### sins-llmwiki-auto (자동 기록 / 상시 발동)
-
-`sins-wiki-pass`는 수동 발동("위키에 넣어줘")이다. **질문·답변·업무·제작 내용을 자동으로** Notion 위키 DB에 정리·기록하려면 `sins-llmwiki-auto`를 쓴다. 옵시디언에는 쓰지 않는다. 함께 설치 후, [`skill-list-docs/llm-wiki-autosave.md`](skill-list-docs/llm-wiki-autosave.md)의 규칙 블록을 `~/.claude/CLAUDE.md`(또는 프로젝트 CLAUDE.md) 끝에 붙여넣으면 매 세션 영구 상시 발동.
-
-Claude Code:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-llmwiki-auto.skill \
-  -o /tmp/sins-llmwiki-auto.skill
-mkdir -p ~/.claude/skills/sins-llmwiki-auto
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-llmwiki-auto.skill').extractall(os.path.expanduser('~/.claude/skills/sins-llmwiki-auto'))
-PY
-```
-
-
-- 지식·정보성 답변 → 자동 위키 노트
-- 마케팅 기획·전략·카피·리서치 → `concept`/`moc` 요약
-- 카드뉴스·웹·랜딩·PT·이미지 등 제작물 → `source` 메타 요약(산출물 경로 포함)
-- 인사·단순확인·잡담 → 제외
-- 끄기: 대화 중 `위키 자동저장 꺼` / `wiki off`
-- 토큰 영향(추정): 세션 평균 **+20~35%**
-
-### sins-loopass-setup (루프 엔지니어링 셋업 위저드)
-
-자율 AI 에이전트 루프를 6단계 인터뷰(트리거→행동→검증→정지조건→아키텍처→산출)로 설계·세팅한다. 각 단계마다 핵심 질문 + 추가할 스킬·MCP를 함께 묻고, 마지막에 정지조건 4종(검증 통과 / max_iterations / 예산 / no-progress)이 코드에 박힌 실행 가능한 루프 스킬을 자동 생성한다.
-
-Claude Code:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-loopass-setup.skill \
-  -o /tmp/sins-loopass-setup.skill
-mkdir -p ~/.claude/skills/sins-loopass-setup
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-loopass-setup.skill').extractall(os.path.expanduser('~/.claude/skills/sins-loopass-setup'))
-PY
-```
-
-Codex:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-loopass-setup.skill \
-  -o /tmp/sins-loopass-setup.skill
-mkdir -p ~/.codex/skills/sins-loopass-setup
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-loopass-setup.skill').extractall(os.path.expanduser('~/.codex/skills/sins-loopass-setup'))
-PY
-```
-
-Hermes:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-loopass-setup.skill \
-  -o /tmp/sins-loopass-setup.skill
-mkdir -p ~/.hermes/skills/sins-loopass-setup
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-loopass-setup.skill').extractall(os.path.expanduser('~/.hermes/skills/sins-loopass-setup'))
-PY
-```
-
-Grok:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-loopass-setup.skill \
-  -o /tmp/sins-loopass-setup.skill
-mkdir -p ~/.grok/skills/sins-loopass-setup
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-loopass-setup.skill').extractall(os.path.expanduser('~/.grok/skills/sins-loopass-setup'))
-PY
-```
-
-### sins-higgsfield (힉스필드 이미지·영상 단계별 생성)
-
-힉스필드(Higgsfield) MCP가 연결된 환경에서, 이미지/영상을 9스텝 선택카드로 한 스텝씩 설계해 생성한다. 유형→참고이미지→프롬프트→보강→모델(Soul이면 캐릭터까지)→화면비→퀄리티→(영상이면 길이·오디오)→갯수→`get_cost` 비용확인→확정 순서. 모델 카탈로그·Soul 캐릭터·크레딧을 런타임에 실제 조회하며, 하네스 없는 순수 위저드다. **힉스필드 MCP 연결이 필요하다.**
-
-Claude Code:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-higgsfield.skill \
-  -o /tmp/sins-higgsfield.skill
-mkdir -p ~/.claude/skills/sins-higgsfield
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-higgsfield.skill').extractall(os.path.expanduser('~/.claude/skills/sins-higgsfield'))
-PY
-```
-
-Codex:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-higgsfield.skill \
-  -o /tmp/sins-higgsfield.skill
-mkdir -p ~/.codex/skills/sins-higgsfield
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-higgsfield.skill').extractall(os.path.expanduser('~/.codex/skills/sins-higgsfield'))
-PY
-```
-
-Hermes:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-higgsfield.skill \
-  -o /tmp/sins-higgsfield.skill
-mkdir -p ~/.hermes/skills/sins-higgsfield
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-higgsfield.skill').extractall(os.path.expanduser('~/.hermes/skills/sins-higgsfield'))
-PY
-```
-
-Grok:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-higgsfield.skill \
-  -o /tmp/sins-higgsfield.skill
-mkdir -p ~/.grok/skills/sins-higgsfield
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-higgsfield.skill').extractall(os.path.expanduser('~/.grok/skills/sins-higgsfield'))
-PY
-```
-
-### sins-yt-subtitles (SBV → 유튜브 VTT 자막 변환)
-
-Claude Code:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-yt-subtitles.skill \
-  -o /tmp/sins-yt-subtitles.skill
-mkdir -p ~/.claude/skills/sins-yt-subtitles
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-yt-subtitles.skill').extractall(os.path.expanduser('~/.claude/skills/sins-yt-subtitles'))
-PY
-```
-
-Codex:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-yt-subtitles.skill \
-  -o /tmp/sins-yt-subtitles.skill
-mkdir -p ~/.codex/skills/sins-yt-subtitles
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-yt-subtitles.skill').extractall(os.path.expanduser('~/.codex/skills/sins-yt-subtitles'))
-PY
-```
-
-Hermes:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-yt-subtitles.skill \
-  -o /tmp/sins-yt-subtitles.skill
-mkdir -p ~/.hermes/skills/sins-yt-subtitles
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-yt-subtitles.skill').extractall(os.path.expanduser('~/.hermes/skills/sins-yt-subtitles'))
-PY
-```
-
-Grok:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-yt-subtitles.skill \
-  -o /tmp/sins-yt-subtitles.skill
-mkdir -p ~/.grok/skills/sins-yt-subtitles
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-yt-subtitles.skill').extractall(os.path.expanduser('~/.grok/skills/sins-yt-subtitles'))
-PY
-```
-
-### sins-lenis (Lenis 부드러운 스크롤 스니펫 삽입)
-
-Claude Code:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-lenis.skill \
-  -o /tmp/sins-lenis.skill
-mkdir -p ~/.claude/skills/sins-lenis
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-lenis.skill').extractall(os.path.expanduser('~/.claude/skills/sins-lenis'))
-PY
-```
-
-Codex:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-lenis.skill \
-  -o /tmp/sins-lenis.skill
-mkdir -p ~/.codex/skills/sins-lenis
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-lenis.skill').extractall(os.path.expanduser('~/.codex/skills/sins-lenis'))
-PY
-```
-
-Hermes:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-lenis.skill \
-  -o /tmp/sins-lenis.skill
-mkdir -p ~/.hermes/skills/sins-lenis
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-lenis.skill').extractall(os.path.expanduser('~/.hermes/skills/sins-lenis'))
-PY
-```
-
-Grok:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-lenis.skill \
-  -o /tmp/sins-lenis.skill
-mkdir -p ~/.grok/skills/sins-lenis
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-lenis.skill').extractall(os.path.expanduser('~/.grok/skills/sins-lenis'))
-PY
-```
-
-### sins-fluent-korean (한국어 문체 지침)
-
-Claude Code:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-fluent-korean.skill \
-  -o /tmp/sins-fluent-korean.skill
-mkdir -p ~/.claude/skills/sins-fluent-korean
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-fluent-korean.skill').extractall(os.path.expanduser('~/.claude/skills/sins-fluent-korean'))
-PY
-```
-
-Codex:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-fluent-korean.skill \
-  -o /tmp/sins-fluent-korean.skill
-mkdir -p ~/.codex/skills/sins-fluent-korean
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-fluent-korean.skill').extractall(os.path.expanduser('~/.codex/skills/sins-fluent-korean'))
-PY
-```
-
-Hermes:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-fluent-korean.skill \
-  -o /tmp/sins-fluent-korean.skill
-mkdir -p ~/.hermes/skills/sins-fluent-korean
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-fluent-korean.skill').extractall(os.path.expanduser('~/.hermes/skills/sins-fluent-korean'))
-PY
-```
-
-Grok:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-fluent-korean.skill \
-  -o /tmp/sins-fluent-korean.skill
-mkdir -p ~/.grok/skills/sins-fluent-korean
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-fluent-korean.skill').extractall(os.path.expanduser('~/.grok/skills/sins-fluent-korean'))
-PY
-```
-
-### sins-mycontentsmake (유튜브 콘텐츠 자산 통합 제작 → 노션 발행)
-
-Claude Code:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-mycontentsmake.skill \
-  -o /tmp/sins-mycontentsmake.skill
-mkdir -p ~/.claude/skills/sins-mycontentsmake
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-mycontentsmake.skill').extractall(os.path.expanduser('~/.claude/skills/sins-mycontentsmake'))
-PY
-```
-
-Codex:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-mycontentsmake.skill \
-  -o /tmp/sins-mycontentsmake.skill
-mkdir -p ~/.codex/skills/sins-mycontentsmake
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-mycontentsmake.skill').extractall(os.path.expanduser('~/.codex/skills/sins-mycontentsmake'))
-PY
-```
-
-Hermes:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-mycontentsmake.skill \
-  -o /tmp/sins-mycontentsmake.skill
-mkdir -p ~/.hermes/skills/sins-mycontentsmake
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-mycontentsmake.skill').extractall(os.path.expanduser('~/.hermes/skills/sins-mycontentsmake'))
-PY
-```
-
-Grok:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-mycontentsmake.skill \
-  -o /tmp/sins-mycontentsmake.skill
-mkdir -p ~/.grok/skills/sins-mycontentsmake
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-mycontentsmake.skill').extractall(os.path.expanduser('~/.grok/skills/sins-mycontentsmake'))
-PY
-```
-
-### sins-palmierpro-cutedit (PalmierPro 타임라인 컷편집)
-
-Claude Code:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-palmierpro-cutedit.skill \
-  -o /tmp/sins-palmierpro-cutedit.skill
-mkdir -p ~/.claude/skills/sins-palmierpro-cutedit
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-palmierpro-cutedit.skill').extractall(os.path.expanduser('~/.claude/skills/sins-palmierpro-cutedit'))
-PY
-```
-
-Codex:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-palmierpro-cutedit.skill \
-  -o /tmp/sins-palmierpro-cutedit.skill
-mkdir -p ~/.codex/skills/sins-palmierpro-cutedit
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-palmierpro-cutedit.skill').extractall(os.path.expanduser('~/.codex/skills/sins-palmierpro-cutedit'))
-PY
-```
-
-Hermes:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-palmierpro-cutedit.skill \
-  -o /tmp/sins-palmierpro-cutedit.skill
-mkdir -p ~/.hermes/skills/sins-palmierpro-cutedit
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-palmierpro-cutedit.skill').extractall(os.path.expanduser('~/.hermes/skills/sins-palmierpro-cutedit'))
-PY
-```
-
-Grok:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-palmierpro-cutedit.skill \
-  -o /tmp/sins-palmierpro-cutedit.skill
-mkdir -p ~/.grok/skills/sins-palmierpro-cutedit
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-palmierpro-cutedit.skill').extractall(os.path.expanduser('~/.grok/skills/sins-palmierpro-cutedit'))
-PY
-```
-
-**사전 준비 — PalmierPro MCP 연결 (이 스킬 전용)**
-
-PalmierPro는 실행 중일 때 `http://127.0.0.1:19789/mcp` 에 MCP 서버를 엽니다. 한 번만 등록하면 됩니다.
-
-```bash
-# Claude Code
-claude mcp add --transport http palmier-pro http://127.0.0.1:19789/mcp
-
-# Codex
-codex mcp add palmier-pro --url http://127.0.0.1:19789/mcp
-
-# Grok
-grok mcp add --transport http palmier-pro http://127.0.0.1:19789/mcp
-```
-
-Cursor는 `~/.cursor/mcp.json` 에 동일 URL을 등록합니다.
-
-| 확인 | 방법 |
+| 옵션 | 효과 |
 |------|------|
-| 연결 상태 | `claude mcp list` → `palmier-pro ✔ Connected` (Grok은 `grok mcp doctor palmier-pro`) |
-| `ConnectionRefused` | PalmierPro 앱이 꺼져 있음. 앱을 실행한 뒤 재시도 |
+| `SINS_SKIP_EXTERNAL=1` | 외부 오픈소스 스킬 설치 건너뜀 |
+| `SINS_SKIP_OMD=1` | oh-my-design만 건너뜀 |
+| `SINS_RUN_GSTACK_SETUP=1` | gstack 브라우저 빌드·Playwright setup까지 실행 |
 
-편집 대상은 **현재 열려있는 프로젝트**입니다. 파일 경로를 넘기지 않습니다.
+예: `curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-skill-all-install.sh | SINS_SKIP_EXTERNAL=1 bash -s -- claude`
 
-### sins-hyp-video-creat (HyperFrames 컷편집 + 영상 제작)
+### 개별 스킬 설치
 
-Claude Code:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-hyp-video-creat.skill \
-  -o /tmp/sins-hyp-video-creat.skill
-mkdir -p ~/.claude/skills/sins-hyp-video-creat
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-hyp-video-creat.skill').extractall(os.path.expanduser('~/.claude/skills/sins-hyp-video-creat'))
-PY
-```
-
-Codex:
+`SKILL` 에 위 표의 이름(`/` 제외)을, `DIR` 에 도구의 스킬 폴더를 넣습니다.
 
 ```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-hyp-video-creat.skill \
-  -o /tmp/sins-hyp-video-creat.skill
-mkdir -p ~/.codex/skills/sins-hyp-video-creat
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-hyp-video-creat.skill').extractall(os.path.expanduser('~/.codex/skills/sins-hyp-video-creat'))
-PY
+SKILL=sins-card-news-creator
+DIR=~/.claude/skills   # Codex ~/.codex/skills · Hermes ~/.hermes/skills · Grok ~/.grok/skills
+curl -fsSL https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/$SKILL.skill -o /tmp/$SKILL.skill
+mkdir -p "$DIR/$SKILL" && python3 -c "import sys,zipfile; zipfile.ZipFile(sys.argv[1]).extractall(sys.argv[2])" /tmp/$SKILL.skill "$DIR/$SKILL"
 ```
 
-Hermes:
+설치 확인은 `ls ~/.claude/skills/` (Grok은 `grok inspect`). Codex는 `@~/.codex/skills/sins-card-news-creator/SKILL.md 위 내용대로 실행해줘` 처럼 파일 참조로 부릅니다.
 
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-hyp-video-creat.skill \
-  -o /tmp/sins-hyp-video-creat.skill
-mkdir -p ~/.hermes/skills/sins-hyp-video-creat
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-hyp-video-creat.skill').extractall(os.path.expanduser('~/.hermes/skills/sins-hyp-video-creat'))
-PY
-```
+### Grok 참고
 
-Grok:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-hyp-video-creat.skill \
-  -o /tmp/sins-hyp-video-creat.skill
-mkdir -p ~/.grok/skills/sins-hyp-video-creat
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-hyp-video-creat.skill').extractall(os.path.expanduser('~/.grok/skills/sins-hyp-video-creat'))
-PY
-```
-
-**사전 준비 — MCP 연결 없음**
-
-HyperFrames 앱 채팅창에서 `/sins-hyp-video-creat`를 입력해 실행합니다. 대상은 **현재 열려있는 HyperFrames 프로젝트**입니다.
-
-| 필요 | 확인 |
-|------|------|
-| HyperFrames CLI | `npx hyperframes doctor` |
-| ffmpeg / ffprobe | `ffmpeg -version` |
-| 2부 영상 제작 | `/sins-video-consource` 설치 (옵션 2 규칙을 읽어 실행) |
-
-### sins-plan (마케팅 기획 논의 → 캐러셀·영상 인계)
-
-Claude Code:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-plan.skill \
-  -o /tmp/sins-plan.skill
-mkdir -p ~/.claude/skills/sins-plan
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-plan.skill').extractall(os.path.expanduser('~/.claude/skills/sins-plan'))
-PY
-```
-
-Codex:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-plan.skill \
-  -o /tmp/sins-plan.skill
-mkdir -p ~/.codex/skills/sins-plan
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-plan.skill').extractall(os.path.expanduser('~/.codex/skills/sins-plan'))
-PY
-```
-
-Hermes:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-plan.skill \
-  -o /tmp/sins-plan.skill
-mkdir -p ~/.hermes/skills/sins-plan
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-plan.skill').extractall(os.path.expanduser('~/.hermes/skills/sins-plan'))
-PY
-```
-
-Grok:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-plan.skill \
-  -o /tmp/sins-plan.skill
-mkdir -p ~/.grok/skills/sins-plan
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-plan.skill').extractall(os.path.expanduser('~/.grok/skills/sins-plan'))
-PY
-```
-
-**사전 준비**
-
-| 필요 | 용도 |
-|------|------|
-| `insane-search` 스킬 · `YOUTUBE_API_KEY` | 시장조사·고객 반응 조사 (선택) |
-| 노션·구글 드라이브·캡슐노트 커넥터, pptx·xlsx·docx·pdf 스킬 | 자료 종류별 읽기 (선택) |
-| `/sins-autoca`, `/sins-vplanma` | 확정한 기획을 캐러셀·영상으로 이어갈 때 |
-
-새 세션 자동 실행은 Claude 데스크톱 앱(Code 탭)에서 동작합니다. 터미널에서는 실행할 명령을 대신 보여줍니다.
-### sins-autoca (캐러셀 자동 제작)
-
-Claude Code:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-autoca.skill \
-  -o /tmp/sins-autoca.skill
-mkdir -p ~/.claude/skills/sins-autoca
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-autoca.skill').extractall(os.path.expanduser('~/.claude/skills/sins-autoca'))
-PY
-```
-
-Codex:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-autoca.skill \
-  -o /tmp/sins-autoca.skill
-mkdir -p ~/.codex/skills/sins-autoca
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-autoca.skill').extractall(os.path.expanduser('~/.codex/skills/sins-autoca'))
-PY
-```
-
-Hermes:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-autoca.skill \
-  -o /tmp/sins-autoca.skill
-mkdir -p ~/.hermes/skills/sins-autoca
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-autoca.skill').extractall(os.path.expanduser('~/.hermes/skills/sins-autoca'))
-PY
-```
-
-Grok:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-autoca.skill \
-  -o /tmp/sins-autoca.skill
-mkdir -p ~/.grok/skills/sins-autoca
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-autoca.skill').extractall(os.path.expanduser('~/.grok/skills/sins-autoca'))
-PY
-```
-
-**사전 준비**
-
-| 필요 | 확인 |
-|------|------|
-| 힉스필드 MCP | 이미지 생성 (배경 recraft 벡터 + 본문 이미지) |
-| Figma MCP | 편집 가능한 레이어로 전송 (없으면 PNG까지) |
-| `python3` + `playwright`(Chromium), macOS `sips`, `curl` | HTML → PNG 렌더, 이미지 변환 |
-| `/humanize-korean` + humanize 에이전트 3종 | 원고·최종 문구 윤문 검수 |
-
-작업 폴더에 `core/`·`themes/`·`tones/`·`personas/`가 없으면 스킬의 `assets/`에서 자동으로 복사합니다.
-### sins-vplanma (영상 스토리보드 → 영상 생성)
-
-Claude Code:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-vplanma.skill \
-  -o /tmp/sins-vplanma.skill
-mkdir -p ~/.claude/skills/sins-vplanma
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-vplanma.skill').extractall(os.path.expanduser('~/.claude/skills/sins-vplanma'))
-PY
-```
-
-Codex:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-vplanma.skill \
-  -o /tmp/sins-vplanma.skill
-mkdir -p ~/.codex/skills/sins-vplanma
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-vplanma.skill').extractall(os.path.expanduser('~/.codex/skills/sins-vplanma'))
-PY
-```
-
-Hermes:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-vplanma.skill \
-  -o /tmp/sins-vplanma.skill
-mkdir -p ~/.hermes/skills/sins-vplanma
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-vplanma.skill').extractall(os.path.expanduser('~/.hermes/skills/sins-vplanma'))
-PY
-```
-
-Grok:
-
-```bash
-curl -L https://github.com/CAPSTONEID/sins-clco/raw/main/skill-list/sins-vplanma.skill \
-  -o /tmp/sins-vplanma.skill
-mkdir -p ~/.grok/skills/sins-vplanma
-python3 - <<'PY'
-import os, zipfile
-zipfile.ZipFile('/tmp/sins-vplanma.skill').extractall(os.path.expanduser('~/.grok/skills/sins-vplanma'))
-PY
-```
-
-**사전 준비**
-
-| 필요 | 확인 |
-|------|------|
-| 힉스필드 MCP | 컷 이미지·엘리먼트·영상 생성 |
-| `python3` + `playwright`(Chromium), `curl`, macOS `sips` | 스토리보드 시트 렌더 |
-| `ffmpeg` (선택) | 가편집본 이어붙이기·영상 검수 |
-## 설치 확인
-
-Claude Code:
-
-```bash
-ls ~/.claude/skills/
-```
-
-Codex:
-
-```bash
-ls ~/.codex/skills/
-```
-
-Hermes:
-
-```bash
-ls ~/.hermes/skills/
-```
-
-Grok:
-
-```bash
-ls ~/.grok/skills/
-grok inspect            # 발견된 스킬 전체와 출처(user·project·plugin)를 함께 확인
-```
-
-Codex에서는 `@` 파일 참조로 스킬을 불러옵니다.
-
-```text
-@~/.codex/skills/sins-video-consource/SKILL.md 위 내용대로 실행해줘
-```
+- `~/.grok/skills/` 에 따로 설치합니다. Claude 스킬과 섞지 않으려면 `GROK_CLAUDE_SKILLS_ENABLED=false`.
+- MCP(노션·힉스필드·PalmierPro)는 옮겨지지 않으니 `grok mcp add` 로 따로 등록합니다.
 
 ## 요구사항
 
-| 도구 | 설치 링크 | 지원 OS |
-|------|-----------|---------|
-| Claude Code | [claude.ai/code](https://claude.ai/code) | macOS / Linux |
-| Codex CLI | [openai.com/codex](https://openai.com/codex) | macOS / Linux |
-| Hermes | [atomicbot.ai](https://atomicbot.ai) | macOS / Linux |
-| Grok CLI | `npm i -g @xai-official/grok` | macOS / Linux |
+Claude Code · Codex CLI · Hermes · Grok CLI(`npm i -g @xai-official/grok`) 중 하나, macOS / Linux.
 
-스킬별 추가 요구사항:
+| 스킬 | 필요한 것 |
+|------|-----------|
+| `/sins-higgsfield` · `/sins-contents-thumbstyle-prompt` | 힉스필드 MCP |
+| `/sins-mycontentsmake` · `/sins-wiki-pass` | 노션 MCP |
+| `/sins-palmierpro-cutedit` | [PalmierPro](https://github.com/palmier-io/palmier-pro) 실행 + MCP 등록(아래) · macOS 26 · Apple Silicon |
+| `/sins-hyp-video-creat` | [HyperFrames](https://github.com/heygen-com/hyperframes) CLI(`npx hyperframes doctor`) + ffmpeg. HyperFrames 앱 채팅창에서 실행 |
+| `/sins-plan` | (선택) insane-search · `YOUTUBE_API_KEY` · 노션·드라이브 커넥터 |
+| `/sins-autoca` | 힉스필드 MCP · Figma MCP(없으면 PNG까지) · python3 + playwright(Chromium) · humanize-korean |
+| `/sins-vplanma` | 힉스필드 MCP · python3 + playwright(Chromium) · ffmpeg(선택) |
 
-| 스킬 | 추가 요구사항 |
-|------|---------------|
-| `/sins-palmierpro-cutedit` | [PalmierPro](https://github.com/palmier-io/palmier-pro) 실행 중 + MCP 등록 (macOS 26 Tahoe · Apple Silicon) |
-| `/sins-hyp-video-creat` | [HyperFrames](https://github.com/heygen-com/hyperframes) CLI + ffmpeg · 2부 영상 제작은 `/sins-video-consource` 필요 |
-| `/sins-autoca` | 힉스필드 MCP + Figma MCP · `playwright`(Chromium) · humanize-korean |
-| `/sins-vplanma` | 힉스필드 MCP · `playwright`(Chromium) · ffmpeg(선택) |
+PalmierPro MCP 등록 (앱 실행 중일 때 한 번):
 
----
+```bash
+claude mcp add --transport http palmier-pro http://127.0.0.1:19789/mcp   # Claude Code
+codex mcp add palmier-pro --url http://127.0.0.1:19789/mcp               # Codex
+grok mcp add --transport http palmier-pro http://127.0.0.1:19789/mcp     # Grok
+```
 
-## 설정 동기화 (다른 기기에서 동일 환경 구성)
+## 설정 동기화
 
 `CLAUDE.md` 페르소나와 caveman 자동 활성화 hook을 새 기기에 적용합니다.
 
@@ -1177,40 +131,29 @@ Codex에서는 `@` 파일 참조로 스킬을 불러옵니다.
 curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-config-apply.sh | bash
 ```
 
-적용 내용:
-- `~/CLAUDE.md` — 역할 페르소나, caveman mode, 작업 하네스 원칙
-- `~/.claude/settings.json` — SessionStart hook (세션 시작 시 caveman full 자동 활성화)
-- `~/.grok/rules/sins-persona.md` — Grok이 설치돼 있으면 같은 페르소나를 홈 룰로 복사 (Grok은 `~/CLAUDE.md` 를 스캔하지 않고 `~/.grok/rules/` 를 항상 읽습니다. caveman 규칙이 페르소나 본문에 있어 훅 없이 상시 적용)
+`~/CLAUDE.md`, `~/.claude/settings.json`(SessionStart hook), Grok이 있으면 `~/.grok/rules/sins-persona.md` 에 적용됩니다.
 
----
+## Claude Code mods
 
-## Claude Code mods (사용량 막대 · 작업 진행 패널 · Higgsfield 띠 · AI 티 점수)
-
-Claude Code 화면 자체를 꾸미는 mod 5개를 새 기기에 설치합니다. 입력창 위 막대는 **화면 종류에 따라 다른 mod 가 그립니다** — 터미널(CLI)은 `usage-band`, 데스크톱 앱(Code 탭)은 `task-progress-band`. 셋을 함께 켜도 겹치지 않습니다.
+Claude Code 화면에 붙는 mod 5개입니다.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-mods-install.sh | bash
 ```
 
-설치 후 Claude Code 를 새 세션으로 열면 적용됩니다 (이미 열린 세션은 그대로).
+`~/.claude/mods/` 에 설치하고 `settings.json` 의 `CLAUDE_CODE_PLUGIN_DIRS` 에 경로를 추가합니다(첫 실행 때 `settings.json.bak-sins-mods` 백업). 다시 실행하면 최신으로 업데이트됩니다. 새 세션부터 적용됩니다.
 
-| mod | 화면 | 위치 | 내용 |
-|-----|------|------|------|
-| `usage-band` | 터미널(CLI) | 입력창 위 | 구분선(왼쪽 끝 `[×]` 단계 목록 비우기 · `[‣]` 옆 패널 열기·닫기 전환) + **단계 줄**(`✔ 리서치 । ◐ 기획 । ◌ 디자인  1/3` 가로 한 줄, 완료 흐리게 · 진행 중 청록 · 대기, 좁으면 이름을 줄이고 진행 중 단계 주변만 표시, `progress-pane` 의 `steps` 도구로 받은 목록) + **Model · Effort(5단계 표시)** + **컨텍스트 · 5시간 한도 · 7일 한도** 그라데이션 게이지 (25/50/75% 눈금, 토큰 수, 초기화까지 남은 시간) + 오른쪽 **작업·렌더 진행 2열 칸**(렌더는 `렌더 hyperframes 8:59 ‣ 42%`처럼 경과 시간과 같은 종류 평균 대비 진행률 병행 표시, 첫 렌더는 시간만. `/usage-band on\|off`로 켜고 끔, `progress-pane` 필요) |
-| `task-progress-band` | 데스크톱 앱(Code 탭) | 입력창 위 | 맨 위 **단계 줄**(usage-band 와 같은 `✔ । ◐ । ◌` 가로 표시, 오른쪽 끝 이모지 버튼 `❎` 단계 목록 비우기 · `▶️` 진행 패널 열기·닫기) + 오른쪽 **작업·렌더 진행 칸**(지금 작업 · 완료율 · 경과/도구/서브에이전트 · 렌더, `progress-pane` 필요) + **Model · Effort(5단계 표시) · Tasks(작업 완료율) · 컨텍스트 · 5시간 한도 · 7일 한도** 둥근 그라디언트 막대 (광택 · 점무늬 · 눈금, 토큰 수, 초기화까지 남은 시간). 한도 75% · 90%(컨텍스트 70% · 85%)를 넘으면 주황 · 빨강, Tasks 줄은 ✕ 로 숨김 |
-| `progress-pane` | 공통 | 옆 패널 | 세션 시작 시 자동 표시. **작업 진행 바**(메인 에이전트 작업만: 작업 목록 완료율 · 경과 시간 · 도구 호출 수 · 진행 중 단계, 서브에이전트 보고 등 자동 메시지로 시작한 턴은 `서브에이전트 보고 처리`처럼 표시, 1분 넘는 턴은 완료 토스트, haiku 요약 완료 기록) + **렌더 진행 바**(ffmpeg · HyperFrames · whisper · render*.py, 같은 종류 평균 대비 % 그라데이션 막대와 남은 시간 추정 — 첫 렌더는 움직이는 막대, 끝나면 토스트). + **에이전트**(`claude agents --json --all` 기준 Claude 세션 이름 · 상태 · 경과 · 폴더, 아이콘 `►` 진행 중 · `◼︎` 대기 · `☑︎` 끝남, 에이전트 사이 옅은 점선. 제목 옆 작은 아이콘 버튼 `✕` 종료(대화형 세션은 프로세스 종료, 백그라운드는 claude stop) · `⌫` 삭제(claude rm, 대화 기록은 남음) · `⊖` 숨기기, 누르면 `정말 종료`·`취소` 확인) + **서브에이전트**(이 세션 아래 들여써서 `► sub । 작업  । 모델 · 추론값  ✕`, 상태 줄에 경과 시간 · 도구 수 · 마지막 도구를 3초마다 갱신, 이 세션 제목 옆 `(n)`을 눌러 접기·펴기, `✕` = TaskStop) + **숨겨진 에이전트 (n)**(숨긴 세션 모음, 제목을 눌러 펼침, `⊕` 로 다시 보이기, 숨김 목록은 세션 간 유지). 잘린 제목을 누르면 `‣ 전체 이름`이 펼쳐짐. 바뀐 게 있을 때만 다시 그려 클릭 누락 방지. **완료 기록 탭**은 작업마다 5글자 ID(`#a3f9k`)·소요 시간·도구 수·고친 파일 수를 2줄로 표시, 제목을 누르면 원래 요청 전문과 `이 작업 전으로 롤백` 버튼(Edit·Write·NotebookEdit로 고친 1MB 이하 텍스트 파일을 그 작업과 이후 작업 전 원본으로 복원, 사본을 못 남긴 파일은 건너뛰고 알림, Bash로 바뀐 파일·대화는 제외, 스냅샷은 `/tmp/progress-pane-snapshots` 세션별 3일 보관). 패널이 안 보이면 진행 중일 때만 상태줄 한 줄 요약. `/progress` 로 직접 열기, `/progress-toggle` 은 열려 있으면 닫고 없으면 엶(막대의 ‣ 버튼). **단계 도구** `mcp__progress-pane__steps`(이 빌드엔 TodoWrite·TaskCreate 가 없어 대신 등록) — 시스템 프롬프트에 사용 규칙(3단계 이상 작업이면 시작 때 전체 단계, 단계가 바뀔 때마다 전체 목록 재전송)을 붙임. 단계 목록은 프로젝트 폴더별로 저장돼 세션이 끝나도 유지되고, `/steps-clear`(또는 usage-band `[×]`)로 비움 |
-| `hf-band` | 공통 | 입력창 위 | **Higgsfield 크레딧 · 이번 세션 생성 요청 · 대기 작업 수**, 작업 완료 시 토스트 (새로고침 · 비우기 · 숨기기 버튼) |
-| `ai-tell` | 공통 | 옆 패널 · 토스트 | `.md` / `.txt` 저장 시 한글 **AI 티 점수**(humanize-korean 규칙 26개, 한글 1000자당 가중 신호 수, 4 미만 낮음 · 8 이상 높음). `/aitell` 로 패널, `/aitell 경로` 로 특정 파일 검사 |
-
-적용 내용:
-- `~/.claude/mods/` 아래 `usage-band/`, `task-progress-band/`, `progress-pane/`, `hf-band/`, `ai-tell/` — mod 파일 (원본: 이 저장소 `mods/`)
-- `~/.claude/settings.json` — env `CLAUDE_CODE_PLUGIN_DIRS` 에 다섯 경로 추가 (기존 값 유지, 첫 실행 때 `settings.json.bak-sins-mods` 백업, 재실행해도 중복 없음)
+| mod | 화면 | 내용 |
+|-----|------|------|
+| `usage-band` | 터미널 입력창 위 | 단계 줄(단계별·전체 소요시간, 누르면 그 작업의 서브에이전트 목록) · Ponytail·Caveman·Humanize 모드 줄(이름 클릭으로 단계 전환) · Model·Effort(클릭해서 바로 변경) · 컨텍스트·5시간·7일 게이지 · 오른쪽 Advisor·Subagents 개수·렌더 진행 |
+| `task-progress-band` | 데스크톱 앱 입력창 위 | 단계 줄 · Model·Effort · Tasks · 컨텍스트·5시간·7일 막대 |
+| `progress-pane` | 옆 패널(`/progress`) | 작업·렌더 진행, Claude 세션·서브에이전트(herdr `hc` 포함) 관리, 완료 기록(롤백, 사용한 서브에이전트), 단계 줄용 `steps` 도구 |
+| `hf-band` | 입력창 위 | Higgsfield 크레딧·생성 대기 작업 |
+| `ai-tell` | 패널·알림 | `.md`/`.txt` 저장 시 한글 AI 티 점수, `/aitell` |
 
 참고:
-- 5시간 · 7일 한도 줄은 구독(Pro/Max) 계정에서만 표시됩니다. 첫 응답 전에는 터미널은 `대기 중`, 데스크톱은 지난 세션 값에 `· 이전 값` 표시.
-- VS Code 확장의 채팅 패널에서는 mod 훅은 실행되지만 화면(막대 · 패널)은 그려지지 않습니다 ([공식 문서](https://code.claude.com/docs/en/plugins/mods/overview#where-mods-run)). VS Code 에서 보려면 내장 터미널에서 `claude` 를 실행하세요.
-- 패널 자동 표시는 터미널 폭 144칸 이상일 때만 뜹니다. 좁으면 `/progress` 로 여세요.
-- `hf-band` 는 Higgsfield MCP(claude.ai 커넥터)가 연결돼 있어야 크레딧이 나옵니다.
-- 터미널과 데스크톱 앱은 같은 `~/.claude/settings.json` 을 읽습니다. 한쪽에서 mods 경로를 빼면 다른 쪽도 빠지므로, 화면별로 다르게 보이게 하려면 경로가 아니라 mod 코드에서 `e.surface` 로 나누세요.
-- 제거: `rm -rf ~/.claude/mods/{usage-band,task-progress-band,progress-pane,hf-band,ai-tell}` 후 `CLAUDE_CODE_PLUGIN_DIRS` 에서 해당 경로 삭제.
-- 수정 후 검사: `claude plugin validate mods/<이름>` · `claude plugin test mods/<이름>`
+- `usage-band` · `task-progress-band` 는 `progress-pane` 이 있어야 작업·단계 표시가 됩니다.
+- Ponytail·Caveman·Humanize 줄은 해당 플러그인·스킬이 설치돼 있어야 실제로 동작합니다.
+- 5시간·7일 한도는 Pro/Max 구독에서만 표시됩니다. `hf-band` 는 Higgsfield MCP 연결이 필요합니다.
+- VS Code 확장 채팅 패널에는 화면이 그려지지 않습니다. VS Code 내장 터미널에서 `claude` 를 실행하세요.
+- 제거: `rm -rf ~/.claude/mods/{usage-band,task-progress-band,progress-pane,hf-band,ai-tell}` 후 `CLAUDE_CODE_PLUGIN_DIRS` 에서 경로 삭제.
