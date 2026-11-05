@@ -135,23 +135,21 @@ curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-conf
 
 ## Claude Code mods
 
-Claude Code 화면에 붙는 mod 3개입니다.
+![usage-band 화면](docs/usage-band.png)
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-mods-install.sh | bash
 ```
 
-`~/.claude/mods/` 에 설치하고 `settings.json` 의 `CLAUDE_CODE_PLUGIN_DIRS` 에 경로를 추가합니다(첫 실행 때 `settings.json.bak-sins-mods` 백업). 다시 실행하면 최신으로 업데이트됩니다. 새 세션부터 적용됩니다.
+설치·업데이트 모두 이 한 줄입니다. 새 세션부터 적용됩니다.
 
-| mod | 화면 | 내용 |
-|-----|------|------|
-| `usage-band` | 터미널 입력창 위 | 단계 줄(단계별·전체 소요시간, 누르면 그 작업의 서브에이전트 목록) · Ponytail·Caveman·Humanize 모드 줄(이름 클릭으로 단계 전환) · Model·Effort(클릭해서 바로 변경) · 컨텍스트·5시간·7일 게이지 · 오른쪽 Advisor·Subagents 개수·렌더 진행 |
-| `task-progress-band` | 데스크톱 앱 입력창 위 | 단계 줄 · Model·Effort · Tasks · 컨텍스트·5시간·7일 막대 |
-| `progress-pane` | 옆 패널(`/progress`) | 작업·렌더 진행, Claude 세션·서브에이전트(herdr `hc` 포함) 관리, 완료 기록(롤백, 사용한 서브에이전트), 단계 줄용 `steps` 도구 |
+- **usage-band** — 위 그림. 터미널 입력창 위
+  - 단계 줄: 단계별·전체 소요시간, 누르면 서브에이전트 목록
+  - 모드 줄: Ponytail·Caveman·Humanize, 이름을 누르면 단계 전환
+  - Model·Effort: 누르면 바로 변경
+  - 게이지: 컨텍스트·5시간·7일 한도
+  - 오른쪽: Advisor · Subagents · 렌더 진행
+- **progress-pane** — `/progress` 옆 패널. 작업·렌더 진행, 세션·서브에이전트 관리, 완료 기록(롤백)
+- **task-progress-band** — 데스크톱 앱 입력창 위 막대
 
-참고:
-- `usage-band` · `task-progress-band` 는 `progress-pane` 이 있어야 작업·단계 표시가 됩니다.
-- Ponytail·Caveman·Humanize 줄은 해당 플러그인·스킬이 설치돼 있어야 실제로 동작합니다.
-- 5시간·7일 한도는 Pro/Max 구독에서만 표시됩니다.
-- VS Code 확장 채팅 패널에는 화면이 그려지지 않습니다. VS Code 내장 터미널에서 `claude` 를 실행하세요.
-- 제거: `rm -rf ~/.claude/mods/{usage-band,task-progress-band,progress-pane}` 후 `CLAUDE_CODE_PLUGIN_DIRS` 에서 경로 삭제.
+참고: 모드 줄은 해당 플러그인·스킬이 있어야 동작하고, 5시간·7일 한도는 Pro/Max 구독에서만 보입니다. 제거는 `rm -rf ~/.claude/mods/{usage-band,task-progress-band,progress-pane}` 후 `settings.json` 의 `CLAUDE_CODE_PLUGIN_DIRS` 에서 경로를 지웁니다.
