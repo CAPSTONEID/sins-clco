@@ -42,7 +42,7 @@
 전체 설치 때 SINS 스킬과 함께 설치됩니다. Hermes는 자체 번들이 있어 건너뜁니다.
 
 <details>
-<summary>외부 스킬 목록 (22개) 펼치기</summary>
+<summary>외부 스킬 목록 (23개) 펼치기</summary>
 
 | 이름 | 대상 | 출처 |
 |------|------|------|
@@ -61,6 +61,7 @@
 | Ponytail | Claude / Codex / Grok | [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) |
 | Humanize Korean | Claude / Codex / Grok | [epoko77-ai/im-not-ai](https://github.com/epoko77-ai/im-not-ai) |
 | Emil Kowalski Skills | Claude / Codex / Grok | [emilkowalski/skills](https://github.com/emilkowalski/skills) |
+| Stageshow | Claude / Codex / Grok | [benjitaylor/skills](https://github.com/benjitaylor/skills) |
 | Insane Search | Codex 전용 | [sinmb79/codex-insane-search](https://github.com/sinmb79/codex-insane-search) |
 | Insane Search | Claude 전용 | [fivetaku/insane-search](https://github.com/fivetaku/insane-search) |
 | oh-my-design | Claude / Codex | [kwakseongjae/oh-my-design](https://github.com/kwakseongjae/oh-my-design) |

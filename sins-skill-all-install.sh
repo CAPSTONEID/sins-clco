@@ -377,6 +377,11 @@ install_external_skills() {
   emil_dir="$(clone_external_repo emil-skills https://github.com/emilkowalski/skills.git)"
   copy_all_skill_dirs "$emil_dir" "skills" ""
 
+  # Stageshow — Claude / Codex / Grok 공용. 제품 소개용 가짜 UI(히어로 애니메이션·기능 카드·커서 데모)를 React로 만드는 스킬(MIT)
+  # 플레이그라운드는 스킬 폴더에서 npm install 후 npm run dev 로 연다.
+  stageshow_dir="$(clone_external_repo stageshow https://github.com/benjitaylor/skills.git)"
+  copy_dir_clean "$stageshow_dir/stageshow" "$SKILL_DIR/stageshow"
+
   gstack_dir="$(clone_external_repo gstack https://github.com/garrytan/gstack.git)"
   install_gstack "$gstack_dir"
 
