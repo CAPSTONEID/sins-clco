@@ -1,5 +1,5 @@
 import { expect, test } from 'claude-code/testing'
-import { age, parseAgents, splitHidden, toggle } from '../hooks/agents'
+import { age, newSubs, parseAgents, parseHc, splitHidden, toggle } from '../hooks/agents'
 import { clip, fallback, mix, shortModel, TITLE_MAX } from '../hooks/run'
 
 test('claude agents --json 출력을 패널 행으로 변환', async () => {
@@ -76,4 +76,29 @@ test('자동 메시지로 시작한 턴은 태그 대신 정해 둔 제목', asy
   expect(fallback('<agent-message from="a1">\n[Subagent hand-back] ...')).toBe('서브에이전트 보고 처리')
   expect(fallback('  <task-notification>\n<task-id>x</task-id>')).toBe('백그라운드 작업 알림 처리')
   expect(fallback('그냥 요청')).toBe('그냥 요청')
+})
+
+test('hc ls 출력에서 이 터미널이 띄운 서브에이전트만 상태와 함께 고름', async () => {
+  const json = JSON.stringify({
+    terminals: [
+      { address: 't3t', agent: 'claude-code', state: 'live', status: 'working' },
+      { address: 't3y', name: 'tf-short2', parent: 't3b', state: 'live', status: 'working' },
+      { address: 't4a', name: 'test-a', parent: 't3t', state: 'live', status: 'working' },
+      { address: 't4b', parent: 't3t', state: 'live' },
+      { address: 't4c', name: 'test-c', parent: 't3t', state: 'live', status: 'done' },
+      { address: 't4d', name: 'old', parent: 't3t', state: 'finished' },
+    ],
+  })
+  expect(parseHc(json, 't3t')).toEqual([
+    { id: 'hc:t4a', type: 'hc', description: 'test-a', status: 'running' },
+    { id: 'hc:t4b', type: 'hc', description: 't4b', status: 'idle' },
+    { id: 'hc:t4c', type: 'hc', description: 'test-c', status: 'completed' },
+  ])
+  expect(parseHc('not json', 't3t')).toEqual([])
+})
+
+test('작업 중 새로 나타난 서브에이전트만 그 작업에 기록', async () => {
+  const a = (id: string) => ({ id, type: 'hc', description: id, status: 'idle' })
+  expect(newSubs([a('hc:t1')], [a('hc:t1'), a('hc:t2'), a('x9')])).toEqual(['hc:t2', 'x9'])
+  expect(newSubs([a('hc:t1')], [])).toEqual([])
 })

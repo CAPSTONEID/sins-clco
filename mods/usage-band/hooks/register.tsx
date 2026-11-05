@@ -1,11 +1,14 @@
 import { atom, read, update } from 'claude-code'
-import type { Register, SessionContextUsage, SessionRateLimit } from 'claude-code'
+import type { EngineInterface, Register, SessionContextUsage, SessionRateLimit } from 'claude-code'
 
-import type { Gauge, ModelInfo, Snapshot } from '../types'
+import type { Gauge, Modes, ModelInfo, Picker, Snapshot } from '../types'
 
 const snap = atom({ plugin: 'usage-band', key: 'snap' } as const, {} as Snapshot)
 // progress-pane 이 쓰는 값을 읽기만 함 (다른 플러그인 값은 읽기 허용, 쓰기는 주인만)
 const run = atom({ plugin: 'progress-pane', key: 'run' } as const, null)
+const runs = atom({ plugin: 'progress-pane', key: 'runs' } as const, [])
+// 단계 줄을 누르면 그 아래에 이 작업의 서브에이전트 목록 펼침
+const subsOpen = atom({ plugin: 'usage-band', key: 'subsOpen' } as const, false)
 const jobs = atom({ plugin: 'progress-pane', key: 'jobs' } as const, [])
 // 옆 칸 표시 여부: 옵션 기본값 위에 /usage-band 로 정한 값($.store)이 우선
 const beside = atom({ plugin: 'usage-band', key: 'beside' } as const, true)
@@ -15,6 +18,130 @@ const agents = atom({ plugin: 'progress-pane', key: 'agents' } as const, [])
 const stepList = atom({ plugin: 'progress-pane', key: 'steps' } as const, [])
 const renderHistory = atom({ plugin: 'progress-pane', key: 'renderHistory' } as const, {})
 const model = atom({ plugin: 'usage-band', key: 'model' } as const, {} as ModelInfo)
+// caveman 은 SessionStart hook 이 매 세션 full 로 주입하므로 기본 켜짐
+const modes = atom({ plugin: 'usage-band', key: 'modes' } as const, { caveman: 'full', humanize: '기본' } as Modes)
+
+// ponytail 플러그인이 쓰는 모드 파일(~/.claude/.ponytail-active). 없거나 비면 꺼짐 (ponytail readMode 와 같은 규칙)
+const ponytailFile = ($: EngineInterface) => `${$.plugin.root}/../../.ponytail-active`
+async function readPonytail($: EngineInterface): Promise<string | undefined> {
+  const text = await $.fs.read(ponytailFile($)).catch(() => undefined)
+  return text?.trim() || undefined
+}
+
+// humanize-korean 윤문 강도 3단계 (스킬의 `강도: 보수|기본|적극`)
+export const HZ_LEVELS = ['보수', '기본', '적극'] as const
+// 파일 값 → 강도: 'off' = 꺼짐, 세 강도 중 하나면 그대로, 그 외(없음·예전 'on')는 기본
+export const humanizeOf = (text?: string): string | undefined => {
+  const t = text?.trim()
+  return t === 'off' ? undefined : HZ_LEVELS.includes(t as (typeof HZ_LEVELS)[number]) ? t : '기본'
+}
+// 이름 누를 때마다 OFF → 보수 → 기본 → 적극 → OFF
+export const nextHumanize = (mode?: string): string | undefined => {
+  const i = mode === undefined ? -1 : HZ_LEVELS.indexOf(mode as (typeof HZ_LEVELS)[number])
+  return HZ_LEVELS[i + 1]
+}
+
+// humanize-korean 검수 상태 파일(~/.claude/.humanize-review). 세션이 바뀌어도 유지
+const humanizeFile = ($: EngineInterface) => `${$.plugin.root}/../../.humanize-review`
+async function readHumanize($: EngineInterface): Promise<string | undefined> {
+  return humanizeOf(await $.fs.read(humanizeFile($)).catch(() => undefined))
+}
+
+// 검수 상태 저장: 표시 갱신 → 파일 기록 → 다음 입력에 모델 안내
+async function setHumanize($: EngineInterface, to?: string): Promise<void> {
+  await update($, modes, x => ({ ...x, humanize: to }))
+  await $.fs.write(humanizeFile($), to ?? 'off')
+  pending.add('humanize')
+}
+
+// 이름을 눌러 바꾼 모드: 다음 입력에 모델이 읽을 안내를 붙임
+// ponytail: 모듈 변수라 mod 재로드 시 미전달 안내는 사라짐, 바뀐 표시·파일은 남음
+const pending = new Set<'ponytail' | 'caveman' | 'humanize'>()
+
+// 입력 → caveman 모드: 강도 문자열 = 켜짐, undefined = 꺼짐, null = 변화 없음
+export const cavemanFrom = (text: string, command?: { name: string; args: string }): string | undefined | null => {
+  const t = text.trim().toLowerCase()
+  const arg = (command?.args ?? '').trim().toLowerCase()
+  if (command?.name === 'caveman') return arg === 'off' ? undefined : arg || 'full'
+  return t === 'stop caveman' || t === 'normal mode' ? undefined : null
+}
+
+// 모드 강도 3단계 (caveman wenyan-* 도 뒤 강도로 칸 수를 셈, wenyan 단독은 full). -1 = 강도 아님
+const LEVELS = ['lite', 'full', 'ultra'] as const
+// 이름 누를 때마다 OFF → LITE → FULL → ULTRA → OFF
+export const nextMode = (mode?: string): string | undefined => {
+  if (mode === undefined) return LEVELS[0]
+  const lv = levelOf(mode)
+  return lv >= LEVELS.length - 1 ? undefined : LEVELS[lv + 1]
+}
+
+// 바뀐 모드를 모델에 알리는 안내 한 줄
+export const modeNote = (which: 'ponytail' | 'caveman' | 'humanize', mode?: string) =>
+  which === 'humanize'
+    ? `HUMANIZE REVIEW: ${mode ? `ON — 강도: ${mode}` : 'OFF'} — follow the CLAUDE.md "한글 결과물 검수" rule from now on.`
+    : which === 'ponytail'
+    ? mode
+      ? `PONYTAIL MODE CHANGED — level: ${mode}. Apply the ponytail ${mode} rules from now on.`
+      : 'PONYTAIL MODE OFF — stop applying ponytail rules from now on.'
+    : mode
+      ? `CAVEMAN MODE CHANGED — level: ${mode}. Apply the caveman ${mode} rules (~/.claude/skills/caveman/SKILL.md) from now on.`
+      : 'CAVEMAN MODE OFF — reply in normal style from now on.'
+
+export const levelOf = (mode: string) =>
+  LEVELS.indexOf((mode.replace(/^wenyan-?/, '') || 'full') as (typeof LEVELS)[number])
+
+// Model·Effort 선택 줄
+const picker = atom({ plugin: 'usage-band', key: 'picker' } as const, null as Picker)
+// herdr 자식 터미널 (hc ls 의 parent = 이 세션 터미널, 살아 있고 done 아님)
+// ponytail: `claude` 로 띄운 터미널은 hc 가 status 를 안 줘서(작업 중·대기 구분 불가) 살아 있으면 표시, 끝나면 hc kill 로 정리
+// Subagents 칸 개수: 실행 중 + hc 는 완료 전까지 (claude 로 띄운 hc 터미널은 상태를 안 줄 때가 있어 대기·작업 구분 불가)
+export const busyCount = (list: readonly { type: string; status: string }[]) =>
+  list.filter(a => a.status === 'running' || (a.type === 'hc' && a.status !== 'completed')).length
+
+// 단계 줄이 보여 주는 작업에서 띄운 서브에이전트 중 아직 살아 있는 것
+// since(단계 목록 첫 시작 시각)가 있으면 그 뒤로 이어진 작업 전부, 없으면(자동 1단계) 지금 작업, 없으면 마지막 완료 작업
+type RunSubs = { subs?: string[]; endedAt?: number }
+export const taskSubs = <A extends { id: string }>(cur: RunSubs | null, past: readonly RunSubs[], list: readonly A[], since?: number): A[] => {
+  const from = since === undefined ? [cur ?? past[0]] : [cur, ...past.filter(x => (x.endedAt ?? Infinity) >= since)]
+  const ids = new Set(from.flatMap(x => x?.subs ?? []))
+  return list.filter(a => ids.has(a.id))
+}
+
+// 선택지: /model 별칭 → 표시 이름 (별칭이라 새 버전이 나와도 최신으로 감)
+export const MODELS = [
+  { alias: 'fable', label: 'Fable 5.1' },
+  { alias: 'opus', label: 'Opus 5.5' },
+  { alias: 'sonnet', label: 'Sonnet 5.5' },
+  { alias: 'haiku', label: 'Haiku 5.5' },
+] as const
+
+// 선택 → /model·/effort 를 사람이 친 것처럼 실행(작업 중이면 끝난 뒤 적용) + 표시 먼저 갱신
+async function pick($: EngineInterface, kind: 'model' | 'effort' | 'advisor', value: string, label: string): Promise<void> {
+  await update($, picker, () => null)
+  await update($, model, m =>
+    kind === 'model' ? { ...m, name: label } : kind === 'effort' ? { ...m, effort: value } : { ...m, advisor: value === 'off' ? undefined : value },
+  )
+  $.ui.toast(`${kind[0]!.toUpperCase() + kind.slice(1)} → ${label} · 작업 중이면 끝난 뒤 적용`)
+  await $.command.run({ command: kind, args: value })
+}
+
+// 어드바이저 선택지 (/advisor <모델>|off) — 더 강한 모델만
+export const ADVISORS = [
+  { alias: 'fable', label: 'Fable 5.1' },
+  { alias: 'opus', label: 'Opus 5.5' },
+  { alias: 'off', label: 'OFF' },
+] as const
+
+// settings.json 의 advisorModel (없으면 꺼짐)
+async function readAdvisor($: EngineInterface): Promise<string | undefined> {
+  const text = await $.fs.read(`${$.plugin.root}/../../settings.json`).catch(() => undefined)
+  try {
+    const v = text ? (JSON.parse(text) as { advisorModel?: unknown }).advisorModel : undefined
+    return typeof v === 'string' && v ? v : undefined
+  } catch {
+    return undefined
+  }
+}
 
 // 추론 단계 순서 (단계 표시용)
 const EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'] as const
@@ -41,7 +168,7 @@ const ROWS = [
 // 2열 모드: 게이지 막대를 줄여 오른쪽 작업 칸에 자리를 줌
 // 좁은 막대 폭 / 게이지 열 너비(라벨 14 + 막대 + 퍼센트 6 + 설명 22) / 작업 칸 최소 너비
 const BAR_NARROW = 16
-const GAUGE_W = 14 + BAR_NARROW + 2 + 6 + 22
+const GAUGE_W = 13 + BAR_NARROW + 2 + 6 + 22
 const SIDE_MIN = 24
 
 // 경과 시간 → "2분 14초", 렌더 시간 → "1:23"
@@ -73,11 +200,13 @@ const cut = (s: string, cap: number) => {
 
 // 단계 줄(가로 1줄): width 칸에 맞게 이름을 줄이고, 그래도 넘치면 진행 중 단계 주변만 남김
 // 한 단계 = 아이콘·공백 2칸 + 이름, 단계 사이 ' । ' 3칸, 앞뒤 생략 표시 2칸
-type Step = { subject: string; status: string }
+type Step = { subject: string; status: string; startedAt?: number; endedAt?: number }
 export const fitSteps = (tasks: readonly Step[], width: number) => {
   const size = (list: readonly Step[], cap: number) =>
-    list.reduce((n, t) => n + 2 + cells(cut(t.subject, cap)), 0) + 3 * Math.max(0, list.length - 1)
-  const pick = (list: readonly Step[], cap: number) => list.map(t => ({ text: cut(t.subject, cap), status: t.status }))
+    // 아래 줄 소요시간('  10분 59초' = 11칸)보다 좁아지지 않게 항목 폭을 잡음
+    list.reduce((n, t) => n + Math.max(2 + cells(cut(t.subject, cap)), t.startedAt === undefined ? 0 : 11), 0) + 3 * Math.max(0, list.length - 1)
+  const pick = (list: readonly Step[], cap: number) =>
+    list.map(t => ({ text: cut(t.subject, cap), status: t.status, startedAt: t.startedAt, endedAt: t.endedAt }))
   for (const cap of [20, 14, 10]) {
     if (size(tasks, cap) <= width) return { items: pick(tasks, cap), before: false, after: false }
   }
@@ -142,7 +271,12 @@ export const register: Register = (on, options) => {
     const u = await $.session.usage()
     await update($, snap, () => toSnap(u.context, u.rateLimits))
     const id = await $.session.model()
-    await update($, model, m => ({ ...m, name: prettyModel(id) }))
+    const adv = await readAdvisor($)
+    await update($, model, m => ({ ...m, name: prettyModel(id), advisor: adv }))
+    const pt = await readPonytail($)
+    const hz = await readHumanize($)
+    await update($, modes, x => ({ ...x, ponytail: pt, humanize: hz }))
+    await $.command.register({ name: 'humanize-review', description: '한글 결과물 humanize-korean 검수 (off|보수|기본|적극, on=기본, 인자 없으면 다음 단계)' })
     // 1분마다 다시 읽어 그림 → 턴 사이에도 "N분 후 초기화" 카운트다운이 흐름
     // ponytail: 한도 값은 이 세션의 API 응답 기준, 다른 세션(하이퍼프레임 등) 사용분은 이 세션이 다음 요청을 보내야 반영
     $.clock.every(60_000, async () => {
@@ -152,6 +286,13 @@ export const register: Register = (on, options) => {
     return r
   })
 
+  on('command.run', { command: 'humanize-review' }, async ($, e) => {
+    const arg = e.args.trim().toLowerCase()
+    const to = arg === 'off' ? undefined : arg === 'on' ? '기본' : arg ? humanizeOf(arg) : nextHumanize((await read($, modes)).humanize)
+    await setHumanize($, to)
+    return { text: `한글 결과물 검수(humanize-korean): ${to ? `ON · 강도 ${to}` : 'OFF'} · 다음 입력부터 적용` }
+  })
+
   on('command.run', { command: 'usage-band' }, async ($, e) => {
     const arg = e.args.trim().toLowerCase()
     const cur = await read($, beside)
@@ -159,6 +300,26 @@ export const register: Register = (on, options) => {
     await $.store.set('beside', next)
     await update($, beside, () => next)
     return { text: `작업·렌더 옆 칸: ${next ? '켜짐' : '꺼짐'}` }
+  })
+
+  // /caveman·/ponytail·"stop caveman"·"normal mode" 입력을 따라 배지 갱신
+  on('prompt.submit', async ($, e, next) => {
+    let notes: string[] = []
+    if (pending.size > 0) {
+      const md = await read($, modes)
+      notes = [...pending].map(w => (w === 'humanize' ? modeNote(w, md.humanize) : modeNote(w, md[w])))
+      pending.clear()
+    }
+    const r = await next(notes.length ? { ...e, context: [...(e.context ?? []), ...notes] } : e)
+    const cave = cavemanFrom(e.text, e.command)
+    // ponytail 은 자기 hook 이 파일을 먼저 고치므로 다시 읽기만 함
+    const pt = await readPonytail($)
+    // 배지 갱신 실패가 입력 처리를 막지 않게 오류는 버림
+    await update($, modes, x => {
+      const caveman = cave === null ? x.caveman : cave
+      return x.caveman === caveman && x.ponytail === pt ? x : { ...x, caveman, ponytail: pt }
+    }).catch(() => undefined)
+    return r
   })
 
   // 메인 루프 요청마다 실제 모델·추론 단계 반영 (서브에이전트 제외)
@@ -185,50 +346,100 @@ export const register: Register = (on, options) => {
     const lvl = typeof m.effort === 'string' ? EFFORTS.indexOf(m.effort as (typeof EFFORTS)[number]) : -1
 
     const now = await $.clock.now()
+    const md = await read($, modes)
+    const pk = await read($, picker)
+    const toggle = (k: 'model' | 'effort' | 'advisor') => void update($, picker, x => (x === k ? null : k)).catch(() => undefined)
+    // 이름 클릭: 표시 갱신 → ponytail 은 모드 파일도 고침 → 다음 입력에 모델 안내
+    const cycle = async (which: 'ponytail' | 'caveman') => {
+      const to = nextMode((await read($, modes))[which])
+      await update($, modes, x => ({ ...x, [which]: to }))
+      if (which === 'ponytail') await $.fs.write(ponytailFile($), to ?? '')
+      pending.add(which)
+      $.ui.toast(`${which === 'ponytail' ? 'Ponytail' : 'Caveman'} → ${to ? to.toUpperCase() : 'OFF'} · 다음 입력부터 적용`)
+    }
     const { Box, Text, Button } = $.ui.resolve(e)
-    // 옆 칸: 줄 수가 4줄(Model + 게이지 3)과 같음. 터미널이 좁으면 생략
+    // 옆 칸: 렌더·서브에이전트 1줄 (작업 진행은 단계 줄이 보여 줌). 터미널이 좁으면 생략
     const isBeside = await read($, beside)
-    const r = isBeside ? await read($, run) : null
+    const r = await read($, run)
     const list = isBeside ? await read($, jobs) : []
     const isSide = isBeside && e.props.bodyColumns >= GAUGE_W + SIDE_MIN + 6
     const BAR = isSide ? BAR_NARROW : BAR_WIDE
-    const total = r?.tasks.length ?? 0
-    const done = r?.tasks.filter(t => t.status === 'completed').length ?? 0
-    // 단계 줄: 옆 칸 설정과 무관하게 단계 목록이 있으면 표시
-    const tasks = await read($, stepList)
-    const count = `  ${tasks.filter(t => t.status === 'completed').length}/${tasks.length}`
+    // 단계 줄: 단계 목록이 있으면 그것, 없으면 지금 작업을 1단계로 자동 표시 (모델 도구 호출 없이)
+    const sent = await read($, stepList)
+    const tasks: Step[] = sent.length
+      ? sent
+      : r
+        ? [{
+            subject: r.label ?? (r.prompt.trim().split('\n')[0] ?? '작업').slice(0, 10),
+            status: r.endedAt ? 'completed' : 'in_progress',
+            startedAt: r.startedAt,
+            ...(r.endedAt && { endedAt: r.endedAt }),
+          }]
+        : []
+    const since = sent.length ? Math.min(...sent.map(t => t.startedAt ?? Infinity)) : undefined
+    const mine = taskSubs(r, await read($, runs), await read($, agents), since === Infinity ? undefined : since)
+    const isSubsOpen = mine.length > 0 && (await read($, subsOpen))
+    // 서브에이전트가 있으면 개수 옆 ▾(접힘)·▴(펼침)
+    const count = `  ${tasks.filter(t => t.status === 'completed').length}/${tasks.length}${mine.length ? (isSubsOpen ? ' ▴' : ' ▾') : ''}`
+    const pressSteps = () =>
+      void (mine.length
+        ? update($, subsOpen, x => !x)
+        : Promise.resolve($.ui.toast('이 작업에서 띄운 서브에이전트가 없거나 모두 닫혔습니다'))
+      ).catch(() => undefined)
+    // 전체 소요시간: 첫 시작부터 (모두 끝났으면 마지막 완료까지, 아니면 지금까지)
+    const starts = tasks.flatMap(t => (t.startedAt === undefined ? [] : [t.startedAt]))
+    const isAllDone = tasks.length > 0 && tasks.every(t => t.status === 'completed')
+    const ends = tasks.flatMap(t => (t.endedAt === undefined ? [] : [t.endedAt]))
+    const stepTotal = starts.length ? (isAllDone && ends.length ? Math.max(...ends) : now) - Math.min(...starts) : undefined
     const fit = fitSteps(tasks, e.props.bodyColumns - 1 - cells(count) - 4)
-    // 일하는 서브에이전트: 여러 개여도 아래 줄로 쌓지 않고 ' ।। ' 로 이어 한 줄에 (넘치면 잘림)
-    const live = isBeside ? (await read($, agents)).filter(a => a.status === 'running') : []
+    // 일하는 서브에이전트 수 (Agent 도구 + herdr hc, 목록은 진행 창에서)
+    const busy = isBeside ? busyCount(await read($, agents)) : 0
     const SEP = ' ।। '
-    const subs = live.map(a => `sub ${a.description.slice(0, 12)}`)
     const past = list.length ? await read($, renderHistory) : {}
-    // 렌더 시간 ‣ 진행률: "렌더 hyperframes 8:59 ‣ 42%" (기록 없으면 시간만)
+    // 렌더 시간 ‣ 진행률: "hyperframes 8:59 ‣ 42%" (기록 없으면 시간만)
     const renders = list.map(j => {
       const pct = renderPct(j.seconds, past[j.kind])
-      return `렌더 ${j.kind} ${clock(j.seconds)}${pct === undefined ? '' : ` ‣ ${pct}%`}`
+      return `${j.kind} ${clock(j.seconds)}${pct === undefined ? '' : ` ‣ ${pct}%`}`
     })
+    const firstPct = list[0] ? renderPct(list[0].seconds, past[list[0].kind]) : undefined
+    // 옆 칸 4줄 (Model + 게이지 3줄과 높이 맞춤): Advisor · Subagents · Render · Render bar
+    const sideW = Math.max(SIDE_MIN, e.props.bodyColumns - GAUGE_W - 9)
+    const RBAR = Math.max(8, Math.min(24, sideW - 12 - 6))
+    const label = (t: string) => (
+      <Box width={12}>
+        <Text dimColor>{t}</Text>
+      </Box>
+    )
+    const advisorName = m.advisor ? (ADVISORS.find(o => o.alias === m.advisor)?.label ?? m.advisor) : undefined
     const side = [
-      r ? (
-        <Text key="s0" bold color="cyan" wrap="truncate">{`▶ ${r.label ?? (r.prompt.trim().split('\n')[0] ?? '작업').slice(0, 18)}`}</Text>
-      ) : (
-        <Text key="s0" dimColor>작업 대기 중</Text>
-      ),
-      r ? (
-        <Text key="s1">{total ? `${done}/${total} 완료 · ${Math.round((done / total) * 100)}%` : '진행 중'}</Text>
-      ) : (
-        <Text key="s1"> </Text>
-      ),
-      r || subs.length ? (
-        <Text key="s2" dimColor wrap="truncate">{[r ? `⏱ ${dur(r.now - r.startedAt)} · 도구 ${r.tools}회` : '', ...subs].filter(Boolean).join(SEP)}</Text>
-      ) : (
-        <Text key="s2"> </Text>
-      ),
-      renders.length ? (
-        <Text key="s3" color="blue" wrap="truncate">{renders.join(SEP)}</Text>
-      ) : (
-        <Text key="s3" dimColor>렌더 없음</Text>
-      ),
+      <Box key="s0" flexDirection="row">
+        {/* 이름 클릭: 어드바이저 선택 줄 (Fable·Opus·OFF) */}
+        <Box width={12}>
+          <Button plain key="pick-advisor" label="Advisor" onPress={() => toggle('advisor')} />
+        </Box>
+        {advisorName ? <Text bold color="#d97757">{advisorName}</Text> : <Text dimColor>off</Text>}
+      </Box>,
+      <Box key="s1" flexDirection="row">
+        {label('Subagents')}
+        {/* 개수만 (목록은 단계 줄을 눌러 펼침) */}
+        {busy === 0 ? <Text dimColor>is resting</Text> : <Text color="blue">{`${busy} running`}</Text>}
+      </Box>,
+      <Box key="s2" flexDirection="row">
+        {label('Render')}
+        {renders.length ? <Text color="blue" wrap="truncate">{renders.join(SEP)}</Text> : <Text dimColor>none</Text>}
+      </Box>,
+      <Box key="s3" flexDirection="row">
+        {label('Render bar')}
+        {Array.from({ length: RBAR }, (_, i) => {
+          const filled = firstPct === undefined ? 0 : Math.round((firstPct / 100) * RBAR)
+          return i < filled ? (
+            <Text key={`r${i}`} color={mix([59, 108, 246], [168, 85, 247], i / RBAR)}>█</Text>
+          ) : (
+            <Text key={`r${i}`} dimColor>░</Text>
+          )
+        })}
+        <Text bold>{firstPct === undefined ? (list.length ? '   …' : '  - ') : `${firstPct}%`.padStart(4)}</Text>
+      </Box>,
     ]
 
     return (
@@ -247,34 +458,170 @@ export const register: Register = (on, options) => {
         <Text> </Text>
         {tasks.length > 0 && (
           // 가로 1줄, ' । ' 로 구분: 완료 ✔ 흐리게 · 진행 중 ◐ 청록 굵게 · 대기 ◌
+          // 각 항목 아래 줄: 소요시간(완료 = 걸린 시간, 진행 중 = 지금까지), 개수 아래: 전체 소요시간
           <Box flexDirection="row" marginBottom={1}>
             {fit.before && <Text dimColor>… </Text>}
             {fit.items.flatMap((it, i) => [
               ...(i > 0 ? [<Text key={`l${i}`} dimColor>{' । '}</Text>] : []),
-              it.status === 'completed' ? (
-                <Text key={`t${i}`} dimColor>{`✔ ${it.text}`}</Text>
-              ) : it.status === 'in_progress' ? (
-                <Text key={`t${i}`} bold color="#1fb5c9">{`◐ ${it.text}`}</Text>
-              ) : (
-                <Text key={`t${i}`}>{`◌ ${it.text}`}</Text>
-              ),
+              <Box key={`t${i}`} flexDirection="column">
+                {/* 단계 이름을 누르면 이 작업의 서브에이전트 목록 펼치기·접기 */}
+                <Button key={`step-${i}`} plain onPress={pressSteps}>
+                  {it.status === 'completed' ? (
+                    <Text dimColor>{`✔ ${it.text}`}</Text>
+                  ) : it.status === 'in_progress' ? (
+                    <Text bold color="#1fb5c9">{`◐ ${it.text}`}</Text>
+                  ) : (
+                    <Text>{`◌ ${it.text}`}</Text>
+                  )}
+                </Button>
+                <Text dimColor color={it.status === 'in_progress' ? '#1fb5c9' : undefined}>
+                  {it.startedAt === undefined ? ' ' : `  ${dur((it.endedAt ?? now) - it.startedAt)}`}
+                </Text>
+              </Box>,
             ])}
             {fit.after && <Text dimColor> …</Text>}
-            <Text bold>{count}</Text>
+            <Box flexDirection="column">
+              <Button key="step-count" plain onPress={pressSteps}>
+                <Text bold>{count}</Text>
+              </Button>
+              <Text dimColor>{stepTotal === undefined ? ' ' : `  총 ${dur(stepTotal)}`}</Text>
+            </Box>
+          </Box>
+        )}
+        {/* 펼친 서브에이전트 목록: 이름 누르면 hc 는 attach 명령 복사·Agent 는 그 화면, ✕ 는 hc 종료 */}
+        {isSubsOpen && (
+          // 단계 줄과 빈 줄 1칸 띄우고 제목 + 목록
+          <Box flexDirection="column" marginBottom={1}>
+            <Text bold>Subagents list</Text>
+            {mine.map(a => (
+              <Box key={`ts-${a.id}`} flexDirection="row">
+                <Text dimColor>{'  └ '}</Text>
+                <Text dimColor>{a.type === 'hc' ? 'hc । ' : 'sub । '}</Text>
+                <Button
+                  key={`ts-name-${a.id}`}
+                  plain
+                  onPress={press =>
+                    void (a.type === 'hc'
+                      ? $.ui.copy({ text: `hc attach ${a.id.slice(3)}`, surface: press.surface }).then(() => $.ui.toast(`hc attach ${a.id.slice(3)} 복사됨`))
+                      : $.ui.view({ agentId: a.id })
+                    ).catch(() => undefined)
+                  }
+                >
+                  <Text color="blue">{a.description}</Text>
+                </Button>
+                <Text dimColor>{`  · ${a.status}  `}</Text>
+                {a.type === 'hc' && (
+                  <Button
+                    key={`ts-kill-${a.id}`}
+                    plain
+                    dimColor
+                    onPress={() =>
+                      void $.process
+                        .run(['hc', 'kill', a.id.slice(3)])
+                        .then(x => $.ui.toast(x.exitCode === 0 ? `${a.description} 종료` : `종료 실패: ${(x.stderr || x.stdout).trim().slice(0, 80)}`))
+                        .catch(() => undefined)
+                    }
+                  >
+                    ✕
+                  </Button>
+                )}
+              </Box>
+            ))}
+          </Box>
+        )}
+        {/* 모드 줄(단계 줄과 Model 줄 사이, 위아래 빈 줄 1칸 — 모델 선택 줄이 열릴 때 덜 붙어 보이게): 단계 줄처럼 가로 1줄, ' । ' 로 구분. ON/OFF + 강도 칸 (Effort 와 같은 모양) */}
+        <Box flexDirection="row" marginBottom={1}>
+          {([
+            ['ponytail', 'Ponytail', md.ponytail, '#87af87', [135, 175, 135], [95, 175, 95]],
+            ['caveman', 'Caveman', md.caveman, '#d7875f', [215, 135, 95], [215, 95, 0]],
+          ] as const).flatMap(([key, name, mode, dot, from, to], k) => {
+            const lv = mode === undefined ? -1 : levelOf(mode)
+            return [
+              ...(k > 0 ? [<Text key={`ml${k}`} dimColor>{' । '}</Text>] : []),
+              <Box key={name} flexDirection="row">
+                <Text color={dot}>● </Text>
+                {/* 이름을 누르면 다음 강도로 (OFF → LITE → FULL → ULTRA → OFF) */}
+                <Button plain key={`mode-${key}`} label={name} onPress={() => void cycle(key).catch(() => undefined)} />
+                <Text> </Text>
+                {mode === undefined ? <Text dimColor>OFF </Text> : <Text bold color={dot}>ON </Text>}
+                {mode !== undefined && lv < 0 ? (
+                  <Text bold>{mode.toUpperCase()}</Text>
+                ) : (
+                  <Box flexDirection="row">
+                    {LEVELS.map((_, i) => (
+                      <Text key={`m${i}`} color={i <= lv ? mix(from, to, i / 2) : undefined} dimColor={i > lv}>
+                        {i <= lv ? '■' : '□'}
+                      </Text>
+                    ))}
+                    {mode !== undefined && <Text bold>{` ${mode.toUpperCase()}`}</Text>}
+                    {mode !== undefined && <Text dimColor>{` (${lv + 1}/${LEVELS.length})`}</Text>}
+                  </Box>
+                )}
+              </Box>,
+            ]
+          })}
+          <Text dimColor>{' । '}</Text>
+          {/* Humanize: ON/OFF + 윤문 강도 칸, 이름 누르면 OFF → 보수 → 기본 → 적극 → OFF */}
+          <Text color="#5fafd7">● </Text>
+          <Button
+            plain
+            key="mode-humanize"
+            label="Humanize"
+            onPress={() => {
+              const to = nextHumanize(md.humanize)
+              void setHumanize($, to)
+                .then(() => $.ui.toast(`Humanize 검수 → ${to ? `강도 ${to}` : 'OFF'} · 다음 입력부터 적용`))
+                .catch(() => undefined)
+            }}
+          />
+          <Text> </Text>
+          {md.humanize === undefined ? <Text dimColor>OFF </Text> : <Text bold color="#5fafd7">ON </Text>}
+          {HZ_LEVELS.map((_, i) => {
+            const lv = md.humanize === undefined ? -1 : HZ_LEVELS.indexOf(md.humanize as (typeof HZ_LEVELS)[number])
+            return (
+              <Text key={`h${i}`} color={i <= lv ? mix([95, 175, 215], [37, 99, 235], i / 2) : undefined} dimColor={i > lv}>
+                {i <= lv ? '■' : '□'}
+              </Text>
+            )
+          })}
+          {md.humanize !== undefined && <Text bold>{` ${md.humanize}`}</Text>}
+          {md.humanize !== undefined && (
+            <Text dimColor>{` (${HZ_LEVELS.indexOf(md.humanize as (typeof HZ_LEVELS)[number]) + 1}/${HZ_LEVELS.length})`}</Text>
+          )}
+        </Box>
+        {pk && (
+          // 선택 줄: 지금 값은 굵게, 누르면 바로 /model·/effort 실행. [×] 닫기
+          <Box flexDirection="row" marginBottom={1}>
+            <Text dimColor>{`${pk[0]!.toUpperCase() + pk.slice(1)}:  `}</Text>
+            {(pk === 'model'
+              ? MODELS.map(o => ({ value: o.alias, label: o.label, isNow: m.name === o.label }))
+              : pk === 'advisor'
+                ? ADVISORS.map(o => ({ value: o.alias, label: o.label, isNow: (m.advisor ?? 'off') === o.alias }))
+                : EFFORTS.map(o => ({ value: o, label: o.toUpperCase(), isNow: m.effort === o }))
+            ).flatMap((o, i) => [
+              ...(i > 0 ? [<Text key={`ps${i}`}> </Text>] : []),
+              <Button key={`p-${o.value}`} plain onPress={() => void pick($, pk, o.value, o.label).catch(() => undefined)}>
+                <Text bold={o.isNow} color={o.isNow ? '#d97757' : undefined}>{`[${o.label}]`}</Text>
+              </Button>,
+            ])}
+            <Text>  </Text>
+            <Button plain key="p-close" label="[×]" onPress={() => void update($, picker, () => null).catch(() => undefined)} />
           </Box>
         )}
         <Box flexDirection="row">
           <Box flexDirection="column">
             {/* 모델 · 추론 단계 줄 */}
             <Box flexDirection="row">
-              <Box width={14}>
+              <Box width={13}>
                 <Text color="#d97757">● </Text>
-                <Text>Model</Text>
+                {/* 이름 클릭: 아래 선택 줄 열기·닫기 */}
+                <Button plain key="pick-model" label="Model" onPress={() => toggle('model')} />
               </Box>
-              <Box width={20}>
+              <Box width={12}>
                 <Text bold>{m.name ?? '-'}</Text>
               </Box>
-              <Text>Effort </Text>
+              <Button plain key="pick-effort" label="Effort" onPress={() => toggle('effort')} />
+              <Text> </Text>
               {m.effort === undefined ? (
                 <Text dimColor>-</Text>
               ) : lvl < 0 ? (
@@ -298,7 +645,7 @@ export const register: Register = (on, options) => {
               const filled = Math.round((Math.min(pct, 100) / 100) * BAR)
               return (
                 <Box key={row.key} flexDirection="row">
-                  <Box width={14}>
+                  <Box width={13}>
                     <Text color={row.dot}>● </Text>
                     <Text>{row.label}</Text>
                   </Box>
@@ -319,14 +666,14 @@ export const register: Register = (on, options) => {
           </Box>
           {isSide && (
             <Box flexDirection="row" paddingLeft={2}>
-              {/* 열 구분선: 4줄 높이로 이어지는 세로선 */}
+              {/* 열 구분선: 옆 칸 4줄 높이 */}
               <Box flexDirection="column" marginRight={2}>
                 {side.map((_, i) => (
                   <Text key={`v${i}`} dimColor>│</Text>
                 ))}
               </Box>
               {/* 폭을 정해 줘야 긴 줄이 아래로 넘치지 않고 잘림: 터미널 폭 - 게이지 열 - 여백 */}
-              <Box flexDirection="column" width={Math.max(SIDE_MIN, e.props.bodyColumns - GAUGE_W - 9)}>
+              <Box flexDirection="column" width={sideW}>
               {side}
               </Box>
             </Box>

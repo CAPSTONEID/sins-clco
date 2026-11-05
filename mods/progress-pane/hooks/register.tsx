@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register, Timer } from 'claude-code'
 
 import type { AgentRow, FileSnap, RenderJob, Run, Session, SubStat, Task } from '../types'
-import { age, parseAgents, splitHidden, toggle } from './agents'
+import { age, newSubs, parseAgents, parseHc, splitHidden, toggle } from './agents'
 import { planRollback, shortId, SNAP_MAX } from './rollback'
 import { average, fmt, parsePs, percent } from './render'
 import { BAR, clip, dur, fallback, mix, shortModel } from './run'
@@ -18,6 +18,21 @@ const runs = atom({ plugin: 'progress-pane', key: 'runs' } as const, [] as Run[]
 // ponytail: 같은 폴더의 다른 세션과 저장 칸을 공유 — 동시 작업이 잦으면 세션 id 를 키에 섞기
 const steps = atom({ plugin: 'progress-pane', key: 'steps' } as const, [] as Task[])
 const stepsKey = async ($: EngineInterface) => `steps:${await $.session.root()}`
+// 새 단계 목록에 시작·완료 시각을 붙임: 같은 이름(없으면 같은 자리)의 이전 시각을 이어 받고,
+// 처음 진행 중·완료가 되는 순간 now 를 찍음. 진행 중을 건너뛰고 바로 완료된 단계는 앞 단계가 끝난 때부터로 셈
+export function timeSteps(prev: readonly Task[], list: readonly Task[], now: number): Task[] {
+  let lastEnd: number | undefined
+  return list.map((t, i) => {
+    const old = prev.find(p => p.subject === t.subject) ?? (prev[i]?.subject === t.subject ? prev[i] : undefined)
+    let startedAt = old?.startedAt
+    let endedAt = t.status === 'completed' ? old?.endedAt : undefined
+    if (t.status !== 'pending') startedAt ??= t.status === 'completed' ? (lastEnd ?? now) : now
+    if (t.status === 'completed') endedAt ??= now
+    if (t.status === 'pending') startedAt = undefined
+    if (endedAt !== undefined) lastEnd = Math.max(lastEnd ?? 0, endedAt)
+    return { ...t, ...(startedAt !== undefined && { startedAt }), ...(endedAt !== undefined && { endedAt }) }
+  })
+}
 async function saveSteps($: EngineInterface, list: Task[]) {
   await update($, steps, () => list)
   const k = await stepsKey($)
@@ -56,7 +71,7 @@ async function summarize($: EngineInterface, r: Run) {
   const steps = r.tasks.map(t => `- ${t.subject}`).join('\n')
   const res = await $.model.complete({
     model: 'haiku',
-    system: '사용자 요청과 수행 단계를 보고, 한 작업을 15자 안팎의 한국어 명사구로 요약한다. 따옴표·마침표·이모지 없이 한 줄만 출력한다. 예: 카드뉴스 JSON 설계, 사용량 게이지 구분선 추가',
+    system: '사용자 요청과 수행 단계를 보고, 한 작업을 10자 이내의 한국어 명사구로 요약한다. 따옴표·마침표·이모지 없이 한 줄만 출력한다. 예: 카드뉴스 설계, 게이지 구분선',
     prompt: `요청: ${r.prompt.slice(0, 600)}\n단계:\n${steps || '(없음)'}\n사용 도구 수: ${r.tools}`,
     maxTokens: 40,
     timeoutMs: 20_000,
@@ -70,23 +85,15 @@ function setTasks($: EngineInterface, fn: (l: Task[]) => Task[]) {
   return update($, run, r => (r ? { ...r, tasks: fn(r.tasks) } : r))
 }
 
-// 창이 화면에 보이면 상태줄은 비우고, 안 보이면 한 줄 요약
+// 상태줄 한 줄 요약은 끔 — 같은 내용이 usage-band 게이지 옆 칸에 이미 표시됨
 async function refreshStatus($: EngineInterface): Promise<void> {
-  const isShown = (await $.ui.panes()).some(p => p.id === PANE && p.isPlaced)
-  if (isShown) return $.ui.status(undefined)
-  const r = await read($, run)
-  const list = await read($, jobs)
-  const parts: string[] = []
-  if (r && !r.endedAt) {
-    const done = r.tasks.filter(t => t.status === 'completed').length
-    parts.push(`작업 ${r.tasks.length ? `${done}/${r.tasks.length}` : '진행 중'} ${dur(r.now - r.startedAt)}`)
-  }
-  if (list.length > 0) parts.push(`렌더 ${list.length}건 ${fmt(Math.max(...list.map(j => j.seconds)))}`)
-  $.ui.status(parts.length > 0 ? `${parts.join(' · ')} · /progress` : undefined)
+  $.ui.status(undefined)
 }
 
 // 이 세션의 sessionId — 빈 값(조회 실패)이면 자기 세션 오종료 방지 위해 세션 버튼 숨김
 let self = ''
+// herdr 안이면 이 터미널 주소($HC_TERMINAL_ID) — hc 서브에이전트를 찾는 기준, 밖이면 ''
+let hcSelf = ''
 // 세션 목록은 3초 타이머 3번에 1번(9초)만 갱신
 // ponytail: claude agents --json 은 실행에 0.2초 남짓, 더 자주 부를 이유 없음
 let polls = 0
@@ -99,8 +106,16 @@ const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
 async function pollAgents($: EngineInterface, force = false) {
   try {
     const list = await $.agent.list()
-    const v = list.map(a => ({ id: a.id, type: a.type, description: a.description, status: a.status }))
-    if (!same(await read($, agents), v)) await update($, agents, () => v)
+    // Agent 도구 서브에이전트 + herdr(hc run --bg) 서브에이전트를 한 목록으로
+    const hc = hcSelf ? parseHc((await $.process.run(['hc', 'ls']).catch(() => ({ stdout: '' }))).stdout, hcSelf) : []
+    const v = [...list.map(a => ({ id: a.id, type: a.type, description: a.description, status: a.status })), ...hc]
+    const prev = await read($, agents)
+    if (!same(prev, v)) {
+      await update($, agents, () => v)
+      // 지금 작업 중에 새로 나타난 서브에이전트는 그 작업에 기록 (완료 기록에서 다시 보기용)
+      const born = newSubs(prev, v)
+      if (born.length) await update($, run, r => (r && !r.endedAt ? { ...r, subs: [...new Set([...(r.subs ?? []), ...born])] } : r))
+    }
     const now = await $.clock.now()
     for (const a of list) {
       const st = stats.get(a.id)
@@ -201,6 +216,9 @@ async function stop($: EngineInterface, key: string) {
   try {
     if (key.startsWith('rb:')) {
       await rollback($, key.slice(3))
+    } else if (key.startsWith('a:hc:')) {
+      const r = await $.process.run(['hc', 'kill', key.slice(5)])
+      $.ui.toast(r.exitCode === 0 ? 'hc 서브에이전트를 종료했습니다' : `종료 실패: ${(r.stderr || r.stdout).trim().slice(0, 120)}`)
     } else if (key.startsWith('a:')) {
       await $.tool.call({ tool: 'TaskStop', task_id: key.slice(2) })
       $.ui.toast('서브에이전트를 종료했습니다')
@@ -274,6 +292,7 @@ export const register: Register = on => {
     // 옆 패널은 자동으로 열지 않음 — 진행 상황은 usage-band 게이지 옆 칸에 표시, 창은 /progress 로 수동 열기
 
     self = await $.session.id().catch(() => '')
+    hcSelf = (await $.env.get('HC_TERMINAL_ID').catch(() => undefined)) ?? ''
     // ponytail: 3일 지난 세션의 스냅샷 폴더 정리, 세션이 3일 넘게 이어지면 그 세션 롤백도 사라짐
     void $.process
       .run(['find', SNAP_ROOT, '-mindepth', '1', '-maxdepth', '1', '-mtime', '+3', '-exec', 'rm', '-rf', '{}', '+'])
@@ -369,6 +388,7 @@ export const register: Register = on => {
     if (e.agentId) return r
     tick?.cancel()
     tick = undefined
+    await pollAgents($)
     const now = await $.clock.now()
     const cur = await read($, run)
     if (cur && !cur.endedAt) {
@@ -452,8 +472,9 @@ export const register: Register = on => {
         subject: String(t.subject ?? ''),
         status: (ok.has(String(t.status)) ? t.status : 'pending') as Task['status'],
       }))
-      await setTasks($, () => tasks)
-      await saveSteps($, tasks)
+      const timed = timeSteps(await read($, steps), tasks, await $.clock.now())
+      await setTasks($, () => timed)
+      await saveSteps($, timed)
     }
     return { result: `단계 ${list.length}개 표시` }
   }).catch(($, e, next) => next(e))
@@ -472,7 +493,7 @@ export const register: Register = on => {
             '# 진행 단계 표시',
             '3단계 이상으로 나뉘는 작업은 첫 도구 호출 전에 mcp__progress-pane__steps 로 전체 단계를 보낸다(첫 단계 in_progress, 나머지 pending).',
             '단계가 끝나고 다음 단계로 넘어갈 때마다 전체 목록을 상태와 함께 다시 보낸다. 작업이 끝나면 모든 단계를 completed 로 보낸다.',
-            '단계 이름은 사용자가 알아볼 짧은 한국어 명사구로 쓴다. 질문 답변·한두 번 도구 호출로 끝나는 일에는 쓰지 않는다.',
+            '단계 이름은 8자 이내의 한국어 명사구로 쓴다(예: 코드 확인, 테스트·푸시). 질문 답변·한두 번 도구 호출로 끝나는 일에는 쓰지 않는다.',
           ].join('\n'),
         },
       ],
@@ -546,12 +567,26 @@ export const register: Register = on => {
             <Text color={live ? 'cyan' : undefined} dimColor={!live}>
               {a.status === 'running' ? '► ' : live ? '● ' : '○ '}
             </Text>
-            <Text>{'sub । '}</Text>
-            {title(key, a.description, clip(a.description, 22))}
+            <Text>{a.type === 'hc' ? 'hc । ' : 'sub । '}</Text>
+            {a.type === 'hc' ? (
+              // hc 서브에이전트: 이름을 누르면 그 터미널로 들어가는 명령 복사
+              <Button
+                key={`t:${key}`}
+                plain
+                label={clip(a.description, 22)}
+                onPress={press => {
+                  const cmd = `hc attach ${a.id.slice(3)}`
+                  void $.ui.copy({ text: cmd, surface: press.surface }).then(() => $.ui.toast(`${cmd} 복사됨`)).catch(() => undefined)
+                }}
+              />
+            ) : (
+              title(key, a.description, clip(a.description, 22))
+            )}
             {meta[a.id] && (
               <Text dimColor>{`  । ${shortModel(meta[a.id]!.model)} · ${meta[a.id]!.effort ?? '기본'}`}</Text>
             )}
-            {live && (
+            {/* hc 서브에이전트는 완료돼도 터미널이 살아 있으면 종료(hc kill) 가능 */}
+            {(live || a.type === 'hc') && (
               <Box marginLeft={1}>
                 {controls(key)}
               </Box>
@@ -772,6 +807,8 @@ export const register: Register = on => {
               {title(`h:${x.id}`, x.prompt.trim(), x.label ? clip(x.label, 30) : fallback(x.prompt), true)}
             </Box>
             {detail(`h:${x.id}`, x.prompt.trim(), x.label ? clip(x.label, 30) : fallback(x.prompt))}
+            {/* 펼쳤을 때: 이 작업이 쓴 서브에이전트 중 아직 살아 있는 것 (모두 닫혔으면 아무것도 안 그림) */}
+            {opened.includes(`h:${x.id}`) && subs.filter(a => x.subs?.includes(a.id)).map(sub)}
             {/* 펼쳤을 때: 고친 파일이 있으면 롤백 버튼 (두 번 눌러 확인) */}
             {opened.includes(`h:${x.id}`) && !x.rolledBack && (x.files?.length ?? 0) > 0 && (
               <Box flexDirection="row">
@@ -785,6 +822,7 @@ export const register: Register = on => {
               {x.rid ? `#${x.rid} · ` : ''}
               {dur((x.endedAt ?? x.now) - x.startedAt)} · 도구 {x.tools}회
               {x.tasks.length ? ` · ${x.tasks.length}단계` : ''}
+              {x.subs?.length ? ` · 서브 ${x.subs.length}개` : ''}
               {x.files?.length ? ` · 파일 ${x.files.length}개` : ''}
             </Text>
           </Box>

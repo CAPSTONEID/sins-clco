@@ -1,4 +1,4 @@
-import type { Session } from '../types'
+import type { AgentRow, Session } from '../types'
 
 // 끝난 세션 상태 — 삭제(claude rm) 대상, 그 외는 종료(claude stop) 대상
 // ponytail: claude agents 의 state 값 목록이 문서화돼 있지 않아 관찰한 값 기준, 새 값은 '진행 중'으로 취급
@@ -55,3 +55,27 @@ export const splitHidden = (rows: Session[], hidden: string[]): [Session[], Sess
 // 목록에 있으면 빼고, 없으면 넣음
 export const toggle = (list: string[], id: string): string[] =>
   list.includes(id) ? list.filter(x => x !== id) : [...list, id]
+
+// `hc ls` 출력 → 이 터미널(self)이 띄운 herdr 서브에이전트 행. id 는 'hc:<주소>', type 'hc'
+// hc 상태: working = 작업 중, done = 완료, 없음·idle = 대기 (claude 로 띄운 터미널은 상태가 없을 때가 있음)
+export const parseHc = (json: string, self: string): AgentRow[] => {
+  try {
+    const t = (JSON.parse(json) as { terminals?: { address?: string; name?: string; parent?: string; state?: string; status?: string }[] }).terminals ?? []
+    return t
+      .filter(x => x.parent === self && x.state === 'live' && x.address)
+      .map(x => ({
+        id: `hc:${x.address}`,
+        type: 'hc',
+        description: x.name || x.address!,
+        status: x.status === 'working' ? 'running' : x.status === 'done' ? 'completed' : 'idle',
+      }))
+  } catch {
+    return []
+  }
+}
+
+// 이전 목록에 없던 서브에이전트 id
+export const newSubs = (prev: readonly AgentRow[], next: readonly AgentRow[]): string[] => {
+  const old = new Set(prev.map(a => a.id))
+  return next.filter(a => !old.has(a.id)).map(a => a.id)
+}

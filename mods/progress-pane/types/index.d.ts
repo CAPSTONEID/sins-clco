@@ -18,7 +18,8 @@ export type AgentRow = { id: string; type: string; description: string; status: 
 // 서브에이전트 작업 상태: 시작·끝 시각, 도구 사용 횟수, 마지막 도구
 export type SubStat = { startedAt: number; endedAt?: number; tools: number; lastTool: string }
 
-export type Task = { id: string; subject: string; status: 'pending' | 'in_progress' | 'completed' }
+// startedAt·endedAt: 단계 시작·완료 시각(ms) — 단계 줄 아래 소요시간 표시용
+export type Task = { id: string; subject: string; status: 'pending' | 'in_progress' | 'completed'; startedAt?: number; endedAt?: number }
 // 작업이 고친 파일: snap 은 고치기 전 원본 사본 경로, null 이면 작업 전엔 없던 파일
 // skip 이면 사본을 못 남긴 파일(1MB 초과·폴더·링크) — 롤백 때 건드리지 않음
 export type FileSnap = { path: string; snap: string | null; skip?: true }
@@ -39,6 +40,8 @@ export type Run = {
   tools: number
   lastTool: string
   tasks: Task[]
+  // 이 작업 중에 새로 나타난 서브에이전트 id (Agent 도구 id 또는 'hc:<주소>') — 완료 기록에서 펼치면 아직 살아 있는 것만 표시
+  subs?: string[]
 }
 
 declare module 'claude-code' {
