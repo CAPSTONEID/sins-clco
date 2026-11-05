@@ -882,6 +882,34 @@ export const register: Register = on => {
       </Box>
     )
 
+    // 마지막 단계 완료 카드 — 작업이 끝나면 초록 테두리로 직전 작업 요약(이름·소요·도구·단계·서브·파일),
+    // 작업 중엔 어둡게 '진행 중'. 위 연결선은 리드 복귀(카드 있을 때) 또는 작업 종료 때 흐름
+    const doneOn = !active && !!last
+    const doneCard = (
+      <Box key="done" flexDirection="column" borderStyle="bold" borderColor={doneOn ? DONE : SUBTLE} paddingX={1} width={fw}>
+        <Box flexDirection="row" justifyContent="space-between">
+          <Text bold color={doneOn ? DONE : MUTED}>{doneOn ? '✓ COMPLETE' : `${active ? spin(phase) : '○'} COMPLETE`}</Text>
+          {doneOn && last!.endedAt !== undefined && <Text color={MUTED}>{hms(last!.endedAt)}</Text>}
+        </Box>
+        {doneOn ? (
+          <Box flexDirection="column">
+            <Text color={FG} bold wrap="truncate">{last!.label ?? fallback(last!.prompt)}</Text>
+            <Text color={MUTED} wrap="truncate">
+              {[
+                `⏱ ${dur((last!.endedAt ?? last!.now) - last!.startedAt)}`,
+                `도구 ${last!.tools}회`,
+                ...(last!.tasks.length ? [`${last!.tasks.length}단계`] : []),
+                ...(last!.subs?.length ? [`서브 ${last!.subs.length}`] : []),
+                ...(last!.files?.length ? [`파일 ${last!.files.length}`] : []),
+              ].join(' · ')}
+            </Text>
+          </Box>
+        ) : (
+          <Text color={MUTED}>{active ? '진행 중…' : '아직 끝난 작업 없음'}</Text>
+        )}
+      </Box>
+    )
+
     const flow = (
       <Box flexDirection="column" rowGap={0} paddingX={1} paddingTop={1} width={width}>
         {legend}
@@ -909,6 +937,8 @@ export const register: Register = on => {
         {cards.length > 0 && runLine('f2', forkLine(per, cw, false), backOn, leadColor, false)}
         {cards.length > 0 && vline('v2', backOn, leadColor)}
         {cards.length > 0 && back}
+        {vline('v3', cards.length > 0 ? backOn : active, DONE)}
+        {doneCard}
 
         {/* 세션 로그 — 최근 도구 호출(아래가 최신), 실행 모델 색으로 */}
         <Box flexDirection="column" borderStyle="round" borderColor={SUBTLE} paddingX={1} width={fw} marginTop={1}>

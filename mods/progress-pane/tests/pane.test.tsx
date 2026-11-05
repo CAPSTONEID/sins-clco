@@ -67,6 +67,7 @@ test('빈 상태: 대기 중·위임 없음·기록 없음', async ($, on) => {
   expect(await ui.find({ type: 'Text', text: /^대기 중$/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /위임 없음/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /기록 없음/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /아직 끝난 작업 없음/ })).toBeDefined()
   await ui.unmount()
 })
 
@@ -81,5 +82,19 @@ test('Bash 로 jev.py route 를 돌리면 결과가 Jev 상자에 뜸', async ($
   expect(await ui.find({ type: 'Text', text: /calls 1/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /sharp → 위임/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /^ 0\.81$/ })).toBeDefined()
+  await ui.unmount()
+})
+
+test('작업이 끝나면 완료 카드에 직전 작업 요약', async ($, on) => {
+  on('clock.now', () => ({ value: NOW }))
+  const done = { id: 't0', prompt: '흐름도 만들어줘', label: '흐름도 제작', startedAt: NOW - 191_000, endedAt: NOW - 1000, now: NOW, tools: 9, lastTool: 'Edit', tasks: [{ id: 's', subject: 'a', status: 'completed' }], subs: ['a1'], files: [] }
+  on('state.get', (_, e) => {
+    const key = (e as { key?: string }).key ?? ''
+    return key === 'runs' ? { value: { value: [done], version: 1 } } : { value: { value: undefined, version: 0 } }
+  })
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  expect(await ui.find({ type: 'Text', text: /✓ COMPLETE/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^흐름도 제작$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /⏱ 3분 10초 · 도구 9회 · 1단계 · 서브 1/ })).toBeDefined()
   await ui.unmount()
 })
