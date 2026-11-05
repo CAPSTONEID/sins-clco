@@ -82,7 +82,7 @@ curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-skil
 
 | 옵션 | 효과 |
 |------|------|
-| `SINS_SKIP_EXTERNAL=1` | 외부 오픈소스 스킬 설치 건너뜀 |
+| `SINS_SKIP_EXTERNAL=1` | 외부 스킬 설치 건너뜀 |
 | `SINS_SKIP_OMD=1` | oh-my-design만 건너뜀 |
 | `SINS_RUN_GSTACK_SETUP=1` | gstack 브라우저 빌드·Playwright setup까지 실행 |
 
