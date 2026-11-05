@@ -24,6 +24,26 @@ export type Task = { id: string; subject: string; status: 'pending' | 'in_progre
 // skip 이면 사본을 못 남긴 파일(1MB 초과·폴더·링크) — 롤백 때 건드리지 않음
 export type FileSnap = { path: string; snap: string | null; skip?: true }
 
+// 세션 로그 한 줄: 시각, 실행 모델(메인이면 메인 모델), 서브에이전트 여부, 도구, 입력 요약
+export type LogLine = { t: number; model: string; sub: boolean; tool: string; arg: string }
+// 메인 루프 상태(turn.step 기준): 모델, effort, 컨텍스트 토큰, advisor 호출 수·마지막 시각
+export type Lead = { model: string; effort?: string | number; ctx: number; advisor: number; advisorAt?: number }
+// Jev 상자: 마지막 jev.py 결과. rows 의 p 는 0~1(route 적합도·review 기준 점수)
+// pick·conf: route 추천 레인·확신도 / verdict·score: review 판정·총점 / note: 오류·사람 검토 사유
+export type Jev = {
+  kind: 'route' | 'review' | 'error'
+  t: number
+  count: number
+  rows: { label: string; p: number }[]
+  pick?: string
+  conf?: number
+  verdict?: string
+  score?: number
+  note?: string
+  // jev.py 실행 중(결과 오기 전)
+  running?: boolean
+}
+
 export type Run = {
   id: string
   // 5글자 작업 ID (#a3f9k)
@@ -52,7 +72,7 @@ declare module 'claude-code' {
       // 단계 목록(steps 도구) — 세션이 끝나도 유지, /steps-clear 로 비움
       steps: Task[]
       runs: Run[]
-      // 렌더 진행
+      // 렌더 진행(이 창엔 안 그림, usage-band 가 읽음)
       jobs: RenderJob[]
       renderHistory: Record<string, number[]>
       // 에이전트 관제
@@ -61,15 +81,17 @@ declare module 'claude-code' {
       subMeta: Record<string, { model: string; effort?: string }>
       // 서브에이전트 id → 작업 상태 (3초 폴링 때만 기록 — 도구마다 다시 그리지 않게)
       subStats: Record<string, SubStat>
-      sessions: Session[]
-      // 숨긴 세션 id ($.store 'hidden-agents' 에도 저장)
-      hidden: string[]
-      // 확인 대기 중인 항목 ('a:<agentId>#종료' | 's:<세션 id>#종료|삭제' | 'rb:<작업 id>#…')
+      // 확인 대기 중인 항목 ('a:<agentId>#종료' | 'rb:<작업 id>#…')
       confirm: string | null
       // 제목을 눌러 전체 내용을 펼친 항목 키
       expanded: string[]
       // 보고 있는 탭
       tab: 'now' | 'history'
+      // 흐름도: 세션 로그(최근 도구 호출), 메인 루프 상태
+      log: LogLine[]
+      lead: Lead | null
+      // 마지막 Jev 결과(세션 동안 유지)
+      jev: Jev | null
     }
   }
 }

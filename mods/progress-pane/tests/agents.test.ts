@@ -1,5 +1,5 @@
 import { expect, test } from 'claude-code/testing'
-import { age, newSubs, parseAgents, parseHc, splitHidden, toggle } from '../hooks/agents'
+import { age, hcTitleStatus, newSubs, parseAgents, parseHc, splitHidden, toggle } from '../hooks/agents'
 import { clip, fallback, mix, shortModel, TITLE_MAX } from '../hooks/run'
 
 test('claude agents --json 출력을 패널 행으로 변환', async () => {
@@ -101,4 +101,11 @@ test('작업 중 새로 나타난 서브에이전트만 그 작업에 기록', a
   const a = (id: string) => ({ id, type: 'hc', description: id, status: 'idle' })
   expect(newSubs([a('hc:t1')], [a('hc:t1'), a('hc:t2'), a('x9')])).toEqual(['hc:t2', 'x9'])
   expect(newSubs([a('hc:t1')], [])).toEqual([])
+})
+
+test('hc 창 제목으로 상태 추정: 점자 스피너는 작업 중, ✳ 는 완료', async () => {
+  expect(hcTitleStatus('⠂ Count test files')).toBe('running')
+  expect(hcTitleStatus('✳ Review hooks/flow.ts exports')).toBe('completed')
+  expect(hcTitleStatus('zsh')).toBeUndefined()
+  expect(hcTitleStatus(undefined)).toBeUndefined()
 })

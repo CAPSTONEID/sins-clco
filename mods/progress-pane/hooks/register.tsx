@@ -1,10 +1,12 @@
 import { atom, read, update } from 'claude-code'
-import type { EngineInterface, Register, Timer } from 'claude-code'
+import type { EngineInterface, Register, RenderChildren, Timer } from 'claude-code'
 
-import type { AgentRow, FileSnap, RenderJob, Run, Session, SubStat, Task } from '../types'
-import { age, newSubs, parseAgents, parseHc, splitHidden, toggle } from './agents'
+import type { AgentRow, FileSnap, Jev, Lead, LogLine, RenderJob, Run, SubStat, Task } from '../types'
+import { hcTitleStatus, newSubs, parseHc, toggle } from './agents'
+import { jevKind, parseJev, SHARP } from './jev'
+import { fmt, parsePs } from './render'
+import { argOf, ARROW_ROWS, arrowRows, cardBar, DONE, dots, effortBar, FAIL, famColor, FLOW, forkLine, hms, kTok, layout, logText, NEON, shortTool, spin } from './flow'
 import { planRollback, shortId, SNAP_MAX } from './rollback'
-import { average, fmt, parsePs, percent } from './render'
 import { BAR, clip, dur, fallback, mix, shortModel } from './run'
 
 const PANE = 'progress'
@@ -41,9 +43,10 @@ async function saveSteps($: EngineInterface, list: Task[]) {
   await (list.length ? $.store.set(k, list) : $.store.delete(k))
 }
 // 렌더 진행: 지금 돌고 있는 렌더, 종류별 과거 소요 시간(초, $.store 'render-history' 에도 저장)
+// 이 창에는 그리지 않음 — usage-band 가 게이지 옆에 렌더 진행을 그릴 때 읽음
 const jobs = atom({ plugin: 'progress-pane', key: 'jobs' } as const, [] as RenderJob[])
 const renderHistory = atom({ plugin: 'progress-pane', key: 'renderHistory' } as const, {} as Record<string, number[]>)
-// 에이전트 관제: 서브에이전트, 다른 Claude 세션, 종료 확인 대기 항목
+// 에이전트 관제: 서브에이전트, 종료 확인 대기 항목
 const agents = atom({ plugin: 'progress-pane', key: 'agents' } as const, [] as AgentRow[])
 const subMeta = atom({ plugin: 'progress-pane', key: 'subMeta' } as const, {} as Record<string, { model: string; effort?: string }>)
 const subStats = atom({ plugin: 'progress-pane', key: 'subStats' } as const, {} as Record<string, SubStat>)
@@ -52,20 +55,29 @@ const subStats = atom({ plugin: 'progress-pane', key: 'subStats' } as const, {} 
 const stats = new Map<string, SubStat>()
 // Agent 호출의 추론값(effort) — 같은 호출의 agent.spawn 에서 서브에이전트 id 와 짝지음
 const efforts = new Map<string, string>()
-const sessions = atom({ plugin: 'progress-pane', key: 'sessions' } as const, [] as Session[])
 const confirm = atom({ plugin: 'progress-pane', key: 'confirm' } as const, null as string | null)
-// 숨긴 세션 id — 세션이 바뀌어도 유지되도록 $.store 'hidden-agents' 에도 저장
-const hidden = atom({ plugin: 'progress-pane', key: 'hidden' } as const, [] as string[])
 // 제목을 눌러 전체 내용을 펼친 항목 키
 const expanded = atom({ plugin: 'progress-pane', key: 'expanded' } as const, [] as string[])
-// 보고 있는 탭: 진행(작업·렌더·에이전트) / 완료 기록
+// 보고 있는 탭: 진행(흐름도) / 완료 기록
 const tab = atom({ plugin: 'progress-pane', key: 'tab' } as const, 'now' as 'now' | 'history')
-// 숨겨진 에이전트 섹션 펼침 여부 — expanded 목록에 이 키가 있으면 펼침
-const HIDDEN_SEC = 'sec:hidden'
-// 이 세션(메인) 아래 서브에이전트 접힘 여부 — expanded 목록에 이 키가 있으면 접힘 (기본 펼침)
-const SUBS_FOLD = 'fold:subs'
+// 흐름도: 세션 로그, 메인 루프 상태(모델·effort·컨텍스트·advisor)
+const log = atom({ plugin: 'progress-pane', key: 'log' } as const, [] as LogLine[])
+const lead = atom({ plugin: 'progress-pane', key: 'lead' } as const, null as Lead | null)
+// 마지막 Jev(jev.py route/review) 결과 — 흐름도 메인 상자 아래 Jev 상자
+const jev = atom({ plugin: 'progress-pane', key: 'jev' } as const, null as Jev | null)
+// 세션 로그 버퍼 — 메인 도구는 바로 창에 반영, 서브에이전트 도구는 3초 폴링 때 반영
+const LOG_MAX = 6
+// 세션 로그 모델 칸 폭('haiku 5.5' 9칸)
+const LOG_MODEL_W = 9
+const logBuf: LogLine[] = []
+const pushLog = (l: LogLine) => {
+  logBuf.push(l)
+  if (logBuf.length > LOG_MAX) logBuf.splice(0, logBuf.length - LOG_MAX)
+}
+// 흐름도에 그릴 서브에이전트 카드 최대 수
+const CARD_MAX = 6
 // 제목 옆 작은 버튼 아이콘 (확인 단계의 '정말 종료'·'취소'는 글자 그대로)
-const ICON: Record<string, string> = { 종료: '✕', 삭제: '⌫', 숨기기: '⊖', 보이기: '⊕' }
+const ICON: Record<string, string> = { 종료: '✕' }
 const LIVE = new Set(['pending', 'running', 'waiting', 'idle'])
 
 // 끝난 작업을 haiku로 15자 안팎 한 줄 설명으로 요약해 기록에 붙임
@@ -92,24 +104,35 @@ async function refreshStatus($: EngineInterface): Promise<void> {
   $.ui.status(undefined)
 }
 
-// 이 세션의 sessionId — 빈 값(조회 실패)이면 자기 세션 오종료 방지 위해 세션 버튼 숨김
+// 이 세션의 sessionId — 롤백 사본 폴더 이름
 let self = ''
 // herdr 안이면 이 터미널 주소($HC_TERMINAL_ID) — hc 서브에이전트를 찾는 기준, 밖이면 ''
 let hcSelf = ''
-// 세션 목록은 3초 타이머 3번에 1번(9초)만 갱신
-// ponytail: claude agents --json 은 실행에 0.2초 남짓, 더 자주 부를 이유 없음
-let polls = 0
-
 // 값이 실제로 바뀔 때만 기록 → 창을 다시 그림. 3초 폴링이 매번 새 배열을 써서 창이 계속 다시 그려지면
 // 그리는 순간 누른 클릭이 이전 그림의 버튼으로 가서 사라짐(가끔 여러 번 눌러야 열리던 원인)
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
 
-// 서브에이전트 목록(매번)과 Claude 세션 목록(9초마다) 갱신. force 면 세션도 즉시
-async function pollAgents($: EngineInterface, force = false) {
+// 서브에이전트 목록 갱신
+async function pollAgents($: EngineInterface) {
   try {
     const list = await $.agent.list()
     // Agent 도구 서브에이전트 + herdr(hc run --bg) 서브에이전트를 한 목록으로
-    const hc = hcSelf ? parseHc((await $.process.run(['hc', 'ls']).catch(() => ({ stdout: '' }))).stdout, hcSelf) : []
+    const hcRows = hcSelf ? parseHc((await $.process.run(['hc', 'ls']).catch(() => ({ stdout: '' }))).stdout, hcSelf) : []
+    // 상태가 안 나온(idle) hc 서브에이전트는 hc get 의 창 제목으로 작업 중·완료를 추정
+    // ponytail: 3초마다 idle 인 hc 서브에이전트 수만큼 hc get 실행 — 수십 개 띄우면 hc ls 에 제목이 생길 때 한 번으로 줄이기
+    const hc = await Promise.all(
+      hcRows.map(async a => {
+        if (a.status !== 'idle') return a
+        const got = await $.process.run(['hc', 'get', a.id.slice(3)]).catch(() => ({ stdout: '' }))
+        let title: unknown
+        try {
+          title = (JSON.parse(got.stdout) as { title?: unknown }).title
+        } catch {
+          // 못 읽으면 idle 그대로
+        }
+        return { ...a, status: hcTitleStatus(title) ?? a.status }
+      }),
+    )
     const v = [...list.map(a => ({ id: a.id, type: a.type, description: a.description, status: a.status })), ...hc]
     const prev = await read($, agents)
     if (!same(prev, v)) {
@@ -126,18 +149,9 @@ async function pollAgents($: EngineInterface, force = false) {
     const s = Object.fromEntries(stats)
     // 실행 중인 서브에이전트가 있으면 경과 시간이 바뀌므로 기록(3초마다 한 번 다시 그림)
     if (list.some(a => a.status === 'running') || !same(await read($, subStats), s)) await update($, subStats, () => s)
+    if (!same(await read($, log), logBuf)) await update($, log, () => [...logBuf])
   } catch {
     // 목록을 못 받으면 이전 값 유지
-  }
-  if (!force && polls++ % 3 !== 0) return
-  try {
-    const { stdout } = await $.process.run(['claude', 'agents', '--json', '--all'])
-    const v = parseAgents(stdout, self)
-    if (!same(await read($, sessions), v)) await update($, sessions, () => v)
-    const saved = (await $.store.get('hidden-agents')) as string[] | undefined
-    if (saved && !same(await read($, hidden), saved)) await update($, hidden, () => saved)
-  } catch {
-    // 실패 시 이전 값 유지
   }
 }
 
@@ -212,7 +226,7 @@ async function rollback($: EngineInterface, id: string) {
   )
 }
 
-// 롤백(rb:), 서브에이전트는 TaskStop, 세션은 대화형이면 kill · 백그라운드면 claude stop · 끝났으면 claude rm(대화 기록은 남음)
+// 롤백(rb:), hc 서브에이전트는 hc kill, 그 외 서브에이전트는 TaskStop
 async function stop($: EngineInterface, key: string) {
   await update($, confirm, () => null)
   try {
@@ -224,31 +238,11 @@ async function stop($: EngineInterface, key: string) {
     } else if (key.startsWith('a:')) {
       await $.tool.call({ tool: 'TaskStop', task_id: key.slice(2) })
       $.ui.toast('서브에이전트를 종료했습니다')
-    } else {
-      const id = key.slice(2)
-      const row = (await read($, sessions)).find(x => x.id === id)
-      const ended = row?.isEnded
-      // claude stop 은 백그라운드 세션 전용 — 대화형(데스크톱·터미널) 세션은 프로세스 종료(대화 기록은 남음)
-      const r =
-        !ended && row?.kind === 'interactive' && row.pid
-          ? await $.process.run(['kill', '-TERM', String(row.pid)])
-          : await $.process.run(['claude', ended ? 'rm' : 'stop', id])
-      const verb = ended ? '삭제' : '종료'
-      $.ui.toast(r.exitCode === 0 ? `세션 ${id} ${verb}했습니다` : `${verb} 실패: ${(r.stderr || r.stdout).trim().slice(0, 120)}`)
     }
   } catch (err) {
     $.ui.toast(`실패: ${String(err).slice(0, 120)}`)
   }
-  await pollAgents($, true)
-}
-
-// 세션 숨기기/보이기 전환 + 저장
-// ponytail: 삭제된 세션 id 도 목록에 남음, 수백 개 쌓이면 목록에 없는 id 정리 추가
-async function toggleHidden($: EngineInterface, id: string) {
-  const cur = ((await $.store.get('hidden-agents')) as string[] | undefined) ?? (await read($, hidden))
-  const saved = toggle(cur, id)
-  await $.store.set('hidden-agents', saved)
-  await update($, hidden, () => saved)
+  await pollAgents($)
 }
 
 export const register: Register = on => {
@@ -288,8 +282,8 @@ export const register: Register = on => {
     const savedHistory = (await $.store.get('render-history')) as Record<string, number[]> | undefined
     if (savedHistory) await update($, renderHistory, () => savedHistory)
     for (const [id, st] of Object.entries(await read($, subStats))) if (!stats.has(id)) stats.set(id, st)
-    const savedHidden = (await $.store.get('hidden-agents')) as string[] | undefined
-    if (savedHidden) await update($, hidden, () => savedHidden)
+    // 다시 로드되면 모듈 버퍼가 비므로 창에 남은 로그로 이어 붙임
+    if (!logBuf.length) logBuf.push(...(await read($, log)))
 
     // 옆 패널은 자동으로 열지 않음 — 진행 상황은 usage-band 게이지 옆 칸에 표시, 창은 /progress 로 수동 열기
 
@@ -299,32 +293,29 @@ export const register: Register = on => {
     void $.process
       .run(['find', SNAP_ROOT, '-mindepth', '1', '-maxdepth', '1', '-mtime', '+3', '-exec', 'rm', '-rf', '{}', '+'])
       .catch(() => undefined)
-    void pollAgents($, true)
+    void pollAgents($)
 
-    // 3초마다 ps 로 렌더 프로세스 확인
+    // 3초마다 ps 로 렌더 프로세스 확인(usage-band 표시용) + 서브에이전트 목록·상태 갱신
     // ponytail: ps 폴링이라 진행률(%)은 모름, 평균 소요 시간으로 ETA 추정
     $.clock.every(3000, async () => {
-      let found: RenderJob[]
       try {
         const { stdout } = await $.process.run(['ps', '-axo', 'pid=,ppid=,etime=,command='])
-        found = parsePs(stdout)
+        const found = parsePs(stdout)
+        const before = await read($, jobs)
+        const alive = new Set(found.map(j => j.pid))
+        for (const job of before.filter(j => !alive.has(j.pid))) {
+          // 3초 미만 단발 프로세스는 기록 안 함
+          if (job.seconds < 3) continue
+          $.ui.toast(`렌더 끝: ${job.kind} · ${fmt(job.seconds)}`, { timeoutMs: 10000 })
+          const h = ((await $.store.get('render-history')) as Record<string, number[]> | undefined) ?? (await read($, renderHistory))
+          const saved = { ...h, [job.kind]: [...(h[job.kind] ?? []), job.seconds].slice(-10) }
+          await $.store.set('render-history', saved)
+          await update($, renderHistory, () => saved)
+        }
+        if (!same(before, found)) await update($, jobs, () => found)
       } catch {
-        return
+        // ps 실패 시 이전 값 유지
       }
-      const before = await read($, jobs)
-      const alive = new Set(found.map(j => j.pid))
-
-      for (const job of before.filter(j => !alive.has(j.pid))) {
-        // 3초 미만 단발 프로세스는 기록 안 함
-        if (job.seconds < 3) continue
-        $.ui.toast(`렌더 끝: ${job.kind} · ${fmt(job.seconds)}`, { timeoutMs: 10000 })
-        const h = ((await $.store.get('render-history')) as Record<string, number[]> | undefined) ?? (await read($, renderHistory))
-        const saved = { ...h, [job.kind]: [...(h[job.kind] ?? []), job.seconds].slice(-10) }
-        await $.store.set('render-history', saved)
-        await update($, renderHistory, () => saved)
-      }
-
-      if (!same(before, found)) await update($, jobs, () => found)
       await pollAgents($)
       await refreshStatus($)
     })
@@ -348,6 +339,27 @@ export const register: Register = on => {
     return r
   })
 
+  // 메인 루프 요청마다: 실제 모델·effort·컨텍스트 토큰, advisor 서버 도구 호출 수 기록
+  on('turn.step', async function* ($, e, next) {
+    const r = yield* next(e)
+    if (e.agentId) return r
+    try {
+      const adv = (r.serverToolUses ?? []).filter(u => u.name === 'advisor')
+      const u = r.usage
+      const ctx = u ? u.input_tokens + u.cache_read_input_tokens + u.cache_creation_input_tokens : undefined
+      await update($, lead, l => ({
+        model: u?.model ?? e.model,
+        effort: e.effort,
+        ctx: ctx ?? l?.ctx ?? 0,
+        advisor: (l?.advisor ?? 0) + adv.length,
+        advisorAt: adv.length ? adv[adv.length - 1]!.startedAt : l?.advisorAt,
+      }))
+    } catch {
+      // 기록 실패해도 응답은 그대로
+    }
+    return r
+  })
+
   on('command.run', { command: 'steps-clear' }, async $ => {
     await saveSteps($, [])
     return { text: '단계 목록을 비웠습니다.' }
@@ -357,13 +369,13 @@ export const register: Register = on => {
   on('command.run', { command: 'progress-toggle' }, async $ => {
     const isOpen = (await $.ui.panes()).some(p => p.id === PANE)
     if (isOpen) await $.ui.close({ id: PANE })
-    else await $.ui.open({ id: PANE, title: TITLE })
+    else await $.ui.open({ id: PANE, title: TITLE, backgroundColor: NEON.bg })
     await refreshStatus($)
     return { text: isOpen ? '진행 상황 창을 닫았습니다.' : '진행 상황 창을 열었습니다.' }
   })
 
   on('command.run', { command: 'progress' }, async $ => {
-    await $.ui.open({ id: PANE, title: TITLE })
+    await $.ui.open({ id: PANE, title: TITLE, backgroundColor: NEON.bg })
     await refreshStatus($)
     return { text: '진행 상황 창을 열었습니다.' }
   })
@@ -411,6 +423,15 @@ export const register: Register = on => {
   on('tool.call', async ($, e, next) => {
     const ran = await next(e)
     if (!e.agentId && next.origin.plugin !== 'progress-pane') await update($, run, r => (r ? { ...r, tools: r.tools + 1, lastTool: e.tool } : r))
+    // 세션 로그: 메인은 바로 창에, 서브에이전트는 버퍼에만(3초 폴링 때 반영)
+    pushLog({
+      t: await $.clock.now(),
+      model: e.agentId ? ((await read($, subMeta))[e.agentId]?.model ?? 'sub') : ((await read($, lead))?.model ?? 'main'),
+      sub: !!e.agentId,
+      tool: shortTool(e.tool),
+      arg: argOf(e as unknown as Record<string, unknown>),
+    })
+    if (!e.agentId) await update($, log, () => [...logBuf])
     // 서브에이전트 도구: 메모리에만 세고 창은 3초 폴링 때 반영
     if (e.agentId) {
       const st = stats.get(e.agentId) ?? { startedAt: await $.clock.now(), tools: 0, lastTool: '' }
@@ -420,6 +441,27 @@ export const register: Register = on => {
   }).catch(($, e, next) => next(e))
 
   // 롤백용 원본 사본: 서브에이전트가 고친 파일도 지금 작업에 포함. 실패해도 도구는 그대로 실행
+  // Jev 실행 감지: Bash 로 jev.py route/review 를 돌리면 실행 중 표시 → 끝나면 출력(JSON)을 읽어 Jev 상자에 기록
+  // .catch 로 next 를 다시 부르지 않음 — 기록 실패로 명령이 두 번 실행되면 안 되므로 기록만 try 로 감쌈
+  on('tool.call', { tool: 'Bash' }, async ($, e, next) => {
+    const kind = jevKind(e.command)
+    if (!kind) return next(e)
+    try {
+      const t = await $.clock.now()
+      await update($, jev, j => ({ ...(j ?? { kind, count: 0, rows: [] }), t, running: true }))
+    } catch {
+      // 표시 실패해도 명령은 그대로
+    }
+    const ran = await next(e)
+    try {
+      const t = await $.clock.now()
+      await update($, jev, j => parseJev(kind, ran.text ?? '', t, (j?.count ?? 0) + 1))
+    } catch {
+      // 기록 실패해도 결과는 그대로
+    }
+    return ran
+  })
+
   on('tool.call', { tool: 'Edit' }, async ($, e, next) => {
     await snapshot($, e.file_path).catch(() => undefined)
     return next(e)
@@ -507,40 +549,56 @@ export const register: Register = on => {
     const { Box, Text, Button } = $.ui.resolve(e)
     const r = await read($, run)
     const hist = await read($, runs)
-    const list = await read($, jobs)
-    const past = await read($, renderHistory)
     const subs = await read($, agents)
     const meta = await read($, subMeta)
     const subStat = await read($, subStats)
-    const procs = await read($, sessions)
     const now = await $.clock.now()
     const asking = await read($, confirm)
     const opened = await read($, expanded)
     const view = await read($, tab)
-    const [shown, stashed] = splitHidden(procs, await read($, hidden))
+    const L = await read($, lead)
+    const logs = await read($, log)
+    const J = await read($, jev)
+    // 네온 다크: 창 전체 바탕을 다크 네이비로, 글자는 모두 색을 직접 지정(기본 글자색은 밝은 테마용이라 어두움)
+    const { fg: FG, muted: MUTED, subtle: SUBTLE, warn: WARN, bg: BG, chip: CHIP, cyan: CYAN } = NEON
+    // 버튼은 글자색을 못 정해서 밝은 칩 위에 올림(어두운 버튼 글자가 다크 바탕에서도 보이게)
+    const chip = (key: string, node: RenderChildren, bg: string = CHIP) => (
+      <Box key={`chip:${key}`} backgroundColor={bg} flexShrink={0}>
+        {node}
+      </Box>
+    )
 
     // 잘린 제목은 누를 수 있는 버튼, 누르면 아래에 전체 내용 펼침 · 다시 누르면 접힘
     // 안 잘린 제목은 그냥 글자
+    // 다크 바탕에선 버튼 글자가 안 보여서 제목은 글자로, 펼치기는 옆의 작은 칩(▸/▾)
     const title = (key: string, full: string, short: string, always = false) =>
       short === full && !always ? (
-        <Text>{full}</Text>
+        <Text color={FG}>{full}</Text>
       ) : (
-        <Button
-          key={`t:${key}`}
-          plain
-          label={short}
-          onPress={() => {
-            void update($, expanded, l => toggle(l, key))
-            // 접거나 펼 때 '정말 종료' 대기 해제 — 다시 펼쳤을 때 한 번 클릭으로 실행되지 않게
-            void update($, confirm, () => null)
-          }}
-        />
+        <Box key={`tt:${key}`} flexDirection="row">
+          <Text color={FG} bold>{short}</Text>
+          <Box marginLeft={1}>
+            {chip(
+              `t:${key}`,
+              <Button
+                key={`t:${key}`}
+                plain
+                label={opened.includes(key) ? '▾' : '▸'}
+                onPress={() => {
+                  void update($, expanded, l => toggle(l, key))
+                  // 접거나 펼 때 '정말 종료' 대기 해제 — 다시 펼쳤을 때 한 번 클릭으로 실행되지 않게
+                  void update($, confirm, () => null)
+                }}
+              />,
+            )}
+          </Box>
+        </Box>
       )
     // 펼친 전체 내용 — 공백 대신 상자 여백으로 들여씀(데스크톱 글꼴에선 공백이 거의 안 보임)
     const detail = (key: string, full: string, short: string) =>
       short !== full && opened.includes(key) ? (
         <Box paddingLeft={4}>
-          <Text color="cyan">{`‣ ${full.slice(0, 1000)}`}</Text>
+          <Text color={CYAN}>{`‣ ${full.slice(0, 1000)}`}</Text>
         </Box>
       ) : null
     const width = Math.max(20, (e.props.bodyColumns ?? 40) - 2)
@@ -549,14 +607,17 @@ export const register: Register = on => {
     const controls = (key: string, verb = '종료') =>
       asking === `${key}#${verb}` ? (
         <Box key={`${key}-c`} flexDirection="row" columnGap={1}>
-          <Button key={`${key}-ok`} variant="primary" onPress={() => void stop($, key)}>{`정말 ${verb}`}</Button>
-          <Button key={`${key}-no`} onPress={() => void update($, confirm, () => null)}>취소</Button>
+          {chip(`${key}-ok`, <Button key={`${key}-ok`} variant="primary" onPress={() => void stop($, key)}>{`정말 ${verb}`}</Button>)}
+          {chip(`${key}-no`, <Button key={`${key}-no`} onPress={() => void update($, confirm, () => null)}>취소</Button>)}
         </Box>
       ) : (
         // 크기 설정이 없어 한 글자 아이콘으로 작게 — label 을 주면 데스크톱이 label 글자를 그려서 아이콘만 둠
-        <Button key={`${key}-x`} plain dimColor onPress={() => void update($, confirm, () => `${key}#${verb}`)}>
-          {ICON[verb] ?? verb}
-        </Button>
+        chip(
+          `${key}-x`,
+          <Button key={`${key}-x`} plain onPress={() => void update($, confirm, () => `${key}#${verb}`)}>
+            {ICON[verb] ?? verb}
+          </Button>,
+        )
       )
 
     // 서브에이전트 한 행(메인 에이전트 아래 xl 여백만큼 들여쓰기) — 1줄: 아이콘 + 'sub । ' + 작업 설명 + 모델 + 작은 종료 버튼(실행 중일 때) / 2줄: 상태 · 경과 · 도구
@@ -567,26 +628,34 @@ export const register: Register = on => {
         // 들여쓰기는 공백 대신 상자 여백 — 데스크톱 글꼴에선 공백이 좁아 거의 안 보임
         <Box key={key} flexDirection="column" rowGap={0} paddingLeft={4}>
           <Box flexDirection="row">
-            <Text color={live ? 'cyan' : undefined} dimColor={!live}>
+            <Text color={live ? CYAN : MUTED}>
               {a.status === 'running' ? '► ' : live ? '● ' : '○ '}
             </Text>
-            <Text>{a.type === 'hc' ? 'hc । ' : 'sub । '}</Text>
+            <Text color={FG}>{a.type === 'hc' ? 'hc । ' : 'sub । '}</Text>
             {a.type === 'hc' ? (
-              // hc 서브에이전트: 이름을 누르면 그 터미널로 들어가는 명령 복사
-              <Button
-                key={`t:${key}`}
-                plain
-                label={clip(a.description, 22)}
-                onPress={press => {
-                  const cmd = `hc attach ${a.id.slice(3)}`
-                  void $.ui.copy({ text: cmd, surface: press.surface }).then(() => $.ui.toast(`${cmd} 복사됨`)).catch(() => undefined)
-                }}
-              />
+              // hc 서브에이전트: 이름 옆 ⧉ 칩을 누르면 그 터미널로 들어가는 명령 복사
+              <Box flexDirection="row">
+                <Text color={FG} bold>{clip(a.description, 22)}</Text>
+                <Box marginLeft={1}>
+                  {chip(
+                    `t:${key}`,
+                    <Button
+                      key={`t:${key}`}
+                      plain
+                      label="⧉"
+                      onPress={press => {
+                        const cmd = `hc attach ${a.id.slice(3)}`
+                        void $.ui.copy({ text: cmd, surface: press.surface }).then(() => $.ui.toast(`${cmd} 복사됨`)).catch(() => undefined)
+                      }}
+                    />,
+                  )}
+                </Box>
+              </Box>
             ) : (
               title(key, a.description, clip(a.description, 22))
             )}
             {meta[a.id] && (
-              <Text dimColor>{`  । ${shortModel(meta[a.id]!.model)} · ${meta[a.id]!.effort ?? '기본'}`}</Text>
+              <Text color={MUTED}>{`  । ${shortModel(meta[a.id]!.model)} · ${meta[a.id]!.effort ?? '기본'}`}</Text>
             )}
             {/* hc 서브에이전트는 완료돼도 터미널이 살아 있으면 종료(hc kill) 가능 */}
             {(live || a.type === 'hc') && (
@@ -596,7 +665,7 @@ export const register: Register = on => {
             )}
           </Box>
           {detail(key, a.description, clip(a.description, 22))}
-          <Text dimColor>
+          <Text color={MUTED}>
             {'  └ '}
             {a.status}
             {subStat[a.id] &&
@@ -608,200 +677,312 @@ export const register: Register = on => {
       )
     }
 
-    // 서브에이전트 목록 — 첫 행 위와 행 사이에 옅은 점선(서브에이전트 들여쓰기에 맞춤)
-    const subRows = () =>
-      subs.flatMap(a => [
-        <Box key={`ga:${a.id}`} paddingLeft={4}>
-          <Text color="subtle" dimColor wrap="truncate">{'┄'.repeat(Math.max(0, width - 2))}</Text>
-        </Box>,
-        sub(a),
-      ])
+    // ── 흐름도: 메인 세션 → 위임 → 서브에이전트 카드 → 리드 복귀, 아래 세션 로그 ──
+    // 애니메이션 박자는 1초 — 턴 중엔 1초 타이머, 서브에이전트만 돌 땐 3초 폴링이 다시 그림
+    const phase = Math.floor(now / 1000)
+    // 다크 화면 안쪽 폭(좌우 여백 1칸씩)
+    const fw = width - 2
+    // 날짜 꼬리(-20261001)를 뗀 짧은 모델 이름
+    const nm = (m: string) => shortModel(m.replace(/-\d{8}$/, ''))
+    const leadModel = L?.model ?? ''
+    const leadName = leadModel ? nm(leadModel) : 'main'
+    const leadColor = famColor(leadModel)
+    const active = !!r && !r.endedAt
+    // 카드: 살아 있는 서브에이전트 + 지금(없으면 직전) 작업이 띄운 서브에이전트
+    const pool = new Set(r?.subs ?? hist[0]?.subs ?? [])
+    const cards = subs.filter(a => LIVE.has(a.status) || pool.has(a.id)).slice(-CARD_MAX)
+    const running = cards.filter(a => a.status === 'running').length
+    const allDone = cards.length > 0 && cards.every(a => !LIVE.has(a.status))
+    const subModels = [...new Set(cards.flatMap(a => (meta[a.id] ? [nm(meta[a.id]!.model)] : [])))]
+    const subColor = famColor(subModels[0] ?? 'haiku')
+    const { per, cw } = layout(cards.length, fw)
+    const lineW = cards.length ? per * cw + per - 1 : fw
+    const pad = (w: number) => ' '.repeat(Math.floor(w / 2))
 
-    // 세션 한 행 — 1줄: 아이콘(► 진행 중 · ◼︎ 대기 · ☑︎ 끝남) + 이름 + 작은 종료/삭제 · 숨기기/보이기 버튼 / 2줄: 상태 · 경과 · 폴더
-    const session = (x: (typeof procs)[number], isHidden: boolean) => {
-      const key = `s:${x.id}`
-      // ponytail: 대화형은 status 'busy', 백그라운드는 state 'working' 이 진행 중
-      const busy = x.state === 'busy' || x.state === 'working'
-      // 대화형 세션은 pid 로만 종료 가능 — pid 없으면 종료 버튼 숨김
-      const canStop = self !== '' && (x.isEnded || x.kind !== 'interactive' || x.pid !== undefined)
+    // 세로 연결선 3줄 — 흐를 땐 ▼가 1→2→3번째 줄로 차례로 내려가고 나머지 줄은 선(│), 쉴 땐 어두운 점선
+    const vline = (key: string, lit: boolean, color: string) =>
+      Array.from({ length: ARROW_ROWS }, (_, i) => (
+        <Box key={`${key}${i}`} flexDirection="row">
+          <Text>{pad(lineW)}</Text>
+          <Text color={lit ? color : SUBTLE}>{lit ? (phase % ARROW_ROWS === i ? FLOW : '│') : '┊'}</Text>
+        </Box>
+      ))
+    // 가로 갈래선 — 흐를 땐 작은 원 • 두 개가 가운데에서 카드 쪽으로 퍼짐(outward) 또는 카드에서 가운데로 모임
+    const runLine = (key: string, line: string, lit: boolean, color: string, outward: boolean) => (
+      <Box key={key} flexDirection="row">
+        {(lit ? dots(line, phase, outward) : ([[line, false]] as [string, boolean][])).map(([s, hot], i) => (
+          <Text key={`${key}${i}`} color={hot ? color : lit ? MUTED : SUBTLE} bold={hot}>{s}</Text>
+        ))}
+      </Box>
+    )
+
+    // 범례: ■ 모델 · 역할
+    const legendItems: [string, string, string][] = [
+      [leadName, 'lead', leadColor],
+      ...subModels.filter(m => m !== leadName).map(m => [m, 'swarm', famColor(m)] as [string, string, string]),
+      ...(L?.advisor ? [['advisor', 'on call', famColor('opus')] as [string, string, string]] : []),
+      ...(J ? [['jev', J.kind === 'review' ? 'review' : 'route', DONE] as [string, string, string]] : []),
+    ]
+    const legend = (
+      <Box key="legend" flexDirection="row" columnGap={2} flexWrap="wrap">
+        {legendItems.map(([name, role, color]) => (
+          <Box key={`lg:${name}`} flexDirection="row">
+            <Text color={color}>■ </Text>
+            <Text color={MUTED}>{`${name} · ${role}`}</Text>
+          </Box>
+        ))}
+      </Box>
+    )
+
+    // 메인 세션 상자 — 작업 중이면 모델 색 테두리 + 깜빡이는 ●
+    const elapsed = r ? r.now - r.startedAt : 0
+    const total = r?.tasks.length ?? 0
+    const doneN = r?.tasks.filter(t => t.status === 'completed').length ?? 0
+    const step = r?.tasks.find(t => t.status === 'in_progress')
+    const barW = Math.max(8, Math.min(BAR, fw - 20))
+    const filled = total ? Math.round((doneN / total) * barW) : 0
+    const cell = (i: number) => {
+      if (i < filled) return <Text key={`c${i}`} color={mix(i / barW)}>█</Text>
+      if (active && !total && (i - (phase % barW) + barW) % barW < 6) return <Text key={`c${i}`} color={mix(i / barW)}>▓</Text>
+      return <Text key={`c${i}`} color={SUBTLE}>░</Text>
+    }
+    const last = hist[0]
+    const mainBox = (
+      <Box key="main" flexDirection="column" borderStyle="bold" borderColor={active ? leadColor : SUBTLE} paddingX={1} width={fw}>
+        <Text bold color={leadColor} wrap="truncate">{`${active && phase % 2 ? '●' : '○'} ${leadName.toUpperCase()} · MAIN SESSION`}</Text>
+        {r ? (
+          // 다크 화면에선 버튼 글자가 안 보여서 제목은 글자로만(전체 요청은 완료 기록 탭에서 펼쳐 봄)
+          <Text color={FG} wrap="truncate">{`▸ ${fallback(r.prompt)}`}</Text>
+        ) : (
+          <Text color={MUTED} wrap="truncate">
+            {last ? `대기 중 · 마지막: ${last.label ?? fallback(last.prompt)} · ${dur((last.endedAt ?? last.now) - last.startedAt)}` : '대기 중'}
+          </Text>
+        )}
+        <Text color={MUTED} wrap="truncate">{`effort ${effortBar(L?.effort)}${L?.ctx ? ` · ctx ${kTok(L.ctx)}` : ''}`}</Text>
+        {r && (
+          <Box flexDirection="row">
+            {Array.from({ length: barW }, (_, i) => cell(i))}
+            <Text bold color={FG}>{`  ${total ? `${doneN}/${total} · ${Math.round((doneN / total) * 100)}%` : '진행 중'}`}</Text>
+          </Box>
+        )}
+        {r && <Text color={MUTED} wrap="truncate">{`⏱ ${dur(elapsed)} · 도구 ${r.tools}회${r.lastTool ? ` · ${shortTool(r.lastTool)}` : ''}`}</Text>}
+        {step && <Text color={leadColor} wrap="truncate">{`└ ${step.subject}`}</Text>}
+      </Box>
+    )
+
+    // Jev 상자 — jev.py 를 한 번이라도 돌렸을 때만. 실행 중이거나 1분 안의 결과면 초록 테두리
+    // route: 레인별 적합도 막대 + 추천·확신도(0.6 이상 sharp → 위임, 미만 split → 메인 판단)
+    // review: 기준별 점수 막대(75 이상 초록) + 판정·총점
+    // 오류는 1분 지나면 숨김(오래된 실패가 계속 남지 않게)
+    const jevBox = J && !(J.kind === 'error' && !J.running && now - J.t > 60_000) && (() => {
+      const fresh = J.running || now - J.t < 60_000
+      const labW = Math.min(20, Math.max(6, ...J.rows.map(x => x.label.length + 1)))
+      const barJ = Math.max(6, fw - 4 - labW - 6)
+      const pass = J.kind === 'review' ? 0.75 : SHARP
+      const sharp = (J.conf ?? 0) >= SHARP
+      const conf = J.conf !== undefined ? ` · conf ${J.conf.toFixed(2)}` : ''
       return (
-        <Box key={key} flexDirection="column" rowGap={0}>
+        <Box key="jev" flexDirection="column" borderStyle="bold" borderColor={fresh ? DONE : SUBTLE} paddingX={1} width={fw}>
+          <Box flexDirection="row" justifyContent="space-between">
+            <Text bold color={DONE}>{`JEV · ${J.kind.toUpperCase()}`}</Text>
+            <Text color={MUTED}>{`calls ${J.count} · ${hms(J.t)}`}</Text>
+          </Box>
+          {J.running && <Text color={DONE}>{`${spin(phase)} 판정 중…`}</Text>}
+          {!J.running &&
+            J.rows.map((x, i) => {
+              const fill = Math.round(Math.min(1, Math.max(0, x.p)) * barJ)
+              const ok = x.p >= pass
+              return (
+                <Box key={`jr${i}`} flexDirection="row">
+                  <Box width={labW} flexShrink={0}>
+                    <Text color={FG} wrap="truncate" bold={J.kind === 'route' && x.label.startsWith(`${J.pick} `)}>{x.label}</Text>
+                  </Box>
+                  <Text color={ok ? DONE : WARN}>{'█'.repeat(fill)}</Text>
+                  <Text color={SUBTLE}>{'░'.repeat(barJ - fill)}</Text>
+                  <Text color={ok ? DONE : WARN}>{J.kind === 'review' ? ` ${String(Math.round(x.p * 100)).padStart(3)}` : ` ${x.p.toFixed(2)}`}</Text>
+                </Box>
+              )
+            })}
+          {!J.running && J.kind === 'route' && J.pick && (
+            <Box flexDirection="row">
+              <Text color={MUTED}>{`→ ${J.pick}${conf}  `}</Text>
+              <Text bold color={sharp ? DONE : WARN}>{sharp ? 'sharp → 위임' : 'split → 메인 판단'}</Text>
+            </Box>
+          )}
+          {!J.running && J.kind === 'review' && (
+            <Box flexDirection="row">
+              <Text color={MUTED}>{`→ ${J.score ?? '?'}점${conf}  `}</Text>
+              <Text bold color={J.verdict === 'pass' ? DONE : WARN}>{J.verdict ?? '?'}</Text>
+            </Box>
+          )}
+          {!J.running && J.note && <Text color={J.kind === 'error' ? FAIL : MUTED} wrap="truncate">{J.note}</Text>}
+        </Box>
+      )
+    })()
+
+    // advisor 서버 도구를 쓴 적 있을 때만 한 줄
+    const advisor = L && L.advisor > 0 && (
+      <Box key="adv" flexDirection="row">
+        <Text color={famColor('opus')}>◆ ADVISOR · ON CALL</Text>
+        <Text color={MUTED} wrap="truncate">{`  호출 ${L.advisor}회${L.advisorAt ? ` · 마지막 ${hms(L.advisorAt)}` : ''}`}</Text>
+      </Box>
+    )
+
+    // 서브에이전트 카드 — 실행 중: 모델 색 테두리 + 흐르는 막대 + 스피너 / 완료: 초록 꽉 찬 막대
+    // ponytail: 엔진이 진행률을 주지 않아 막대는 % 대신 실행 중 표시, 아래 줄에 경과·도구 수
+    const iw = Math.max(4, cw - 4)
+    const card = (a: AgentRow) => {
+      const key = `a:${a.id}`
+      const m = meta[a.id]?.model
+      const st = subStat[a.id]
+      const color = m ? famColor(m) : subColor
+      const state = a.status === 'running' ? 'run' : a.status === 'completed' ? 'done' : 'idle'
+      const bad = ['failed', 'killed', 'error', 'stopped'].includes(a.status)
+      const live = LIVE.has(a.status)
+      return (
+        <Box
+          key={key}
+          flexDirection="column"
+          borderStyle="bold"
+          borderColor={bad ? FAIL : state === 'run' ? color : state === 'done' ? DONE : SUBTLE}
+          paddingX={1}
+          width={cw}
+        >
+          <Text bold color={FG} wrap="truncate">{clip(a.description, iw)}</Text>
+          <Text color={color} wrap="truncate">{m ? nm(m) : a.type}</Text>
           <Box flexDirection="row">
-            <Text color={x.isSelf ? 'cyan' : x.state === 'blocked' ? 'yellow' : undefined} dimColor={x.isEnded || isHidden}>
-              {x.isEnded ? '☑︎ ' : busy ? '► ' : '◼︎ '}
+            {cardBar(iw, phase, state).map((full, i) => (
+              <Text key={`${key}b${i}`} color={full ? (state === 'done' ? DONE : color) : SUBTLE}>
+                {full ? '█' : '░'}
+              </Text>
+            ))}
+          </Box>
+          <Box flexDirection="row">
+            <Text
+              color={bad ? FAIL : state === 'done' ? DONE : state === 'run' ? color : MUTED}
+              wrap="truncate"
+            >
+              {bad ? `✕ ${a.status}` : state === 'done' ? '✓ done' : state === 'run' ? `${spin(phase)} running` : `○ ${a.status}`}
             </Text>
-            {/* 이 세션은 제목을 누르면 아래 서브에이전트 접기·펴기, 다른 세션은 잘린 제목일 때 전체 이름 펼침 */}
-            {x.isSelf
-              ? subs.length > 0
-                ? // 서브에이전트가 있으면 제목 옆 (n), 누르면 접기·펴기
-                  title(SUBS_FOLD, x.name, `${clip(x.name, 28)} (${subs.length})`, true)
-                : title(SUBS_FOLD, x.name, clip(x.name, 28))
-              : title(key, x.name, clip(x.name, 28))}
-            {/* 제목 옆 작은 버튼(글자형·흐리게): 종료/삭제 · 숨기기/보이기 */}
-            {!x.isSelf && self !== '' && (
-              <Box flexDirection="row" columnGap={1} marginLeft={1}>
-                {canStop && controls(key, x.isEnded ? '삭제' : '종료')}
-                <Button key={`${key}-h`} plain dimColor onPress={() => void toggleHidden($, x.id)}>
-                  {isHidden ? ICON.보이기 : ICON.숨기기}
-                </Button>
+            {(live || a.type === 'hc') && <Box marginLeft={1}>{controls(key)}</Box>}
+          </Box>
+          {st && <Text color={MUTED} wrap="truncate">{`⏱ ${dur((st.endedAt ?? now) - st.startedAt)} · ${st.tools}회`}</Text>}
+        </Box>
+      )
+    }
+
+    // 리드 복귀 상자 — 카드가 모두 끝났고 작업이 이어지는 중이면 켜짐
+    const backOn = allDone && active
+    const back = (
+      <Box key="back" flexDirection="row" justifyContent="center" width={lineW}>
+        <Box flexDirection="column" alignItems="center" borderStyle="bold" borderColor={backOn ? leadColor : SUBTLE} paddingX={2}>
+          <Text bold color={backOn ? leadColor : MUTED}>{`BACK TO ${leadName.toUpperCase()} · LEAD`}</Text>
+          <Text color={MUTED}>review + verify</Text>
+        </Box>
+      </Box>
+    )
+
+    const flow = (
+      <Box flexDirection="column" rowGap={0} paddingX={1} paddingTop={1} width={width}>
+        {legend}
+        {advisor}
+        {mainBox}
+        {vline('v1', active || running > 0, leadColor)}
+        {jevBox}
+        {jevBox && vline('vj', active || running > 0, DONE)}
+        <Box flexDirection="row" justifyContent="center" width={lineW}>
+          <Text color={cards.length ? FG : MUTED} wrap="truncate">DELEGATE → SUBAGENTS · </Text>
+          <Text color={cards.length ? subColor : MUTED}>
+            {cards.length ? subModels.join(', ') || 'sub' : '위임 없음'}
+          </Text>
+        </Box>
+        {cards.length > 0 && runLine('f1', forkLine(per, cw, true), running > 0, subColor, true)}
+        {cards.length > 0 &&
+          arrowRows(per, cw, phase, running > 0).map((row, i) => (
+            <Text key={`ar${i}`} color={running > 0 ? subColor : SUBTLE}>{row}</Text>
+          ))}
+        {cards.length > 0 && (
+          <Box flexDirection="row" columnGap={1} flexWrap="wrap" width={lineW}>
+            {cards.map(card)}
+          </Box>
+        )}
+        {cards.length > 0 && runLine('f2', forkLine(per, cw, false), backOn, leadColor, false)}
+        {cards.length > 0 && vline('v2', backOn, leadColor)}
+        {cards.length > 0 && back}
+
+        {/* 세션 로그 — 최근 도구 호출(아래가 최신), 실행 모델 색으로 */}
+        <Box flexDirection="column" borderStyle="round" borderColor={SUBTLE} paddingX={1} width={fw} marginTop={1}>
+          <Text bold color={MUTED}>SESSION LOG</Text>
+          {logs.length === 0 && <Text color={MUTED}>기록 없음</Text>}
+          {/* 한 줄 고정: 시간 । 모델 । 내역 — 시간·모델은 고정 폭(줄어들지 않음), 내역은 남는 폭에 맞춰 … 로 줄임 */}
+          {logs.slice(-5).map((l, i) => (
+            <Box key={`log${i}`} flexDirection="row">
+              <Box flexShrink={0}>
+                <Text color={MUTED}>{`${hms(l.t)} । `}</Text>
               </Box>
-            )}
-          </Box>
-          {detail(key, x.name, clip(x.name, 28))}
-          <Text dimColor>
-            {'  └ '}
-            {x.isSelf ? '이 세션 · ' : ''}
-            {x.state} · {x.startedAt ? age(now - x.startedAt) : '?'} · {x.dir}
-          </Text>
-          {x.isSelf && !opened.includes(SUBS_FOLD) && subRows()}
+              <Box flexShrink={0}>
+                <Text color={l.model === 'sub' || l.model === 'main' ? FG : famColor(l.model)}>
+                  {clip(l.model === 'main' || l.model === 'sub' ? l.model : nm(l.model), LOG_MODEL_W - 1).padEnd(LOG_MODEL_W)}
+                </Text>
+              </Box>
+              <Box flexShrink={0}>
+                <Text color={MUTED}>{' । '}</Text>
+              </Box>
+              <Box flexShrink={1}>
+                {/* 테두리·여백 4 + 시간 8 + 구분 3 + 모델 + 구분 3 을 뺀 폭 */}
+                <Text color={FG} wrap="truncate">{logText(l.tool, l.arg, fw - 4 - 8 - 3 - LOG_MODEL_W - 3)}</Text>
+              </Box>
+            </Box>
+          ))}
         </Box>
-      )
-    }
-
-    // 에이전트 사이 가이드선(옅은 점선) — 첫 행 위엔 없음, 창 너비로 잘라 줄바꿈 방지
-    const guided = (rows: typeof procs, isHidden: boolean) =>
-      rows.flatMap((x, i) => [
-        ...(i > 0 ? [<Text key={`g:${x.id}`} color="subtle" dimColor wrap="truncate">{'┄'.repeat(width)}</Text>] : []),
-        session(x, isHidden),
-      ])
-
-    let work = <Text dimColor>대기 중</Text>
-    if (r) {
-      const elapsed = r.now - r.startedAt
-      const total = r.tasks.length
-      const done = r.tasks.filter(t => t.status === 'completed').length
-      const active = r.tasks.find(t => t.status === 'in_progress')
-      const filled = total ? Math.round((done / total) * BAR) : 0
-      const pos = Math.floor(elapsed / 1000) % BAR
-      const cell = (i: number) => {
-        if (i < filled) return <Text key={`c${i}`} color={mix(i / BAR)}>█</Text>
-        if (!total && (i - pos + BAR) % BAR < 6) return <Text key={`c${i}`} color={mix(i / BAR)}>▓</Text>
-        return <Text key={`c${i}`} dimColor>░</Text>
-      }
-      work = (
-        <Box flexDirection="column" rowGap={0}>
+        {/* 하단 상태 줄 */}
+        <Box flexDirection="row" columnGap={2} flexWrap="wrap">
           <Box flexDirection="row">
-            <Text bold color="cyan">▶ </Text>
-            {title(`r:${r.id}`, r.prompt.trim(), fallback(r.prompt))}
+            <Text color={MUTED}>subagents </Text>
+            <Text color={running ? subColor : SUBTLE}>{`[${running}/${cards.length}]`}</Text>
           </Box>
-          {detail(`r:${r.id}`, r.prompt.trim(), fallback(r.prompt))}
           <Box flexDirection="row">
-            {Array.from({ length: BAR }, (_, i) => cell(i))}
-            <Text bold>
-              {'  '}
-              {total ? `${done}/${total} · ${Math.round((done / total) * 100)}%` : '진행 중'}
-            </Text>
+            <Text color={MUTED}>{`${leadName} `}</Text>
+            <Text color={active ? leadColor : SUBTLE}>{active ? '[working]' : '[idle]'}</Text>
           </Box>
-          <Text dimColor>
-            ⏱ {dur(elapsed)} · 도구 {r.tools}회{r.lastTool ? ` · ${r.lastTool}` : ''}
-          </Text>
-          {active && <Text color="cyan">  └ {active.subject}</Text>}
+          {L?.advisor ? (
+            <Box flexDirection="row">
+              <Text color={MUTED}>advisor </Text>
+              <Text color={famColor('opus')}>{`[${L.advisor}]`}</Text>
+            </Box>
+          ) : null}
         </Box>
-      )
-    }
+      </Box>
+    )
 
     return (
-      // 왼쪽 디바이더와 붙지 않게 전체 2칸 들여쓰기
-      <Box flexDirection="column" paddingLeft={2}>
+      // 창 전체를 다크 네이비로 채움(창 높이만큼) · 왼쪽 디바이더와 붙지 않게 2칸 들여쓰기
+      <Box flexDirection="column" paddingLeft={2} backgroundColor={BG} width={e.props.bodyColumns} minHeight={e.props.scroll?.bodyRows}>
         {/* 탭 위 구분 실선 */}
-        <Text dimColor wrap="truncate">{'─'.repeat(width)}</Text>
-        {/* 탭: 지금 보는 탭은 primary(강조색), 다른 탭은 흐리게 */}
-        <Box flexDirection="row">
-          <Button
-            key="tab-now"
-            variant={view === 'now' ? 'primary' : undefined}
-            dimColor={view !== 'now'}
-            onPress={() => void update($, tab, () => 'now')}
-          >
-            진행
-          </Button>
-          <Text> </Text>
-          <Button
-            key="tab-history"
-            variant={view === 'history' ? 'primary' : undefined}
-            dimColor={view !== 'history'}
-            onPress={() => void update($, tab, () => 'history')}
-          >
-            {`완료 기록 ${hist.length}`}
-          </Button>
+        <Text color={SUBTLE} wrap="truncate">{'─'.repeat(width)}</Text>
+        {/* 탭: 칩 모양 — 보는 탭은 네온 시안, 다른 탭은 회청색 */}
+        <Box flexDirection="row" columnGap={1}>
+          {chip('tab-now', <Button key="tab-now" onPress={() => void update($, tab, () => 'now')}>진행</Button>, view === 'now' ? CYAN : MUTED)}
+          {chip(
+            'tab-history',
+            <Button key="tab-history" onPress={() => void update($, tab, () => 'history')}>{`완료 기록 ${hist.length}`}</Button>,
+            view === 'history' ? CYAN : MUTED,
+          )}
         </Box>
 
         {view === 'now' && (
         <Box flexDirection="column" rowGap={0}>
         {/* 탭과 작업 진행 구분 실선 */}
-        <Text dimColor wrap="truncate">{'─'.repeat(width)}</Text>
-        <Text bold>작업 진행</Text>
-        {work}
+        <Text color={SUBTLE} wrap="truncate">{'─'.repeat(width)}</Text>
+        {flow}
 
-        <Box marginTop={1}>
-          <Text bold>렌더</Text>
-        </Box>
-        {list.length === 0 && <Text dimColor>진행 중인 렌더 없음</Text>}
-        {list.map(job => {
-          const avg = average(past[job.kind])
-          const pct = percent(job.seconds, avg)
-          // 기록 있으면 평균 대비 % 만큼 채움, 없으면 작업 진행 바처럼 움직이는 6칸 블록
-          const filled = pct === undefined ? 0 : Math.round((pct / 100) * BAR)
-          const pos = job.seconds % BAR
-          const cell = (i: number) => {
-            if (i < filled) return <Text key={`r${i}`} color={mix(i / BAR)}>█</Text>
-            if (pct === undefined && (i - pos + BAR) % BAR < 6) return <Text key={`r${i}`} color={mix(i / BAR)}>▓</Text>
-            return <Text key={`r${i}`} dimColor>░</Text>
-          }
-          const label = pct === undefined ? '기록 없음' : `약 ${pct}%`
-          const eta =
-            avg === undefined
-              ? `${fmt(job.seconds)} 경과 · 한 번 끝나면 다음부터 % 표시`
-              : job.seconds < avg
-                ? `${fmt(job.seconds)} 경과 · 남은 시간 약 ${fmt(avg - job.seconds)} (평균 ${fmt(avg)})`
-                : `${fmt(job.seconds)} 경과 · 평균 ${fmt(avg)} 초과`
-          return (
-            <Box key={`j${job.pid}`} flexDirection="column" rowGap={0}>
-              <Text bold color="cyan">▶ {job.kind}</Text>
-              <Box flexDirection="row">
-                {Array.from({ length: BAR }, (_, i) => cell(i))}
-                <Text bold>
-                  {'  '}
-                  {label}
-                </Text>
-              </Box>
-              <Text dimColor>⏱ {eta}</Text>
-              <Text dimColor>{job.command.slice(0, width)}</Text>
-            </Box>
-          )
-        })}
-
-        <Box marginTop={1}>
-          <Text bold>에이전트</Text>
-        </Box>
-        {shown.length === 0 && <Text dimColor>세션 없음</Text>}
-        {guided(shown, false)}
-        {!shown.some(x => x.isSelf) && subRows()}
-
-        {/* 소제목 전체를 누르면 아래로 펼침·접힘
-            ponytail: 데스크톱은 Button 을 네이티브 버튼(안쪽 여백, 굵기 무시)으로 그려 다른 소제목과 미세하게 어긋남 — 여백·굵기 props 생기면 맞춤 */}
-        {/* 에이전트 목록과 숨겨진 에이전트 구분 가이드선 */}
-        <Box marginTop={1}>
-          <Text dimColor wrap="truncate">{'─'.repeat(width)}</Text>
-        </Box>
-        {/* 펼쳤을 때 제목과 첫 에이전트 사이 간격 */}
-        <Box marginBottom={opened.includes(HIDDEN_SEC) ? 1 : undefined}>
-          {/* ponytail: Button 은 label 문자열만 받음(자식 Text 거부) → 굵기 빠짐, bold prop 생기면 복구 */}
-          <Button
-            key="sec-hidden"
-            plain
-            label={`숨겨진 에이전트 (${stashed.length})`}
-            onPress={() => void update($, expanded, l => toggle(l, HIDDEN_SEC))}
-          />
-        </Box>
-        {opened.includes(HIDDEN_SEC) && stashed.length === 0 && <Text dimColor>숨긴 에이전트 없음</Text>}
-        {opened.includes(HIDDEN_SEC) && guided(stashed, true)}
         </Box>
         )}
 
         {view === 'history' && (
         <Box flexDirection="column" rowGap={0}>
-        {hist.length === 0 && <Text dimColor>완료 기록 없음</Text>}
+        <Text color={SUBTLE} wrap="truncate">{'─'.repeat(width)}</Text>
+        {hist.length === 0 && <Text color={MUTED}>완료 기록 없음</Text>}
         {hist.map(x => (
           // 1줄: ✔ 작업 설명 / 2줄: 소요 시간 · 도구 수 · 단계 수
           <Box key={x.id} flexDirection="column" rowGap={0}>
@@ -814,12 +995,11 @@ export const register: Register = on => {
             {opened.includes(`h:${x.id}`) && subs.filter(a => x.subs?.includes(a.id)).map(sub)}
             {/* 펼쳤을 때: 고친 파일이 있으면 롤백 버튼 (두 번 눌러 확인) */}
             {opened.includes(`h:${x.id}`) && !x.rolledBack && (x.files?.length ?? 0) > 0 && (
-              <Box flexDirection="row">
-                <Text>{'    '}</Text>
+              <Box flexDirection="row" paddingLeft={4}>
                 {controls(`rb:${x.id}`, '이 작업 전으로 롤백')}
               </Box>
             )}
-            <Text dimColor>
+            <Text color={MUTED}>
               {'  └ '}
               {x.rolledBack ? '↩ 롤백됨 · ' : ''}
               {x.rid ? `#${x.rid} · ` : ''}

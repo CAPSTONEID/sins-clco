@@ -79,3 +79,8 @@ export const newSubs = (prev: readonly AgentRow[], next: readonly AgentRow[]): s
   const old = new Set(prev.map(a => a.id))
   return next.filter(a => !old.has(a.id)).map(a => a.id)
 }
+
+// hc 상태가 비어 있을 때(claude 로 띄운 터미널) 창 제목으로 추정
+// Claude Code 는 작업 중이면 제목 앞에 점자 스피너(⠂⠐ 등), 쉬면 ✳ 를 붙임 → running / completed, 그 외는 모름
+export const hcTitleStatus = (title: unknown): 'running' | 'completed' | undefined =>
+  typeof title !== 'string' ? undefined : /^[⠀-⣿]/.test(title) ? 'running' : title.startsWith('✳') ? 'completed' : undefined

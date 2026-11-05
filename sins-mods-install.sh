@@ -2,7 +2,7 @@
 # Claude Code mods 설치
 #   usage-band         : 터미널(CLI) 입력창 위 사용량 게이지
 #   task-progress-band : 데스크톱 앱(Code 탭) 입력창 위 Tasks·컨텍스트·5시간·7일 그라디언트 막대
-#   progress-pane      : 작업 진행 바 + 렌더 진행 + 에이전트 관제 패널 (/progress)
+#   progress-pane      : 네온 다크 흐름도 패널 — 메인 세션·Jev·서브에이전트 카드·세션 로그 (/progress)
 # 입력창 위 막대는 화면 종류로 나눠 그리므로 함께 켜도 겹치지 않는다
 # 예전에 설치한 hf-band·ai-tell 은 더 이상 배포하지 않아 이 스크립트가 지운다
 set -euo pipefail
@@ -16,7 +16,7 @@ FILES=(.claude-plugin/plugin.json hooks/hooks.json hooks/register.tsx types/inde
 # mod 별로 register.tsx 가 import 하는 추가 파일
 extra_files() {
   case "$1" in
-    progress-pane) echo hooks/render.ts hooks/run.ts hooks/agents.ts hooks/rollback.ts ;;
+    progress-pane) echo hooks/flow.ts hooks/jev.ts hooks/render.ts hooks/run.ts hooks/agents.ts hooks/rollback.ts ;;
   esac
 }
 
@@ -75,4 +75,4 @@ echo ""
 echo "✅ mods 설치 완료! Claude Code 를 새 세션으로 여세요."
 echo "   입력창 위 막대: 터미널 = usage-band, 데스크톱 앱 = task-progress-band"
 echo "   (VS Code 확장 채팅 패널은 mod 화면 미지원 — VS Code 내장 터미널의 claude 는 usage-band)"
-echo "   /progress = 작업 진행·렌더 패널"
+echo "   /progress = 흐름도 패널(메인·Jev·서브에이전트·세션 로그)"
