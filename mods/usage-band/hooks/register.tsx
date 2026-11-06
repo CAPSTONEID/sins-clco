@@ -534,10 +534,11 @@ tasks.length > 0 && (
               <Box key={`t${i}`} flexDirection="column">
                 {/* 단계 이름을 누르면 이 작업의 서브에이전트 목록 펼치기·접기 */}
                 <Button key={`step-${i}`} plain onPress={pressSteps}>
+                  {/* 데스크톱은 컬러 이모지(✅ 완료 · ▶️ 진행 중), 터미널은 기존 글리프 */}
                   {it.status === 'completed' ? (
-                    <Text dimColor>{`✔ ${it.text}`}</Text>
+                    <Text dimColor>{`${isDesk ? '✅' : '✔'} ${it.text}`}</Text>
                   ) : it.status === 'in_progress' ? (
-                    <Text bold color="#1fb5c9">{`◐ ${it.text}`}</Text>
+                    <Text bold color="#1fb5c9">{`${isDesk ? '▶️' : '◐'} ${it.text}`}</Text>
                   ) : (
                     <Text>{`◌ ${it.text}`}</Text>
                   )}
