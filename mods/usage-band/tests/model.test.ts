@@ -1,5 +1,5 @@
 import { expect, test } from 'claude-code/testing'
-import { busyCount, cavemanFrom, taskSubs, humanizeOf, levelOf, modeNote, nextHumanize, nextMode, fitSteps, prettyModel, renderPct, until } from '../hooks/register'
+import { busyCount, cavemanFrom, taskSubs, humanizeOf, levelOf, modeNote, nextHumanize, nextMode, fitSteps, prettyModel, renderPct, segSvg, until } from '../hooks/register'
 
 test('모델 id → 표시 이름', async () => {
   expect(prettyModel('claude-opus-5-5')).toBe('Opus 5.5')
@@ -88,4 +88,15 @@ test('단계 줄 서브에이전트: 지금 작업(없으면 마지막 완료 �
   expect(taskSubs({}, [{ subs: ['x9'] }], alive)).toEqual([])
   // 단계 목록이 여러 턴에 걸치면 그 시작 뒤로 끝난 작업 전부
   expect(taskSubs(null, [{ subs: [], endedAt: 300 }, { subs: ['hc:t1'], endedAt: 200 }, { subs: ['x9'], endedAt: 50 }], alive, 100)).toEqual([{ id: 'hc:t1' }])
+})
+
+test('단계 막대 Svg: n칸 중 lv칸만 채움', async () => {
+  const count = (svg: string, part: string) => svg.split(part).length - 1
+  // 채운 칸은 clipPath 안, 빈 칸은 회색 트랙 그룹 안
+  const half = segSvg(5, 3, ['#000000', '#ffffff'])
+  expect(count(half.slice(half.indexOf('<clipPath'), half.indexOf('</clipPath>')), '<rect')).toBe(3)
+  expect(count(half.slice(half.indexOf('fill-opacity="0.22">')), '<rect x=')).toBe(2)
+  // 0칸이면 채움 그룹 없음
+  expect(segSvg(3, 0, ['#000000', '#ffffff'])).not.toContain('url(#g)"/>')
+  expect(segSvg(3, 3, ['#000000', '#ffffff'])).toContain('width="68"')
 })

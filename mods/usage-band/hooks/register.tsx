@@ -172,6 +172,8 @@ const ROWS = [
 const BAR_NARROW = 16
 const GAUGE_W = 13 + BAR_NARROW + 2 + 6 + 22
 const SIDE_MIN = 24
+// 데스크톱 옆 칸 라벨 폭(칸): 버튼 여백까지 넣어 'Render bar' 가 잘리지 않는 최소 폭 (값 칸과 간격 최소)
+const DESK_LABEL_W = 11
 
 // 경과 시간 → "2분 14초", 렌더 시간 → "1:23"
 const dur = (ms: number) => {
@@ -259,6 +261,56 @@ const toSnap = (context: SessionContextUsage, limits: SessionRateLimit[]): Snaps
     fiveHour: lim('five_hour'),
     sevenDay: lim('seven_day'),
   }
+}
+
+// ponytail: task-progress-band 의 게이지 막대와 같은 함수·크기. 플러그인끼리 import 못 해 복사함 (바꿀 땐 둘 다)
+// 데스크톱용 둥근 막대: 반투명 트랙이라 라이트·다크 테마 모두에서 보인다
+// 채운 구간 = 가로 그라디언트 + 위쪽 광택 + 점무늬 질감, 끝에 은은한 빛번짐
+// 막대 크기(CSS px): 짧고 두껍게. Svg 에 그대로 넘겨 늘어나거나 납작해지지 않게 함
+const BAR_W = 120
+const BAR_H = 10
+const barSvg = (pct: number, [from, to]: readonly [string, string], ticks: number) => {
+  const W = BAR_W
+  const H = BAR_H
+  const fill = pct <= 0 ? 0 : Math.max(H, Math.round((Math.min(pct, 100) / 100) * W))
+  const marks = Array.from({ length: Math.max(0, ticks - 1) }, (_, i) => Math.round(((i + 1) / ticks) * W))
+    .map(x => `<rect x="${x - 0.75}" y="3" width="1.5" height="${H - 6}" rx="0.75" fill="${x < fill ? '#ffffff' : '#8e8e99'}" fill-opacity="${x < fill ? 0.8 : 0.5}"/>`)
+    .join('')
+  const glow = fill > 0 ? `<circle cx="${fill - H / 2}" cy="${H / 2}" r="${H}" fill="url(#r)"/>` : ''
+
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">` +
+    `<defs><clipPath id="c"><rect width="${W}" height="${H}" rx="${H / 2}"/></clipPath>` +
+    `<linearGradient id="g" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="${Math.max(fill, 1)}" y2="0"><stop offset="0" stop-color="${from}"/><stop offset="1" stop-color="${to}"/></linearGradient>` +
+    `<linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity="0.35"/><stop offset="0.55" stop-color="#ffffff" stop-opacity="0"/></linearGradient>` +
+    `<radialGradient id="r"><stop offset="0" stop-color="${to}" stop-opacity="0.9"/><stop offset="1" stop-color="${to}" stop-opacity="0"/></radialGradient>` +
+    `<pattern id="d" width="4" height="4" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="0.8" fill="#ffffff" fill-opacity="0.25"/></pattern></defs>` +
+    `<g clip-path="url(#c)"><rect width="${W}" height="${H}" fill="#8e8e99" fill-opacity="0.22"/>` +
+    `<rect width="${fill}" height="${H}" fill="url(#g)"/>${glow}<rect width="${fill}" height="${H}" fill="url(#s)"/>` +
+    `<rect width="${fill}" height="${H}" fill="url(#d)"/>${marks}</g></svg>`
+  )
+}
+
+// 단계 막대(데스크톱): n칸 중 lv칸을 채움. 게이지 막대와 같은 모양(둥근 반투명 칸 + 가로 그라디언트 + 광택 + 점무늬)
+const SEG_W = 20
+const SEG_GAP = 4
+const hex = (c: readonly number[]) => `#${c.map(v => Math.round(v).toString(16).padStart(2, '0')).join('')}`
+export const segSvg = (n: number, lv: number, [from, to]: readonly [string, string]) => {
+  const H = BAR_H
+  const W = n * SEG_W + (n - 1) * SEG_GAP
+  const cell = (i: number) => `<rect x="${i * (SEG_W + SEG_GAP)}" width="${SEG_W}" height="${H}" rx="${H / 2}"/>`
+  const cells = Array.from({ length: n }, (_, i) => i)
+  const on = cells.filter(i => i < lv)
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">` +
+    `<defs><clipPath id="f">${on.map(cell).join('')}</clipPath>` +
+    `<linearGradient id="g" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="${W}" y2="0"><stop offset="0" stop-color="${from}"/><stop offset="1" stop-color="${to}"/></linearGradient>` +
+    `<linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity="0.35"/><stop offset="0.55" stop-color="#ffffff" stop-opacity="0"/></linearGradient>` +
+    `<pattern id="d" width="4" height="4" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="0.8" fill="#ffffff" fill-opacity="0.25"/></pattern></defs>` +
+    `<g fill="#8e8e99" fill-opacity="0.22">${cells.filter(i => i >= lv).map(cell).join('')}</g>` +
+    (on.length ? `<g clip-path="url(#f)"><rect width="${W}" height="${H}" fill="url(#g)"/><rect width="${W}" height="${H}" fill="url(#s)"/><rect width="${W}" height="${H}" fill="url(#d)"/></g>` : '') +
+    `</svg>`
+  )
 }
 
 export const register: Register = (on, options) => {
@@ -367,7 +419,13 @@ export const register: Register = (on, options) => {
       pending.add(which)
       $.ui.toast(`${which === 'ponytail' ? 'Ponytail' : 'Caveman'} → ${to ? to.toUpperCase() : 'OFF'} · 다음 입력부터 적용`)
     }
-    const { Box, Text, Button } = $.ui.resolve(e)
+    const table = $.ui.resolve(e)
+    const { Box, Text, Button } = table
+    // 데스크톱은 Svg 가 있음: Render bar 를 게이지 막대와 같은 그림으로
+    const Svg = isDesk && 'Svg' in table ? table.Svg : undefined
+    // 데스크톱: ON/FULL 같은 글자 대신 단계 막대 (alt 에 이름·값)
+    const seg = (n: number, lv: number, grad: readonly [string, string], alt: string) =>
+      Svg ? <Svg source={segSvg(n, lv, grad)} width={n * SEG_W + (n - 1) * SEG_GAP} height={BAR_H} alt={alt} /> : null
     // 옆 칸: 렌더·서브에이전트 1줄 (작업 진행은 단계 줄이 보여 줌). 터미널이 좁으면 생략
     const isBeside = await read($, beside)
     const r = await read($, run)
@@ -416,15 +474,20 @@ export const register: Register = (on, options) => {
     const sideW = Math.max(SIDE_MIN, e.props.bodyColumns - GAUGE_W - 9)
     const RBAR = Math.max(8, Math.min(24, sideW - 12 - 6))
     const label = (t: string) => (
-      <Box width={12}>
-        <Text dimColor>{t}</Text>
+      <Box width={isDesk ? DESK_LABEL_W : 12} flexShrink={0}>
+        {/* 데스크톱: 동작 없는 버튼으로 Advisor 버튼과 같은 여백을 받아 글자 시작점을 맞춤 (버튼 글자색은 앱이 무시해 흐리게만) */}
+        {isDesk ? (
+          <Button plain dimColor key={`label-${t}`} label={t} onPress={() => undefined} />
+        ) : (
+          <Text dimColor>{t}</Text>
+        )}
       </Box>
     )
     const advisorName = m.advisor ? (ADVISORS.find(o => o.alias === m.advisor)?.label ?? m.advisor) : undefined
     const side = [
-      <Box key="s0" flexDirection="row">
-        {/* 이름 클릭: 어드바이저 선택 줄 (Fable·Opus·OFF) */}
-        <Box width={12}>
+      <Box key="s0" flexDirection="row" alignItems="center">
+        {/* 이름(타이틀) 클릭: 어드바이저 선택 줄 (Fable·Opus·OFF) */}
+        <Box width={isDesk ? DESK_LABEL_W : 12} flexShrink={0}>
           <Button plain key="pick-advisor" label="Advisor" onPress={() => toggle('advisor')} />
         </Box>
         {advisorName ? <Text bold color="#d97757">{advisorName}</Text> : <Text dimColor>off</Text>}
@@ -438,9 +501,16 @@ export const register: Register = (on, options) => {
         {label('Render')}
         {renders.length ? <Text color="blue" wrap="truncate">{renders.join(SEP)}</Text> : <Text dimColor>none</Text>}
       </Box>,
-      <Box key="s3" flexDirection="row">
+      <Box key="s3" flexDirection="row" alignItems="center">
         {label('Render bar')}
-        {Array.from({ length: RBAR }, (_, i) => {
+        {Svg ? (
+          <Svg
+            source={barSvg(firstPct ?? 0, ['#3b6cf6', '#a855f7'], 4)}
+            width={BAR_W}
+            height={BAR_H}
+            alt={`Render bar ${firstPct === undefined ? '-' : `${firstPct}%`}`}
+          />
+        ) : Array.from({ length: RBAR }, (_, i) => {
           const filled = firstPct === undefined ? 0 : Math.round((firstPct / 100) * RBAR)
           return i < filled ? (
             <Text key={`r${i}`} color={mix([59, 108, 246], [168, 85, 247], i / RBAR)}>█</Text>
@@ -490,6 +560,9 @@ tasks.length > 0 && (
 
     // 터미널·데스크톱 공용 조각: 모드 줄 · Model/Effort/Advisor 선택 줄 · Effort 칸
     // 데스크톱은 모드 줄 바로 아래에 Model 줄을 붙임 (빈 줄 없음)
+    // 터미널: 글자를 가로 Box 에 그대로(찾기·테스트용 개별 Text 유지). 데스크톱: 글자 하나로 묶어 한 덩어리로 정렬
+    const stateWrap = (children: unknown) =>
+      isDesk ? <Text>{children as never}</Text> : <Box flexDirection="row">{children as never}</Box>
     const modesRow = (
         <Box flexDirection="row" flexWrap="wrap" marginBottom={isDesk ? 0 : 1}>
           {([
@@ -497,58 +570,92 @@ tasks.length > 0 && (
             ['caveman', 'Caveman', md.caveman, '#d7875f', [215, 135, 95], [215, 95, 0]],
           ] as const).flatMap(([key, name, mode, dot, from, to], k) => {
             const lv = mode === undefined ? -1 : levelOf(mode)
+            // 상태 한 덩어리: ON/OFF + 강도 칸
+            const state = Svg && !(mode !== undefined && lv < 0)
+              ? seg(LEVELS.length, lv + 1, [hex(from), hex(to)], `${name} ${mode ?? 'off'}`)
+              : stateWrap([
+              mode === undefined ? <Text key="o" dimColor>OFF </Text> : <Text key="o" bold color={dot}>ON </Text>,
+              ...(mode !== undefined && lv < 0
+                ? [<Text key="n" bold>{mode.toUpperCase()}</Text>]
+                : LEVELS.map((_, i) => (
+                    <Text key={`m${i}`} color={i <= lv ? mix(from, to, i / 2) : undefined} dimColor={i > lv}>
+                      {i <= lv ? '■' : '□'}
+                    </Text>
+                  ))),
+              ...(mode !== undefined && lv >= 0
+                ? [<Text key="l" bold>{` ${mode.toUpperCase()}`}</Text>, <Text key="c" dimColor>{` (${lv + 1}/${LEVELS.length})`}</Text>]
+                : []),
+            ])
+            // 이름(타이틀)을 누르면 다음 강도로 (OFF → LITE → FULL → ULTRA → OFF)
+            const press = () => void cycle(key).catch(() => undefined)
             return [
               ...(k > 0 ? [<Text key={`ml${k}`} dimColor>{' । '}</Text>] : []),
-              <Box key={name} flexDirection="row">
-                <Text color={dot}>● </Text>
-                {/* 이름을 누르면 다음 강도로 (OFF → LITE → FULL → ULTRA → OFF) */}
-                <Button plain key={`mode-${key}`} label={name} onPress={() => void cycle(key).catch(() => undefined)} />
-                <Text> </Text>
-                {mode === undefined ? <Text dimColor>OFF </Text> : <Text bold color={dot}>ON </Text>}
-                {mode !== undefined && lv < 0 ? (
-                  <Text bold>{mode.toUpperCase()}</Text>
-                ) : (
-                  <Box flexDirection="row">
-                    {LEVELS.map((_, i) => (
-                      <Text key={`m${i}`} color={i <= lv ? mix(from, to, i / 2) : undefined} dimColor={i > lv}>
-                        {i <= lv ? '■' : '□'}
-                      </Text>
-                    ))}
-                    {mode !== undefined && <Text bold>{` ${mode.toUpperCase()}`}</Text>}
-                    {mode !== undefined && <Text dimColor>{` (${lv + 1}/${LEVELS.length})`}</Text>}
-                  </Box>
-                )}
+              <Box key={name} flexDirection="row" alignItems="center">
+                {isDesk
+                  ? [
+                      // 데스크톱 버튼은 안의 글자색을 무시함: ● 은 버튼 밖 색 글자, 타이틀은 버튼(누르면 변경)
+                      <Text key="d" color={dot}>●</Text>,
+                      <Button key={`mode-${key}`} plain label={name} onPress={press} />,
+                      <Box key="st">{state}</Box>,
+                    ]
+                  : [
+                      <Text key="d" color={dot}>● </Text>,
+                      <Button plain key={`mode-${key}`} label={name} onPress={press} />,
+                      <Text key="s"> </Text>,
+                      <Box key="st">{state}</Box>,
+                    ]}
               </Box>,
             ]
           })}
           <Text dimColor>{' । '}</Text>
-          {/* Humanize: ON/OFF + 윤문 강도 칸, 이름 누르면 OFF → 보수 → 기본 → 적극 → OFF (CLI 표시는 off·low·mid·high) */}
-          <Text color="#5fafd7">● </Text>
-          <Button
-            plain
-            key="mode-humanize"
-            label="Humanize"
-            onPress={() => {
+          {(() => {
+            // Humanize: ON/OFF + 윤문 강도 칸, 누르면 OFF → 보수 → 기본 → 적극 → OFF (CLI 표시는 off·low·mid·high)
+            const hz = HZ_LEVELS.indexOf(md.humanize as (typeof HZ_LEVELS)[number])
+            const lvH = md.humanize === undefined ? -1 : hz
+            const state = Svg
+              ? seg(HZ_LEVELS.length, lvH + 1, ['#5fafd7', '#2563eb'], `Humanize ${md.humanize ?? 'off'}`)
+              : stateWrap([
+              md.humanize === undefined ? <Text key="o" dimColor>{isDesk ? 'OFF ' : 'off '}</Text> : <Text key="o" bold color="#5fafd7">ON </Text>,
+              ...HZ_LEVELS.map((_, i) => (
+                <Text key={`h${i}`} color={i <= lvH ? mix([95, 175, 215], [37, 99, 235], i / 2) : undefined} dimColor={i > lvH}>
+                  {i <= lvH ? '■' : '□'}
+                </Text>
+              )),
+              ...(md.humanize !== undefined
+                ? [
+                    // CLI 표시는 off·low·mid·high
+                    <Text key="l" bold>{` ${isDesk ? md.humanize : HZ_CLI[md.humanize] ?? md.humanize}`}</Text>,
+                    <Text key="c" dimColor>{` (${hz + 1}/${HZ_LEVELS.length})`}</Text>,
+                  ]
+                : []),
+            ])
+            const press = () => {
               const to = nextHumanize(md.humanize)
               void setHumanize($, to)
                 .then(() => $.ui.toast(`Humanize 검수 → ${to ? `강도 ${isDesk ? to : HZ_CLI[to] ?? to}` : isDesk ? 'OFF' : 'off'} · 다음 입력부터 적용`))
                 .catch(() => undefined)
-            }}
-          />
-          <Text> </Text>
-          {md.humanize === undefined ? <Text dimColor>{isDesk ? 'OFF ' : 'off '}</Text> : <Text bold color="#5fafd7">ON </Text>}
-          {HZ_LEVELS.map((_, i) => {
-            const lv = md.humanize === undefined ? -1 : HZ_LEVELS.indexOf(md.humanize as (typeof HZ_LEVELS)[number])
-            return (
-              <Text key={`h${i}`} color={i <= lv ? mix([95, 175, 215], [37, 99, 235], i / 2) : undefined} dimColor={i > lv}>
-                {i <= lv ? '■' : '□'}
-              </Text>
+            }
+            return isDesk ? (
+              <Box flexDirection="row" alignItems="center">
+                <Text color="#5fafd7">●</Text>
+                <Button plain key="mode-humanize" label="Humanize" onPress={press} />
+                {state}
+              </Box>
+            ) : (
+              <Box flexDirection="row">
+                <Text color="#5fafd7">● </Text>
+                <Button plain key="mode-humanize" label="Humanize" onPress={press} />
+                <Text> </Text>
+                {state}
+              </Box>
             )
-          })}
-          {md.humanize !== undefined && <Text bold>{` ${isDesk ? md.humanize : HZ_CLI[md.humanize] ?? md.humanize}`}</Text>}
-          {md.humanize !== undefined && (
-            <Text dimColor>{` (${HZ_LEVELS.indexOf(md.humanize as (typeof HZ_LEVELS)[number]) + 1}/${HZ_LEVELS.length})`}</Text>
-          )}
+          })()}
+          {/* 데스크톱: Humanize 옆에 글자 버튼 × 단계 목록 비우기 · ➤ 진행 창 열기·닫기 (터미널은 맨 위 [×] [‣]) */}
+          {isDesk && [
+            <Text key="bs" dimColor>{' । '}</Text>,
+            <Button key="steps-clear" plain label="×" onPress={() => void $.command.run({ command: 'steps-clear' }).catch(() => undefined)} />,
+            <Button key="progress" plain label="➤" onPress={() => void $.command.run({ command: 'progress-toggle' }).catch(() => undefined)} />,
+          ]}
         </Box>
     )
     const pickerRow = pk && (
@@ -572,6 +679,8 @@ tasks.length > 0 && (
         )
     const effortView = m.effort === undefined ? (
                 <Text dimColor>-</Text>
+              ) : Svg && lvl >= 0 ? (
+                seg(EFFORTS.length, lvl + 1, ['#4f46e5', '#a855f7'], `Effort ${EFFORTS[lvl]}`)
               ) : lvl < 0 ? (
                 <Text bold>{String(m.effort)}</Text>
               ) : (
@@ -592,31 +701,43 @@ tasks.length > 0 && (
       const below = await next(e)
       return (
         <Box flexDirection="column" paddingX={1}>
-          {/* 단계 줄 + 오른쪽 끝 버튼: ❎ 단계 비우기 · ▶️ 진행 창 열기·닫기 */}
-          <Box flexDirection="row" alignItems="flex-start">
-            <Box flexGrow={1} flexShrink={1}>
-              {stepsRow || <Text dimColor>단계 없음</Text>}
-            </Box>
-            <Box flexDirection="row" flexShrink={0}>
-              <Button key="steps-clear" plain label="❎" onPress={() => void $.command.run({ command: 'steps-clear' }).catch(() => undefined)} />
-              <Button key="progress" plain label="▶️" onPress={() => void $.command.run({ command: 'progress-toggle' }).catch(() => undefined)} />
-            </Box>
-          </Box>
+          {/* 단계 줄 (× 비우기 · ➤ 진행 창 버튼은 모드 줄 Humanize 옆) */}
+          {stepsRow || <Text dimColor>단계 없음</Text>}
           {modesRow}
           {pickerRow}
-          {/* Model 줄: 아래 task-progress-band 의 컨텍스트 줄 바로 위 (빈 줄 없이) */}
-          <Box flexDirection="row" flexWrap="wrap" alignItems="center" gap={1}>
-            <Text color="#d97757">●</Text>
-            <Button plain key="pick-model" label="Model" onPress={() => toggle('model')} />
-            <Text bold>{m.name ?? '-'}</Text>
-            <Text dimColor>{' । '}</Text>
-            <Button plain key="pick-effort" label="Effort" onPress={() => toggle('effort')} />
-            {effortView}
-            <Text dimColor>{' । '}</Text>
-            <Button plain key="pick-advisor" label="Advisor" onPress={() => toggle('advisor')} />
-            {advisorName ? <Text bold color="#d97757">{advisorName}</Text> : <Text dimColor>off</Text>}
+          {/* 왼쪽: Model 줄 + 아래 task-progress-band 게이지(컨텍스트·5시간·7일) / 오른쪽: 터미널과 같은 옆 칸 4줄 */}
+          <Box flexDirection="row">
+            <Box flexDirection="column" flexGrow={1} flexShrink={1}>
+              {/* Model 줄: 컨텍스트 줄 바로 위 (빈 줄 없이). 줄바꿈하면 옆 칸 4줄과 높이가 어긋나 한 줄 고정. Advisor 는 옆 칸에 */}
+              <Box flexDirection="row" alignItems="center" gap={1}>
+                {/* 데스크톱 버튼은 안의 글자색을 무시함: ● 은 버튼 밖 색 글자, 타이틀은 버튼(누르면 선택 줄) */}
+                {/* 간격 없는 묶음: 모드 줄 ● 과 같은 간격 */}
+                <Box flexDirection="row" alignItems="center">
+                  <Text color="#d97757">●</Text>
+                  <Button plain key="pick-model" label="Model" onPress={() => toggle('model')} />
+                </Box>
+                <Text bold>{m.name ?? '-'}</Text>
+                <Text dimColor>{' । '}</Text>
+                <Button plain key="pick-effort" label="Effort" onPress={() => toggle('effort')} />
+                {effortView}
+              </Box>
+              {below}
+            </Box>
+            {/* 옆 칸: /usage-band off 로 끔 */}
+            {isBeside && (
+              <Box flexDirection="row" flexShrink={0} paddingLeft={1}>
+                <Box flexDirection="column" marginRight={1}>
+                  {side.map((_, i) => (
+                    <Text key={`v${i}`} dimColor>│</Text>
+                  ))}
+                </Box>
+                {/* 폭을 고정하지 않음: Advisor·Render 값이 길어도 잘리지 않고 다 보이게 */}
+                <Box flexDirection="column" flexShrink={0}>
+                  {side}
+                </Box>
+              </Box>
+            )}
           </Box>
-          {below}
         </Box>
       )
     }

@@ -137,17 +137,22 @@ test('데스크톱: Humanize·Caveman 이름 클릭과 Model 선택이 동작한
     component: 'AbovePrompt',
     props: { hasSurvey: false, isWorking: false, maxRows: 10, bodyColumns: 120 } as never,
   })
+  // 데스크톱은 단계를 글자 대신 Svg 막대로: alt 에 이름·값
+  const drawn = async () => JSON.stringify(await ui.drawn())
   // Humanize: 기본 → 적극 → OFF → 보수
-  expect(await ui.find({ type: 'Text', text: ' 기본' })).toBeDefined()
+  expect(await drawn()).toContain('"alt":"Humanize 기본"')
   await ui.press({ key: 'mode-humanize' })
-  expect(await ui.find({ type: 'Text', text: ' 적극' })).toBeDefined()
+  expect(await drawn()).toContain('"alt":"Humanize 적극"')
   await ui.press({ key: 'mode-humanize' })
-  expect(await ui.find({ type: 'Text', text: ' 적극' })).toBeUndefined()
+  expect(await drawn()).toContain('"alt":"Humanize off"')
   await ui.press({ key: 'mode-humanize' })
-  expect(await ui.find({ type: 'Text', text: ' 보수' })).toBeDefined()
+  expect(await drawn()).toContain('"alt":"Humanize 보수"')
   // Caveman: FULL → ULTRA
+  expect(await drawn()).toContain('"alt":"Caveman full"')
   await ui.press({ key: 'mode-caveman' })
-  expect(await ui.find({ type: 'Text', text: ' ULTRA' })).toBeDefined()
+  expect(await drawn()).toContain('"alt":"Caveman ultra"')
+  // ON/FULL 같은 글자는 없음
+  expect(await ui.find({ type: 'Text', text: 'ON ' })).toBeUndefined()
   // Model: 선택 줄 열고 Opus 고르면 /model opus 실행
   await ui.press({ key: 'pick-model' })
   await ui.press({ key: 'p-opus' })

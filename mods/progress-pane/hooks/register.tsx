@@ -2,10 +2,12 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register, RenderChildren, Timer } from 'claude-code'
 
 import type { AgentRow, FileSnap, Jev, Lead, LogLine, RenderJob, Run, SubStat, Task } from '../types'
-import { hcTitleStatus, newSubs, parseHc, toggle } from './agents'
+import { hcTitleStatus, mergeSeen, newSubs, parseHc, toggle } from './agents'
 import { jevKind, parseJev, SHARP } from './jev'
 import { fmt, parsePs } from './render'
 import { argOf, ARROW_ROWS, arrowRows, cardBar, DONE, dots, effortBar, FAIL, famColor, FLOW, forkLine, hms, kTok, layout, logText, NEON, shortTool, spin } from './flow'
+import { cardSvg, chipsSvg, linkSvg, railSvg, rowSvg } from './neon'
+import type { Row } from './neon'
 import { planRollback, shortId, SNAP_MAX } from './rollback'
 import { BAR, clip, dur, fallback, mix, shortModel } from './run'
 
@@ -16,10 +18,10 @@ const HISTORY_MAX = 30
 // 작업 진행 바: 지금 턴, 완료 기록(최신이 앞, 세션 동안 유지)
 const run = atom({ plugin: 'progress-pane', key: 'run' } as const, null as Run | null)
 const runs = atom({ plugin: 'progress-pane', key: 'runs' } as const, [] as Run[])
-// 단계 목록(steps 도구): 턴·세션이 끝나도 유지, [×](/steps-clear)로 비움. 다 끝난 목록은 다음 입력 때 비움. 프로젝트 폴더별로 $.store 에 저장
-// ponytail: 같은 폴더의 다른 세션과 저장 칸을 공유 — 동시 작업이 잦으면 세션 id 를 키에 섞기
+// 단계 목록(steps 도구): [×](/steps-clear)로 비우기 전까지 유지(다 끝나도 남김). 세션별로 $.store 에 저장 → 이어 열면 복원, 새 세션은 빈 목록
+// shortcut: 세션마다 저장 칸이 하나씩 남음(작은 JSON), 쌓이는 게 문제 되면 오래된 칸 정리 추가
 const steps = atom({ plugin: 'progress-pane', key: 'steps' } as const, [] as Task[])
-const stepsKey = async ($: EngineInterface) => `steps:${await $.session.root()}`
+const stepsKey = async ($: EngineInterface) => `steps:${await $.session.id()}`
 // 새 단계 목록에 시작·완료 시각을 붙임: 같은 이름(없으면 같은 자리)의 이전 시각을 이어 받고,
 // 처음 진행 중·완료가 되는 순간 now 를 찍음. 진행 중을 건너뛰고 바로 완료된 단계는 앞 단계가 끝난 때부터로 셈
 export function timeSteps(prev: readonly Task[], list: readonly Task[], now: number): Task[] {
@@ -35,8 +37,6 @@ export function timeSteps(prev: readonly Task[], list: readonly Task[], now: num
     return { ...t, ...(startedAt !== undefined && { startedAt }), ...(endedAt !== undefined && { endedAt }) }
   })
 }
-// 모든 단계가 완료된 목록 — 다음 입력이 오면 새 작업으로 보고 비움 (진행 중인 목록은 다음 턴까지 이어감)
-export const isAllDone = (list: readonly Task[]) => list.length > 0 && list.every(t => t.status === 'completed')
 async function saveSteps($: EngineInterface, list: Task[]) {
   await update($, steps, () => list)
   const k = await stepsKey($)
@@ -48,6 +48,9 @@ const jobs = atom({ plugin: 'progress-pane', key: 'jobs' } as const, [] as Rende
 const renderHistory = atom({ plugin: 'progress-pane', key: 'renderHistory' } as const, {} as Record<string, number[]>)
 // 에이전트 관제: 서브에이전트, 종료 확인 대기 항목
 const agents = atom({ plugin: 'progress-pane', key: 'agents' } as const, [] as AgentRow[])
+// 진행 탭 카드: 이 세션에서 본 서브에이전트(끝나도 남김) · [×] 로 숨긴 id
+const seen = atom({ plugin: 'progress-pane', key: 'seen' } as const, [] as AgentRow[])
+const hiddenSubs = atom({ plugin: 'progress-pane', key: 'hiddenSubs' } as const, [] as string[])
 const subMeta = atom({ plugin: 'progress-pane', key: 'subMeta' } as const, {} as Record<string, { model: string; effort?: string }>)
 const subStats = atom({ plugin: 'progress-pane', key: 'subStats' } as const, {} as Record<string, SubStat>)
 // 서브에이전트 작업 상태 실시간 집계 — 도구 호출마다 여기만 고치고, 창 기록은 3초 폴링 때 한 번
@@ -134,6 +137,10 @@ async function pollAgents($: EngineInterface) {
       }),
     )
     const v = [...list.map(a => ({ id: a.id, type: a.type, description: a.description, status: a.status })), ...hc]
+    const hid = new Set(await read($, hiddenSubs))
+    const was = await read($, seen)
+    const kept = mergeSeen(was, v.filter(a => !hid.has(a.id)))
+    if (!same(was, kept)) await update($, seen, () => kept)
     const prev = await read($, agents)
     if (!same(prev, v)) {
       await update($, agents, () => v)
@@ -362,6 +369,10 @@ export const register: Register = on => {
 
   on('command.run', { command: 'steps-clear' }, async $ => {
     await saveSteps($, [])
+    // 진행 탭 서브에이전트 카드도 비움(지금 목록에 있는 것까지 숨김 — 다시 안 나타나게)
+    const ids = [...(await read($, seen)), ...(await read($, agents))].map(a => a.id)
+    await update($, hiddenSubs, h => [...new Set([...h, ...ids])])
+    await update($, seen, () => [])
     return { text: '단계 목록을 비웠습니다.' }
   })
 
@@ -385,7 +396,6 @@ export const register: Register = on => {
     // 서브에이전트 턴은 메인 작업 진행을 덮어쓰지 않음 (turn.complete 와 같은 기준)
     if (e.agentId) return next(e)
     tick?.cancel()
-    if (isAllDone(await read($, steps))) await saveSteps($, [])
     const now = await $.clock.now()
     const prev = await read($, run)
     if (prev && !prev.endedAt && prev.tools > 0)
@@ -546,10 +556,15 @@ export const register: Register = on => {
   }).catch(($, e, next) => next(e))
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
-    const { Box, Text, Button } = $.ui.resolve(e)
+    const table = $.ui.resolve(e)
+    const { Box, Text, Button } = table
+    // 데스크톱(Svg 그리는 화면)은 진행 탭을 네온 SVG 카드로, 터미널은 글자 흐름도
+    // (resolve 는 모든 화면에 Svg 이름을 채워 줌 — 터미널은 빈 조각으로 그려서 화면으로 가름)
+    const Svg = e.surface !== 'terminal' && 'Svg' in table ? table.Svg : undefined
     const r = await read($, run)
     const hist = await read($, runs)
     const subs = await read($, agents)
+    const seenSubs = await read($, seen)
     const meta = await read($, subMeta)
     const subStat = await read($, subStats)
     const now = await $.clock.now()
@@ -601,7 +616,8 @@ export const register: Register = on => {
           <Text color={CYAN}>{`‣ ${full.slice(0, 1000)}`}</Text>
         </Box>
       ) : null
-    const width = Math.max(20, (e.props.bodyColumns ?? 40) - 2)
+    // 좌우 2칸씩 여백 뺀 폭
+    const width = Math.max(20, (e.props.bodyColumns ?? 40) - 4)
 
     // 작업 진행 바: 할 일 목록 있으면 완료 비율, 없으면 움직이는 6칸 블록
     const controls = (key: string, verb = '종료') =>
@@ -688,9 +704,8 @@ export const register: Register = on => {
     const leadName = leadModel ? nm(leadModel) : 'main'
     const leadColor = famColor(leadModel)
     const active = !!r && !r.endedAt
-    // 카드: 살아 있는 서브에이전트 + 지금(없으면 직전) 작업이 띄운 서브에이전트
-    const pool = new Set(r?.subs ?? hist[0]?.subs ?? [])
-    const cards = subs.filter(a => LIVE.has(a.status) || pool.has(a.id)).slice(-CARD_MAX)
+    // 카드: 이 세션에서 본 서브에이전트(끝난 것도) — [×] 초기화 전까지, 최근 CARD_MAX 장
+    const cards = seenSubs.slice(-CARD_MAX)
     const running = cards.filter(a => a.status === 'running').length
     const allDone = cards.length > 0 && cards.every(a => !LIVE.has(a.status))
     const subModels = [...new Set(cards.flatMap(a => (meta[a.id] ? [nm(meta[a.id]!.model)] : [])))]
@@ -985,9 +1000,236 @@ export const register: Register = on => {
       </Box>
     )
 
+    // ── 데스크톱 네온 흐름도: 카드·레일을 SVG 로. 폭은 창 폭 기준 추정(크면 화면이 줄여 맞춤), 가운데 정렬로 좌우 여백 대칭 ──
+    // ponytail: 칸→px 비율 8.4 는 데스크톱 글꼴 기준 추정, 화면마다 다르면 이 숫자만 조정
+    const W = Math.max(260, Math.round(width * 8.4))
+    // alt 가 빈 Svg 는 데스크톱이 그리지 않음 → 비면 key 로 채움
+    const svg = (key: string, source: string, alt: string) => <Svg key={key} source={source} alt={alt || key} />
+    const EFF = ['low', 'medium', 'high', 'xhigh', 'max']
+    const effN = typeof L?.effort === 'string' ? EFF.indexOf(L.effort) + 1 : 0
+    const ctxText = L?.ctx ? ` · ctx ${kTok(L.ctx)}` : ''
+    const mainRows: Row[] = [
+      { kind: 'text', size: 13.5, spans: [{ text: `${active && phase % 2 ? '●' : '○'} ${leadName.toUpperCase()} · MAIN SESSION`, color: leadColor, bold: true, glow: active }] },
+      r
+        ? { kind: 'text', spans: [{ text: `▸ ${fallback(r.prompt)}`, color: FG }] }
+        : { kind: 'text', spans: [{ text: last ? `대기 중 · 마지막: ${last.label ?? fallback(last.prompt)} · ${dur((last.endedAt ?? last.now) - last.startedAt)}` : '대기 중', color: MUTED }] },
+      effN
+        ? { kind: 'pills', n: EFF.length, on: effN, from: '#4f46e5', to: '#a855f7', before: { text: 'effort', color: MUTED }, after: { text: `${L!.effort}${ctxText}`, color: MUTED } }
+        : { kind: 'text', spans: [{ text: `effort ${effortBar(L?.effort)}${ctxText}`, color: MUTED }] },
+      ...(r
+        ? ([
+            { kind: 'bar', pct: total ? doneN / total : active ? undefined : 0, phase, from: mix(0), to: mix(1), value: { text: total ? `${doneN}/${total} · ${Math.round((doneN / total) * 100)}%` : '진행 중', color: FG, bold: true } },
+            { kind: 'text', spans: [{ text: `⏱ ${dur(elapsed)} · 도구 ${r.tools}회${r.lastTool ? ` · ${shortTool(r.lastTool)}` : ''}`, color: MUTED }] },
+          ] as Row[])
+        : []),
+      ...(step ? ([{ kind: 'text', spans: [{ text: `└ ${step.subject}`, color: leadColor }] }] as Row[]) : []),
+    ]
+    const jevRows: Row[] | undefined = jevBox
+      ? [
+          { kind: 'text', spans: [{ text: `JEV · ${J!.kind.toUpperCase()}`, color: DONE, bold: true, glow: true }], right: { text: `calls ${J!.count} · ${hms(J!.t)}`, color: MUTED } },
+          ...(J!.running
+            ? ([{ kind: 'text', spans: [{ text: `${spin(phase)} 판정 중…`, color: DONE }] }] as Row[])
+            : J!.rows.map(x => {
+                const ok = x.p >= (J!.kind === 'review' ? 0.75 : SHARP)
+                return {
+                  kind: 'bar',
+                  pct: x.p,
+                  from: ok ? DONE : WARN,
+                  to: ok ? DONE : WARN,
+                  label: { text: x.label, color: FG, bold: J!.kind === 'route' && x.label.startsWith(`${J!.pick} `) },
+                  labelW: 150,
+                  value: { text: J!.kind === 'review' ? String(Math.round(x.p * 100)) : x.p.toFixed(2), color: ok ? DONE : WARN },
+                } as Row
+              })),
+          ...(!J!.running && J!.kind === 'route' && J!.pick
+            ? ([{ kind: 'text', spans: [
+                { text: `→ ${J!.pick}${J!.conf !== undefined ? ` · conf ${J!.conf.toFixed(2)}` : ''}  `, color: MUTED },
+                { text: (J!.conf ?? 0) >= SHARP ? 'sharp → 위임' : 'split → 메인 판단', color: (J!.conf ?? 0) >= SHARP ? DONE : WARN, bold: true },
+              ] }] as Row[])
+            : []),
+          ...(!J!.running && J!.kind === 'review'
+            ? ([{ kind: 'text', spans: [
+                { text: `→ ${J!.score ?? '?'}점${J!.conf !== undefined ? ` · conf ${J!.conf.toFixed(2)}` : ''}  `, color: MUTED },
+                { text: J!.verdict ?? '?', color: J!.verdict === 'pass' ? DONE : WARN, bold: true },
+              ] }] as Row[])
+            : []),
+          ...(!J!.running && J!.note ? ([{ kind: 'text', spans: [{ text: J!.note, color: J!.kind === 'error' ? FAIL : MUTED }] }] as Row[]) : []),
+        ]
+      : undefined
+    // 서브에이전트는 나란히(병렬): 한 줄에 PER 장, 위아래 갈래선으로 레일과 이음
+    // 각 칸은 폭 % 로 나눈 Box, 안에 카드 SVG, ✕ 는 그 Box 안 오른쪽 아래(absolute)
+    const PER = Math.max(1, Math.min(cards.length, Math.floor(W / 120)))
+    const cardW = Math.floor(W / PER)
+    const gridRows = Array.from({ length: Math.ceil(cards.length / PER) }, (_, i) => cards.slice(i * PER, i * PER + PER))
+    // 카드 안 ✕: 데스크톱 버튼은 그림을 못 담고(글자만) 글자색도 못 정함 →
+    // ✕ 는 카드 그림에 네온 아이콘으로 그리고, 그 위에 글자 없는 투명 버튼을 겹쳐 누르게 함. 확인 단계(정말 종료 · 취소)는 기존 칩
+    const iconControls = (key: string, verb = '종료') =>
+      asking === `${key}#${verb}` ? (
+        controls(key, verb)
+      ) : (
+        <Button key={`${key}-x`} plain label={'\u2003'} onPress={() => void update($, confirm, () => `${key}#${verb}`)} />
+      )
+    const subCard = (a: AgentRow) => {
+      const key = `a:${a.id}`
+      const m = meta[a.id]?.model
+      const st = subStat[a.id]
+      const color = m ? famColor(m) : subColor
+      const state = a.status === 'running' ? 'run' : a.status === 'completed' ? 'done' : 'idle'
+      const bad = ['failed', 'killed', 'error', 'stopped'].includes(a.status)
+      const live = LIVE.has(a.status)
+      const hasX = live || a.type === 'hc'
+      const rows: Row[] = [
+        { kind: 'text', spans: [{ text: a.description, color: FG, bold: true }] },
+        // 좁은 카드라 한 줄에 하나씩: 상태 → 막대 → 경과·도구(오른쪽은 ✕ 자리)
+        {
+          kind: 'text',
+          spans: [{
+            text: bad ? `✕ ${a.status}` : state === 'done' ? '✓ done' : state === 'run' ? `${spin(phase)} running` : `○ ${a.status}`,
+            color: bad ? FAIL : state === 'done' ? DONE : state === 'run' ? color : MUTED,
+            bold: state === 'run',
+          }],
+        },
+        { kind: 'bar', pct: state === 'run' ? undefined : state === 'done' ? 1 : 0, phase, from: state === 'done' ? DONE : color, to: state === 'done' ? DONE : color },
+        {
+          kind: 'text',
+          // 모델은 카드 테두리 색과 위 범례로 구분(좁은 칸에선 이름이 잘려서)
+          // ✕ 가 있는 카드는 칸이 좁아 경과 시간만
+          spans: [{ text: st ? `⏱ ${dur((st.endedAt ?? now) - st.startedAt)}${hasX ? '' : ` · ${st.tools}회`}` : '⏱ -', color: MUTED }],
+          ...(hasX ? { right: { text: '     ', color: MUTED } } : {}),
+        },
+      ]
+      return {
+        svg: cardSvg({ w: cardW, accent: bad ? FAIL : state === 'done' ? DONE : color, lit: state === 'run' || bad, rows, ...(hasX ? { corner: bad ? FAIL : color } : {}) }),
+        x: hasX ? (
+          <Box key={`${key}:x`} position="absolute" bottom={1} right={2}>
+            {iconControls(key)}
+          </Box>
+        ) : null,
+        alt: `${a.description} ${a.status}`,
+      }
+    }
+    // 터미널(Svg 없음)에선 만들지 않음 — 없는 요소로 그리면 오류
+    // 이음선 좌표: 줄마다 가운데 정렬된 카드 중심(px, 가장 넓은 줄 기준)
+    const gridW = cardW * Math.min(PER, Math.max(1, cards.length))
+    const centers = (n: number) => Array.from({ length: n }, (_, i) => (gridW - n * cardW) / 2 + (i + 0.5) * cardW)
+    const grid = !Svg ? [] : gridRows.map((row, ri) => {
+      const made = row.map(subCard)
+      return (
+        <Box key={`grid${ri}`} flexDirection="column" width="100%" alignItems="center">
+          {/* 위 줄 카드들에서 이 줄 카드들로: 가로줄 하나를 타고 내려감 */}
+          {ri > 0 && svg(`link${ri}`, linkSvg({ w: gridW, from: centers(gridRows[ri - 1]!.length), to: centers(row.length), lit: running > 0, color: subColor, phase }), '카드 줄 이음선')}
+          {svg(`grid${ri}:svg`, rowSvg(cardW * row.length, made.map(c => c.svg)), made.map(c => c.alt).join(' · '))}
+          {/* ✕ 칸: 카드와 같은 폭 비율로 나눈 투명 칸을 그림 위에 겹침 */}
+          <Box position="absolute" top={0} bottom={0} left={0} right={0} flexDirection="row" justifyContent="center">
+            {made.map((c, i) => (
+              <Box key={`cell${ri}-${i}`} width={`${Math.floor(100 / PER)}%`} height="100%">
+                {c.x}
+              </Box>
+            ))}
+          </Box>
+        </Box>
+      )
+    })
+    const logRows: Row[] = [
+      { kind: 'text', spans: [{ text: 'SESSION LOG', color: MUTED, bold: true }] },
+      ...(logs.length === 0
+        ? ([{ kind: 'text', spans: [{ text: '기록 없음', color: MUTED }] }] as Row[])
+        : logs.slice(-5).map(l => ({
+            kind: 'text',
+            spans: [
+              { text: `${hms(l.t)}  `, color: MUTED, mono: true, size: 11.5 },
+              { text: `${(l.model === 'main' || l.model === 'sub' ? l.model : nm(l.model)).padEnd(10)} `, color: l.model === 'sub' || l.model === 'main' ? FG : famColor(l.model), mono: true, size: 11.5 },
+              { text: l.arg ? `${l.tool} ${l.arg}` : l.tool, color: FG, mono: true, size: 11.5 },
+            ],
+          }) as Row)),
+    ]
+    const neonFlow = Svg && (
+      <Box flexDirection="column" alignItems="center" paddingTop={1}>
+        {svg(
+          'legend',
+          chipsSvg(W, [
+            ...legendItems.map(([name, role, color]) => ({ dot: color, parts: [{ text: `${name} · ${role}`, color: MUTED }] })),
+            ...(L && L.advisor > 0
+              ? [{ dot: famColor('opus'), parts: [{ text: 'ADVISOR · ON CALL', color: famColor('opus'), bold: true }, { text: `  호출 ${L.advisor}회${L.advisorAt ? ` · ${hms(L.advisorAt)}` : ''}`, color: MUTED }] }]
+              : []),
+          ]),
+          '범례',
+        )}
+        {svg('main', cardSvg({ w: W, accent: leadColor, lit: active, rows: mainRows }), `${leadName} main session`)}
+        {jevRows && svg('rail-jev', railSvg({ w: W, color: leadColor, lit: active || running > 0, phase }), '연결선')}
+        {jevRows && svg('jev', cardSvg({ w: W, accent: DONE, lit: J!.running || now - J!.t < 60_000, rows: jevRows }), `JEV ${J!.kind}`)}
+        {svg(
+          'delegate',
+          railSvg({
+            w: W,
+            color: jevRows ? DONE : leadColor,
+            lit: active || running > 0,
+            phase,
+            label: [
+              { text: 'DELEGATE → SUBAGENTS · ', color: cards.length ? FG : MUTED },
+              { text: cards.length ? subModels.join(', ') || 'sub' : '위임 없음', color: cards.length ? subColor : MUTED, bold: cards.length > 0 },
+            ],
+          }),
+          `delegate ${cards.length}`,
+        )}
+        {cards.length > 0 && svg('link-top', linkSvg({ w: gridW, from: [gridW / 2], to: centers(gridRows[0]!.length), lit: running > 0, color: subColor, phase }), '위임 갈래선')}
+        {grid}
+        {cards.length > 0 &&
+          svg('link-bottom', linkSvg({ w: gridW, from: centers(gridRows[gridRows.length - 1]!.length), to: [gridW / 2], lit: backOn, color: leadColor, phase }), '복귀 이음선')}
+        {cards.length > 0 &&
+          svg(
+            'back',
+            railSvg({ w: W, color: leadColor, lit: backOn, phase, label: [{ text: `BACK TO ${leadName.toUpperCase()} · LEAD`, color: backOn ? leadColor : MUTED, bold: true }, { text: '  review + verify', color: MUTED }] }),
+            'back to lead',
+          )}
+        {svg('rail-done', railSvg({ w: W, color: DONE, lit: cards.length > 0 ? backOn : active, phase }), '완료 연결선')}
+        {svg(
+          'done',
+          cardSvg({
+            w: W,
+            accent: DONE,
+            lit: doneOn,
+            rows: doneOn
+              ? [
+                  { kind: 'text', size: 13.5, spans: [{ text: '✓ COMPLETE', color: DONE, bold: true, glow: true }], ...(last!.endedAt !== undefined ? { right: { text: hms(last!.endedAt), color: MUTED } } : {}) },
+                  { kind: 'text', spans: [{ text: last!.label ?? fallback(last!.prompt), color: FG, bold: true }] },
+                  {
+                    kind: 'text',
+                    spans: [{
+                      text: [
+                        `⏱ ${dur((last!.endedAt ?? last!.now) - last!.startedAt)}`,
+                        `도구 ${last!.tools}회`,
+                        ...(last!.tasks.length ? [`${last!.tasks.length}단계`] : []),
+                        ...(last!.subs?.length ? [`서브 ${last!.subs.length}`] : []),
+                        ...(last!.files?.length ? [`파일 ${last!.files.length}`] : []),
+                      ].join(' · '),
+                      color: MUTED,
+                    }],
+                  },
+                ]
+              : [
+                  { kind: 'text', size: 13.5, spans: [{ text: `${active ? spin(phase) : '○'} COMPLETE`, color: MUTED, bold: true }] },
+                  { kind: 'text', spans: [{ text: active ? '진행 중…' : '아직 끝난 작업 없음', color: MUTED }] },
+                ],
+          }),
+          doneOn ? 'complete' : 'not complete',
+        )}
+        {svg('log', cardSvg({ w: W, accent: MUTED, lit: false, rows: logRows }), 'session log')}
+        {svg(
+          'status',
+          chipsSvg(W, [
+            { parts: [{ text: 'subagents ', color: MUTED }, { text: `[${running}/${cards.length}]`, color: running ? subColor : MUTED, bold: true }] },
+            { parts: [{ text: `${leadName} `, color: MUTED }, { text: active ? '[working]' : '[idle]', color: active ? leadColor : MUTED, bold: true }] },
+            ...(L?.advisor ? [{ parts: [{ text: 'advisor ', color: MUTED }, { text: `[${L.advisor}]`, color: famColor('opus'), bold: true }] }] : []),
+          ]),
+          'status',
+        )}
+      </Box>
+    )
+
     return (
-      // 창 전체를 다크 네이비로 채움(창 높이만큼) · 왼쪽 디바이더와 붙지 않게 2칸 들여쓰기
-      <Box flexDirection="column" paddingLeft={2} backgroundColor={BG} width={e.props.bodyColumns} minHeight={e.props.scroll?.bodyRows}>
+      // 창 전체를 다크 네이비로 채움(창 높이만큼) · 좌우 2칸씩 같은 여백
+      <Box flexDirection="column" paddingX={2} backgroundColor={BG} width={e.props.bodyColumns} minHeight={e.props.scroll?.bodyRows}>
         {/* 탭 위 구분 실선 */}
         <Text color={SUBTLE} wrap="truncate">{'─'.repeat(width)}</Text>
         {/* 탭: 칩 모양 — 보는 탭은 네온 시안, 다른 탭은 회청색 */}
@@ -1004,7 +1246,7 @@ export const register: Register = on => {
         <Box flexDirection="column" rowGap={0}>
         {/* 탭과 작업 진행 구분 실선 */}
         <Text color={SUBTLE} wrap="truncate">{'─'.repeat(width)}</Text>
-        {flow}
+        {neonFlow || flow}
 
         </Box>
         )}

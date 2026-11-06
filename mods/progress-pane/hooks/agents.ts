@@ -84,3 +84,10 @@ export const newSubs = (prev: readonly AgentRow[], next: readonly AgentRow[]): s
 // Claude Code 는 작업 중이면 제목 앞에 점자 스피너(⠂⠐ 등), 쉬면 ✳ 를 붙임 → running / completed, 그 외는 모름
 export const hcTitleStatus = (title: unknown): 'running' | 'completed' | undefined =>
   typeof title !== 'string' ? undefined : /^[⠀-⣿]/.test(title) ? 'running' : title.startsWith('✳') ? 'completed' : undefined
+
+// 이 세션에서 본 서브에이전트 목록에 지금 목록을 합침: 처음 본 순서 유지, 상태·설명은 최신 값으로, 사라진 것도 남김
+export const mergeSeen = (prev: readonly AgentRow[], now: readonly AgentRow[]): AgentRow[] => {
+  const m = new Map(prev.map(a => [a.id, a]))
+  for (const a of now) m.set(a.id, a)
+  return [...m.values()]
+}

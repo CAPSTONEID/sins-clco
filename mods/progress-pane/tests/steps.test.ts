@@ -1,5 +1,5 @@
 import { expect, test } from 'claude-code/testing'
-import { isAllDone, timeSteps } from '../hooks/register'
+import { timeSteps } from '../hooks/register'
 
 const s = (subject: string, status: 'pending' | 'in_progress' | 'completed') => ({ id: subject, subject, status })
 
@@ -16,11 +16,4 @@ test('단계 소요시간: 시작·완료 시각을 이어 받고, 진행 중을
   expect(c[0]).toMatchObject({ startedAt: 1000, endedAt: 5000 })
   expect(c[1]).toMatchObject({ startedAt: 5000, endedAt: 9000 })
   expect(c[2]).toMatchObject({ startedAt: 9000, endedAt: 9000 })
-})
-
-test('다 끝난 단계 목록만 다음 입력 때 비움', async () => {
-  expect(isAllDone([])).toBe(false)
-  expect(isAllDone([s('A', 'completed'), s('B', 'completed')])).toBe(true)
-  expect(isAllDone([s('A', 'completed'), s('B', 'in_progress')])).toBe(false)
-  expect(isAllDone([s('A', 'pending')])).toBe(false)
 })

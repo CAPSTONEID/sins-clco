@@ -11,25 +11,6 @@ const now = atom({ plugin: 'task-progress-band', key: 'now' } as const, 0)
 // 이번 세션에서 엔진이 사용량을 한 번이라도 알려줬는지. false면 지난 세션 값으로 그리는 중
 const isFresh = atom({ plugin: 'task-progress-band', key: 'isFresh' } as const, false)
 const model = atom({ plugin: 'task-progress-band', key: 'model' } as const, {} as ModelInfo)
-// progress-pane 값을 읽기만 함: 단계 목록(세션이 끝나도 유지), 지금 작업, 렌더, 서브에이전트
-const run = atom({ plugin: 'progress-pane', key: 'run' } as const, null)
-const jobs = atom({ plugin: 'progress-pane', key: 'jobs' } as const, [])
-const agents = atom({ plugin: 'progress-pane', key: 'agents' } as const, [])
-const renderHistory = atom({ plugin: 'progress-pane', key: 'renderHistory' } as const, {})
-
-// ponytail: usage-band 와 같은 계산. 플러그인끼리 import 못 해 복사함
-// 경과 시간 → "2분 14초", 렌더 시간 → "1:23"
-const dur = (ms: number) => {
-  const sec = Math.max(0, Math.floor(ms / 1000))
-  return sec >= 60 ? `${Math.floor(sec / 60)}분 ${sec % 60}초` : `${sec}초`
-}
-const clockText = (sec: number) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`
-// 같은 종류 과거 평균 대비 진행률 — 기록 없으면 undefined, 끝나기 전엔 99 에서 멈춤
-const renderPct = (seconds: number, past: number[] | undefined) => {
-  const avg = past?.length ? past.reduce((a, b) => a + b, 0) / past.length : 0
-  return avg > 0 ? Math.min(99, Math.floor((seconds * 100) / avg)) : undefined
-}
-
 
 // ponytail: usage-band 와 같은 함수. 플러그인끼리 import 못 해 복사함
 // 모델 id → 표시 이름: claude-opus-5-5 → Opus 5.5, claude-haiku-4-5-20251001 → Haiku 4.5
@@ -276,21 +257,7 @@ export const register: Register = on => {
     const { Box, Button, Svg, Text } = table
     const bar = (row: Row) => <Svg source={barSvg(row.pct, row.grad, row.ticks)} width={BAR_W} height={BAR_H} alt={`${row.label} ${row.value}`} />
 
-    // 단계 줄 + 오른쪽 작업 칸 (터미널 usage-band 와 같은 내용)
-    const r = await read($, run)
-    const list = await read($, jobs)
-    const total = r?.tasks.length ?? 0
-    const done = r?.tasks.filter(t => t.status === 'completed').length ?? 0
-    const SEP = ' ।। '
-    const subs = (await read($, agents)).filter(a => a.status === 'running').map(a => `sub ${a.description.slice(0, 12)}`)
-    const past = list.length ? await read($, renderHistory) : {}
-    const renders = list.map(j => {
-      const pct = renderPct(j.seconds, past[j.kind])
-      return `렌더 ${j.kind} ${clockText(j.seconds)}${pct === undefined ? '' : ` ‣ ${pct}%`}`
-    })
-
-
-    // Model·Effort 줄과 모드 줄은 usage-band 가 그림: 그 밴드(아래 플러그인)를 위에 두고 단계·막대를 이어 그린다
+    // 단계·모드·Model 줄과 오른쪽 Advisor·Subagents·Render 칸은 usage-band 가 그림. 여기는 게이지 막대만
     const below = await next(e)
 
     // 열 폭은 모든 줄 공통: 라벨+막대(고정, 붙여 둠) | 퍼센트(오른쪽 정렬) | 메모(가변) | 닫기
@@ -304,16 +271,17 @@ export const register: Register = on => {
         {rows.map(row => (
           <Box key={row.key} flexDirection="row" alignItems="center" gap={1}>
             <Box flexDirection="row" alignItems="center" gap={1} flexShrink={0}>
-              <Box width={9} flexShrink={0}>
-                <Text color={row.grad[0]}>● </Text>
-                <Text wrap="truncate">{row.label}</Text>
+              {/* ● 은 색 글자, 라벨은 동작 없는 버튼: 위 usage-band 의 '● Ponytail' 버튼과 같은 여백이라 ● ·글자 시작점이 세로로 맞음 */}
+              <Box width={12} flexShrink={0} flexDirection="row" alignItems="center">
+                <Text color={row.grad[0]}>●</Text>
+                <Button plain key={`label-${row.key}`} label={row.label} onPress={() => undefined} />
               </Box>
               {bar(row)}
             </Box>
             <Box width={5} flexShrink={0} justifyContent="flex-end">
               <Text bold>{row.value}</Text>
             </Box>
-            <Box flexGrow={1} flexShrink={1}>
+            <Box flexGrow={1} flexShrink={1} minWidth={0} overflow="hidden">
               <Text dimColor wrap="truncate">{row.note}</Text>
             </Box>
             <Box width={3} flexShrink={0} justifyContent="flex-end">
@@ -321,21 +289,6 @@ export const register: Register = on => {
             </Box>
           </Box>
         ))}
-        </Box>
-        {/* 오른쪽 작업 칸: 지금 작업 · 완료율 · 경과/도구/서브에이전트 · 렌더 */}
-        <Box flexDirection="column" width="20%" flexShrink={0} paddingLeft={2}>
-          {r ? (
-            <Text bold color="#1fb5c9" wrap="truncate">{`▶ ${r.label ?? (r.prompt.trim().split('\n')[0] ?? '작업').slice(0, 18)}`}</Text>
-          ) : (
-            <Text dimColor>작업 대기 중</Text>
-          )}
-          <Text>{r ? (total ? `${done}/${total} 완료 · ${Math.round((done / total) * 100)}%` : '진행 중') : ' '}</Text>
-          <Text dimColor wrap="truncate">{[r ? `⏱ ${dur(r.now - r.startedAt)} · 도구 ${r.tools}회` : '', ...subs].filter(Boolean).join(SEP) || ' '}</Text>
-          {renders.length ? (
-            <Text color="#3b82f6" wrap="truncate">{renders.join(SEP)}</Text>
-          ) : (
-            <Text dimColor>렌더 없음</Text>
-          )}
         </Box>
         </Box>
       </Box>

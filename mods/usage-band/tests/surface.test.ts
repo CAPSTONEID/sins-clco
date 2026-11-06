@@ -24,6 +24,13 @@ for (const surface of ['terminal', 'desktop', 'vscode'] as const) {
       // 게이지 막대는 task-progress-band 몫: 데스크톱에선 안 그림
       expect(drawn).not.toContain('5시간 한도')
       expect(drawn.indexOf('Ponytail')).toBeLessThan(drawn.indexOf('engine'))
+      // Render bar 는 게이지와 같은 Svg 막대 (터미널의 █░ 글자 막대 아님)
+      expect(drawn).toContain('"alt":"Render bar -"')
+      expect(drawn).not.toContain('░')
+      // × · ➤ 글자 버튼은 Humanize 뒤 같은 줄에 (이모지 버튼 아님)
+      expect(drawn).not.toContain('❎')
+      expect(drawn.indexOf('Humanize')).toBeLessThan(drawn.indexOf('"label":"×"'))
+      expect(drawn.indexOf('"label":"×"')).toBeLessThan(drawn.indexOf('"label":"➤"'))
     }
   })
 }

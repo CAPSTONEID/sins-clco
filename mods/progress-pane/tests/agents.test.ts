@@ -1,5 +1,5 @@
 import { expect, test } from 'claude-code/testing'
-import { age, hcTitleStatus, newSubs, parseAgents, parseHc, splitHidden, toggle } from '../hooks/agents'
+import { age, hcTitleStatus, mergeSeen, newSubs, parseAgents, parseHc, splitHidden, toggle } from '../hooks/agents'
 import { clip, fallback, mix, shortModel, TITLE_MAX } from '../hooks/run'
 
 test('claude agents --json 출력을 패널 행으로 변환', async () => {
@@ -108,4 +108,12 @@ test('hc 창 제목으로 상태 추정: 점자 스피너는 작업 중, ✳ 는
   expect(hcTitleStatus('✳ Review hooks/flow.ts exports')).toBe('completed')
   expect(hcTitleStatus('zsh')).toBeUndefined()
   expect(hcTitleStatus(undefined)).toBeUndefined()
+})
+
+test('mergeSeen: 끝나고 목록에서 사라진 서브에이전트도 남기고, 순서는 처음 본 순서', () => {
+  const a = { id: 'a', type: 'x', description: 'A', status: 'running' }
+  const b = { id: 'b', type: 'x', description: 'B', status: 'running' }
+  const once = mergeSeen([], [a, b])
+  const later = mergeSeen(once, [{ ...b, status: 'completed' }])
+  expect(later.map(x => `${x.id}:${x.status}`)).toEqual(['a:running', 'b:completed'])
 })

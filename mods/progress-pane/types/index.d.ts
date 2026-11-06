@@ -77,6 +77,10 @@ declare module 'claude-code' {
       renderHistory: Record<string, number[]>
       // 에이전트 관제
       agents: AgentRow[]
+      // 이 세션에서 본 서브에이전트(진행 탭 카드) — 끝나도 남김, [×] 초기화 또는 새 세션까지
+      seen: AgentRow[]
+      // [×] 초기화로 숨긴 서브에이전트 id
+      hiddenSubs: string[]
       // 서브에이전트 id → 실행 모델·추론값(effort 미지정이면 없음 = 기본)
       subMeta: Record<string, { model: string; effort?: string }>
       // 서브에이전트 id → 작업 상태 (3초 폴링 때만 기록 — 도구마다 다시 그리지 않게)

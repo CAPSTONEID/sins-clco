@@ -23,6 +23,12 @@ const SEED: Record<string, unknown> = {
     { id: 'a2', type: 'Explore', description: 'finds call sites', status: 'completed' },
     { id: 'a3', type: 'general-purpose', description: 'runs in a worktree', status: 'running' },
   ],
+  // 진행 탭 카드는 이 세션에서 본 서브에이전트 목록(seen)
+  seen: [
+    { id: 'a1', type: 'Explore', description: 'maps the repo', status: 'running' },
+    { id: 'a2', type: 'Explore', description: 'finds call sites', status: 'completed' },
+    { id: 'a3', type: 'general-purpose', description: 'runs in a worktree', status: 'running' },
+  ],
   subMeta: { a1: { model: 'claude-haiku-5-5' }, a2: { model: 'claude-haiku-5-5' }, a3: { model: 'claude-haiku-5-5' } },
   subStats: { a1: { startedAt: NOW - 20_000, tools: 4, lastTool: 'Grep' } },
   log: [
@@ -42,7 +48,7 @@ test('진행 탭 흐름도: 메인 상자·카드·리드 복귀·세션 로그�
     const key = (e as { key?: string }).key ?? ''
     return key in SEED ? { value: { value: SEED[key], version: 1 } } : { value: { value: undefined, version: 0 } }
   })
-  for (const surface of ['terminal', 'desktop'] as const) {
+  for (const surface of ['terminal'] as const) {
     const ui = await $.ui.mount({ ...PANE, surface })
     expect(await ui.find({ type: 'Text', text: /OPUS 5\.5 · MAIN SESSION/ })).toBeDefined()
     expect(await ui.find({ type: 'Text', text: /effort ▮▮▮▯▯ high · ctx 412k/ })).toBeDefined()
@@ -58,6 +64,27 @@ test('진행 탭 흐름도: 메인 상자·카드·리드 복귀·세션 로그�
     expect(await ui.find({ type: 'Text', text: /^ 0\.55$/ })).toBeDefined()
     await ui.unmount()
   }
+})
+
+test('데스크톱 진행 탭: 같은 내용을 네온 SVG 카드로 그림', async ($, on) => {
+  on('clock.now', () => ({ value: NOW }))
+  on('state.get', (_, e) => {
+    const key = (e as { key?: string }).key ?? ''
+    return key in SEED ? { value: { value: SEED[key], version: 1 } } : { value: { value: undefined, version: 0 } }
+  })
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  const drawn = JSON.stringify(await ui.drawn())
+  expect(drawn).toContain('"type":"Svg"')
+  for (const s of ['OPUS 5.5 · MAIN SESSION', 'ctx 412k', 'maps the repo', '✓ done', 'BACK TO OPUS 5.5 · LEAD', 'Grep subRows', 'ADVISOR · ON CALL', '[2/3]', 'JEV · ROUTE', 'calls 3', 'split → 메인 판단', '0.55'])
+    expect(drawn).toContain(s)
+  // 실행 중 서브에이전트 종료 버튼은 그대로 버튼
+  expect(drawn).toContain('"key":"a:a1-x"')
+  // 갈래선 포함 모든 Svg 에 설명(alt)이 있음 — 빈 alt 는 데스크톱이 안 그림
+  expect(drawn).not.toContain('"alt":""')
+  expect(drawn).toContain('위임 갈래선')
+  // 글자 흐름도(테두리 상자)는 안 그림
+  expect(drawn).not.toContain('borderStyle')
+  await ui.unmount()
 })
 
 test('빈 상태: 대기 중·위임 없음·기록 없음', async ($, on) => {
