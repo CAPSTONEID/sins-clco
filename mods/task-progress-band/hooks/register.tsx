@@ -12,7 +12,6 @@ const now = atom({ plugin: 'task-progress-band', key: 'now' } as const, 0)
 const isFresh = atom({ plugin: 'task-progress-band', key: 'isFresh' } as const, false)
 const model = atom({ plugin: 'task-progress-band', key: 'model' } as const, {} as ModelInfo)
 // progress-pane 값을 읽기만 함: 단계 목록(세션이 끝나도 유지), 지금 작업, 렌더, 서브에이전트
-const steps = atom({ plugin: 'progress-pane', key: 'steps' } as const, [])
 const run = atom({ plugin: 'progress-pane', key: 'run' } as const, null)
 const jobs = atom({ plugin: 'progress-pane', key: 'jobs' } as const, [])
 const agents = atom({ plugin: 'progress-pane', key: 'agents' } as const, [])
@@ -31,9 +30,6 @@ const renderPct = (seconds: number, past: number[] | undefined) => {
   return avg > 0 ? Math.min(99, Math.floor((seconds * 100) / avg)) : undefined
 }
 
-// 추론 단계 순서 (단계 표시용)
-const EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'] as const
-const EFFORT: Grad = ['#4f46e5', '#a855f7']
 
 // ponytail: usage-band 와 같은 함수. 플러그인끼리 import 못 해 복사함
 // 모델 id → 표시 이름: claude-opus-5-5 → Opus 5.5, claude-haiku-4-5-20251001 → Haiku 4.5
@@ -83,9 +79,12 @@ const remaining = (ms: number) => {
 
 // 데스크톱용 둥근 막대: 반투명 트랙이라 라이트·다크 테마 모두에서 보인다
 // 채운 구간 = 가로 그라디언트 + 위쪽 광택 + 점무늬 질감, 끝에 은은한 빛번짐
+// 막대 크기(CSS px): 짧고 두껍게. Svg 에 그대로 넘겨 늘어나거나 납작해지지 않게 함
+const BAR_W = 120
+const BAR_H = 10
 const barSvg = (pct: number, [from, to]: Grad, ticks: number) => {
-  const W = 360
-  const H = 12
+  const W = BAR_W
+  const H = BAR_H
   const fill = pct <= 0 ? 0 : Math.max(H, Math.round((Math.min(pct, 100) / 100) * W))
   const marks = Array.from({ length: Math.max(0, ticks - 1) }, (_, i) => Math.round(((i + 1) / ticks) * W))
     .map(x => `<rect x="${x - 0.75}" y="3" width="1.5" height="${H - 6}" rx="0.75" fill="${x < fill ? '#ffffff' : '#8e8e99'}" fill-opacity="${x < fill ? 0.8 : 0.5}"/>`)
@@ -262,8 +261,6 @@ export const register: Register = on => {
     }
 
     const m = await read($, model)
-    // 추론 단계 위치 (0~4), 숫자 effort 면 -1
-    const lvl = typeof m.effort === 'string' ? EFFORTS.indexOf(m.effort as (typeof EFFORTS)[number]) : -1
 
     if (rows.length === 0 && m.name === undefined) {
       return next(e)
@@ -277,10 +274,9 @@ export const register: Register = on => {
     }
 
     const { Box, Button, Svg, Text } = table
-    const bar = (row: Row) => <Svg source={barSvg(row.pct, row.grad, row.ticks)} alt={`${row.label} ${row.value}`} />
+    const bar = (row: Row) => <Svg source={barSvg(row.pct, row.grad, row.ticks)} width={BAR_W} height={BAR_H} alt={`${row.label} ${row.value}`} />
 
     // 단계 줄 + 오른쪽 작업 칸 (터미널 usage-band 와 같은 내용)
-    const stepList = await read($, steps)
     const r = await read($, run)
     const list = await read($, jobs)
     const total = r?.tasks.length ?? 0
@@ -294,77 +290,30 @@ export const register: Register = on => {
     })
 
 
-    // 열 폭은 모든 줄 공통: 라벨 | 막대(가변) | 퍼센트(오른쪽 정렬) | 메모 | 닫기
+    // Model·Effort 줄과 모드 줄은 usage-band 가 그림: 그 밴드(아래 플러그인)를 위에 두고 단계·막대를 이어 그린다
+    const below = await next(e)
+
+    // 열 폭은 모든 줄 공통: 라벨+막대(고정, 붙여 둠) | 퍼센트(오른쪽 정렬) | 메모(가변) | 닫기
     return (
-      <Box flexDirection="column" paddingX={1}>
-        {/* 단계 줄(가로, ' । ' 구분) + 오른쪽 끝 이모지 버튼: ❎ 비우기 · ▶️ 진행 패널 열기·닫기 */}
-        <Box flexDirection="row" alignItems="center" gap={1} marginBottom={1}>
-          <Box flexGrow={1} flexShrink={1} flexDirection="row" alignItems="center" flexWrap="wrap">
-            {stepList.length === 0 ? (
-              <Text dimColor>단계 없음</Text>
-            ) : (
-              stepList.flatMap((t, i) => [
-                ...(i > 0 ? [<Text key={`l${i}`} dimColor>{' । '}</Text>] : []),
-                t.status === 'completed' ? (
-                  <Text key={`t${i}`} dimColor>{`✔ ${t.subject}`}</Text>
-                ) : t.status === 'in_progress' ? (
-                  <Text key={`t${i}`} bold color="#1fb5c9">{`◐ ${t.subject}`}</Text>
-                ) : (
-                  <Text key={`t${i}`}>{`◌ ${t.subject}`}</Text>
-                ),
-              ])
-            )}
-            {stepList.length > 0 && <Text bold>{`  ${stepList.filter(t => t.status === 'completed').length}/${stepList.length}`}</Text>}
-          </Box>
-          {/* 두 버튼은 간격 없이 붙여 한 묶음으로 */}
-          <Box flexDirection="row" alignItems="center" gap={0} flexShrink={0}>
-            <Button key="steps-clear" plain label="❎" onPress={() => void $.command.run({ command: 'steps-clear' }).catch(() => undefined)} />
-            <Button key="progress" plain label="▶️" onPress={() => void $.command.run({ command: 'progress-toggle' }).catch(() => undefined)} />
-          </Box>
-        </Box>
+      // 왼쪽 여백 없음: 위 usage-band 의 여백 안에서 그려져 ● 들이 Ponytail ● 과 같은 선에 섬
+      <Box flexDirection="column">
+        {below}
+        {/* 단계 줄과 ❎·▶️ 버튼은 usage-band 가 모드 줄 위에 그림 */}
         <Box flexDirection="row" gap={2}>
         <Box flexDirection="column" flexGrow={1} flexShrink={1}>
-        {/* 모델 · 추론 단계 줄: 라벨 열은 다른 줄과 같은 폭 */}
-        {m.name !== undefined && (
-          <Box key="model" flexDirection="row" alignItems="center" gap={2}>
-            <Box width="14%" flexShrink={0}>
-              <Text color="#d97757">● </Text>
-              <Text wrap="truncate">Model</Text>
-            </Box>
-            <Box flexGrow={1} flexShrink={1} flexDirection="row" alignItems="center" gap={2}>
-              <Text bold>{m.name}</Text>
-              <Text dimColor>Effort</Text>
-              {m.effort === undefined ? (
-                <Text dimColor>—</Text>
-              ) : lvl < 0 ? (
-                <Text bold>{String(m.effort)}</Text>
-              ) : (
-                <Box flexDirection="row" alignItems="center">
-                  {EFFORTS.map((_, i) => (
-                    <Text key={`e${i}`} color={i <= lvl ? EFFORT[i < 2 ? 0 : 1] : undefined} dimColor={i > lvl}>
-                      {i <= lvl ? '■' : '□'}
-                    </Text>
-                  ))}
-                  <Text bold>{` ${EFFORTS[lvl]!.toUpperCase()}`}</Text>
-                  <Text dimColor>{` (${lvl + 1}/${EFFORTS.length})`}</Text>
-                </Box>
-              )}
-            </Box>
-          </Box>
-        )}
         {rows.map(row => (
-          <Box key={row.key} flexDirection="row" alignItems="center" gap={2}>
-            <Box width="14%" flexShrink={0}>
-              <Text color={row.grad[0]}>● </Text>
-              <Text wrap="truncate">{row.label}</Text>
-            </Box>
-            <Box flexGrow={1} flexShrink={1} alignItems="center">
+          <Box key={row.key} flexDirection="row" alignItems="center" gap={1}>
+            <Box flexDirection="row" alignItems="center" gap={1} flexShrink={0}>
+              <Box width={9} flexShrink={0}>
+                <Text color={row.grad[0]}>● </Text>
+                <Text wrap="truncate">{row.label}</Text>
+              </Box>
               {bar(row)}
             </Box>
-            <Box width="6%" flexShrink={0} justifyContent="flex-end">
+            <Box width={5} flexShrink={0} justifyContent="flex-end">
               <Text bold>{row.value}</Text>
             </Box>
-            <Box width="22%" flexShrink={0}>
+            <Box flexGrow={1} flexShrink={1}>
               <Text dimColor wrap="truncate">{row.note}</Text>
             </Box>
             <Box width={3} flexShrink={0} justifyContent="flex-end">
@@ -374,7 +323,7 @@ export const register: Register = on => {
         ))}
         </Box>
         {/* 오른쪽 작업 칸: 지금 작업 · 완료율 · 경과/도구/서브에이전트 · 렌더 */}
-        <Box flexDirection="column" width="24%" flexShrink={0} paddingLeft={2}>
+        <Box flexDirection="column" width="20%" flexShrink={0} paddingLeft={2}>
           {r ? (
             <Text bold color="#1fb5c9" wrap="truncate">{`▶ ${r.label ?? (r.prompt.trim().split('\n')[0] ?? '작업').slice(0, 18)}`}</Text>
           ) : (

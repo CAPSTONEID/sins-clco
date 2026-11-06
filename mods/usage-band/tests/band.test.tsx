@@ -66,12 +66,15 @@ test('모드 줄: 단계 없어도 Ponytail । Caveman 한 줄로 그린다', a
   expect(await ui.find({ type: 'Text', text: ' ULTRA' })).toBeDefined()
   await ui.press({ key: 'mode-caveman' })
   expect(await ui.find({ type: 'Text', text: 'OFF ' })).toBeDefined()
-  // Humanize 이름 클릭: 기본 → 적극 → OFF
-  expect(await ui.find({ type: 'Text', text: ' 기본' })).toBeDefined()
+  // Humanize 이름 클릭: 기본 → 적극 → OFF (CLI 표시는 mid → high → off)
+  expect(await ui.find({ type: 'Text', text: ' mid' })).toBeDefined()
   await ui.press({ key: 'mode-humanize' })
-  expect(await ui.find({ type: 'Text', text: ' 적극' })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: ' high' })).toBeDefined()
   await ui.press({ key: 'mode-humanize' })
-  expect(await ui.find({ type: 'Text', text: ' 적극' })).toBeUndefined()
+  expect(await ui.find({ type: 'Text', text: ' high' })).toBeUndefined()
+  expect(await ui.find({ type: 'Text', text: 'off ' })).toBeDefined()
+  await ui.press({ key: 'mode-humanize' })
+  expect(await ui.find({ type: 'Text', text: ' low' })).toBeDefined()
   await ui.unmount()
 })
 
@@ -113,5 +116,41 @@ test('Model 이름 클릭 → 선택 줄 → 고르면 /model 실행·표시 갱
   await ui.press({ key: 'p-off' })
   expect(ran).toContain('advisor off')
   expect(await ui.find({ type: 'Text', text: 'off' })).toBeDefined()
+  await ui.unmount()
+})
+
+// 데스크톱 앱: 같은 버튼(Humanize·Caveman·Model)이 데스크톱 표면에서도 눌리고 표시가 바뀌는지
+test('데스크톱: Humanize·Caveman 이름 클릭과 Model 선택이 동작한다', async ($, on) => {
+  const ran: string[] = []
+  on('command.run', (_, e) => {
+    ran.push(`${e.command} ${e.args}`)
+    return { text: '' }
+  })
+  on('session.measure', (_, e) => ({ changed: e.changed }))
+  // 엔진 몫(아래 task-progress-band 자리) 대역
+  on('ui.render', { component: 'AbovePrompt' }, () => ({ type: 'Box', children: [] }) as never)
+  mock.clock(on)
+  await $.session.measure({ context: { tokens: 1000, window: 1_000_000, percent: 1 }, rateLimits: [], changed: ['context'] })
+  const ui = await $.ui.mount({
+    plugin: 'usage-band',
+    surface: 'desktop',
+    component: 'AbovePrompt',
+    props: { hasSurvey: false, isWorking: false, maxRows: 10, bodyColumns: 120 } as never,
+  })
+  // Humanize: 기본 → 적극 → OFF → 보수
+  expect(await ui.find({ type: 'Text', text: ' 기본' })).toBeDefined()
+  await ui.press({ key: 'mode-humanize' })
+  expect(await ui.find({ type: 'Text', text: ' 적극' })).toBeDefined()
+  await ui.press({ key: 'mode-humanize' })
+  expect(await ui.find({ type: 'Text', text: ' 적극' })).toBeUndefined()
+  await ui.press({ key: 'mode-humanize' })
+  expect(await ui.find({ type: 'Text', text: ' 보수' })).toBeDefined()
+  // Caveman: FULL → ULTRA
+  await ui.press({ key: 'mode-caveman' })
+  expect(await ui.find({ type: 'Text', text: ' ULTRA' })).toBeDefined()
+  // Model: 선택 줄 열고 Opus 고르면 /model opus 실행
+  await ui.press({ key: 'pick-model' })
+  await ui.press({ key: 'p-opus' })
+  expect(ran).toContain('model opus')
   await ui.unmount()
 })

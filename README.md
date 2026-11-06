@@ -150,13 +150,13 @@ curl -fsSL https://raw.githubusercontent.com/CAPSTONEID/sins-clco/main/sins-mods
 
 설치·업데이트 모두 이 한 줄입니다. 새 세션부터 적용됩니다.
 
-- **usage-band** — 위 그림. 터미널 입력창 위
+- **usage-band** — 위 그림. 터미널 입력창 위 (데스크톱 앱에서는 모드 줄과 Model·Effort·Advisor 줄만)
   - 단계 줄: 단계별·전체 소요시간, 누르면 서브에이전트 목록
-  - 모드 줄: Ponytail·Caveman·Humanize, 이름을 누르면 단계 전환
+  - 모드 줄: Ponytail·Caveman·Humanize, 이름을 누르면 단계 전환 (터미널의 Humanize 강도는 off·low·mid·high로 표시)
   - Model·Effort: 누르면 바로 변경
   - 게이지: 컨텍스트·5시간·7일 한도
   - 오른쪽: Advisor · Subagents · 렌더 진행
 - **progress-pane** — `/progress` 옆 패널. 네온 다크 흐름도(메인 세션 → Jev → 서브에이전트 카드 → 리드 복귀 → 완료 카드)와 세션 로그, 완료 기록(롤백)
-- **task-progress-band** — 데스크톱 앱 입력창 위 막대
+- **task-progress-band** — 데스크톱 앱 입력창 위 단계 줄과 그라디언트 막대(Tasks·컨텍스트·5시간·7일), usage-band 줄 아래에 표시
 
 참고: 모드 줄은 해당 플러그인·스킬이 있어야 동작하고, 5시간·7일 한도는 Pro/Max 구독에서만 보입니다. 제거는 `rm -rf ~/.claude/mods/{usage-band,task-progress-band,progress-pane}` 후 `settings.json` 의 `CLAUDE_CODE_PLUGIN_DIRS` 에서 경로를 지웁니다.

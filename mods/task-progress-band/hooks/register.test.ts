@@ -5,6 +5,8 @@ const HOUR = 3_600_000
 
 for (const surface of ['desktop', 'vscode'] as const) {
   test(`tasks row counts and turns Done at 100% (${surface})`, async ($, on) => {
+    // 엔진 몫(아래 밴드) 대역
+    on('ui.render', { component: 'AbovePrompt' }, () => ({ type: 'Box', children: [] }) as never)
     let n = 0
     on('tool.call', { tool: 'TaskCreate' }, () => ({ result: { task: { id: String(++n), subject: 's' } } }) as never)
     on('tool.call', { tool: 'TaskUpdate' }, () => ({ result: { success: true, taskId: '1', updatedFields: ['status'] } }) as never)
@@ -27,6 +29,8 @@ for (const surface of ['desktop', 'vscode'] as const) {
   })
 
   test(`TodoWrite keeps TaskCreate tasks instead of replacing them (${surface})`, async ($, on) => {
+    // 엔진 몫(아래 밴드) 대역
+    on('ui.render', { component: 'AbovePrompt' }, () => ({ type: 'Box', children: [] }) as never)
     let n = 0
     on('tool.call', { tool: 'TaskCreate' }, () => ({ result: { task: { id: String(++n), subject: 's' } } }) as never)
     on('tool.call', { tool: 'TodoWrite' }, () => ({ result: {} }) as never)
@@ -50,6 +54,8 @@ for (const surface of ['desktop', 'vscode'] as const) {
   })
 
   test(`TaskUpdate on an unknown id is ignored (${surface})`, async ($, on) => {
+    // 엔진 몫(아래 밴드) 대역
+    on('ui.render', { component: 'AbovePrompt' }, () => ({ type: 'Box', children: [] }) as never)
     on('tool.call', { tool: 'TaskCreate' }, () => ({ result: { task: { id: '1', subject: 's' } } }) as never)
     on('tool.call', { tool: 'TaskUpdate' }, () => ({ result: { success: true, taskId: '9', updatedFields: ['status'] } }) as never)
 
@@ -64,6 +70,8 @@ for (const surface of ['desktop', 'vscode'] as const) {
   })
 
   test(`usage rows show 5h and 7d percent with time to reset (${surface})`, async ($, on) => {
+    // 엔진 몫(아래 밴드) 대역
+    on('ui.render', { component: 'AbovePrompt' }, () => ({ type: 'Box', children: [] }) as never)
     const t = Date.UTC(2026, 9, 6, 12)
     mock.clock(on, { now: t })
     on('session.measure', (_$, e) => ({ changed: e.changed }))
@@ -95,6 +103,8 @@ for (const surface of ['desktop', 'vscode'] as const) {
   })
 
   test(`rows show right at session start from last session's values (${surface})`, async ($, on) => {
+    // 엔진 몫(아래 밴드) 대역
+    on('ui.render', { component: 'AbovePrompt' }, () => ({ type: 'Box', children: [] }) as never)
     const t = Date.UTC(2026, 9, 6, 12)
     mock.clock(on, { now: t })
     // 지난 세션이 저장한 값: 5시간 창은 아직 진행 중, 7일 창은 이미 초기화 시각이 지남
@@ -121,19 +131,22 @@ for (const surface of ['desktop', 'vscode'] as const) {
     expect(drawn).not.toContain('55%')
   })
 
-  test(`model row shows name and effort level (${surface})`, async ($, on) => {
+  test(`model row is left to usage-band and the band beneath is kept (${surface})`, async ($, on) => {
     mock.clock(on, { now: 0 })
     on('session.usage', () => ({ value: { startedAt: 0, context: { window: 200_000 }, rateLimits: [] } }) as never)
     on('session.model', () => ({ value: 'claude-opus-5-5' }) as never)
     on('session.start', (_$, e) => ({ cwd: e.cwd }))
+    on('ui.render', { component: 'AbovePrompt' }, () => ({ type: 'Text', children: ['beneath'] }) as never)
     await $.session.start({ cwd: '/tmp', surface, isInteractive: true } as never)
 
     const drawn = JSON.stringify(
       await (await $.ui.mount({ plugin: 'task-progress-band', surface, component: 'AbovePrompt', props: PROPS })).drawn(),
     )
-    expect(drawn).toContain('Model')
-    expect(drawn).toContain('Opus 5.5')
-    expect(drawn).toContain('Effort')
+    expect(drawn).toContain('beneath')
+    expect(drawn).toContain('컨텍스트')
+    expect(drawn).not.toContain('Opus 5.5')
+    // 아래 밴드가 단계·막대보다 위
+    expect(drawn.indexOf('beneath')).toBeLessThan(drawn.indexOf('컨텍스트'))
   })
 }
 

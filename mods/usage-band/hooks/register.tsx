@@ -35,6 +35,8 @@ export const humanizeOf = (text?: string): string | undefined => {
   const t = text?.trim()
   return t === 'off' ? undefined : HZ_LEVELS.includes(t as (typeof HZ_LEVELS)[number]) ? t : '기본'
 }
+// CLI 밴드 표시 이름 (파일·모델 안내 값은 보수·기본·적극 그대로)
+export const HZ_CLI: Record<string, string> = { 보수: 'low', 기본: 'mid', 적극: 'high' }
 // 이름 누를 때마다 OFF → 보수 → 기본 → 적극 → OFF
 export const nextHumanize = (mode?: string): string | undefined => {
   const i = mode === undefined ? -1 : HZ_LEVELS.indexOf(mode as (typeof HZ_LEVELS)[number])
@@ -282,6 +284,9 @@ export const register: Register = (on, options) => {
     $.clock.every(60_000, async () => {
       const u = await $.session.usage()
       await update($, snap, () => toSnap(u.context, u.rateLimits))
+      // 데스크톱 하단 모델 선택처럼 턴 없이 바뀐 모델도 1분 안에 반영
+      const name = prettyModel(await $.session.model())
+      await update($, model, m => (m.name === name ? m : { ...m, name }))
     })
     return r
   })
@@ -342,8 +347,11 @@ export const register: Register = (on, options) => {
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     const s = await read($, snap)
     const m = await read($, model)
-    // CLI(터미널) 전용: 데스크톱 앱은 task-progress-band 가 그린다. VS Code 확장 채팅 패널은 mod 화면을 그리지 않음 (VS Code 내장 터미널의 claude 는 usage-band)
-    if (e.surface !== 'terminal' || e.props.hasSurvey || (!ROWS.some(r => s[r.key]) && !m.name)) return next(e)
+    // 터미널: 전체 밴드. 데스크톱 앱: 모드·Model·Effort·Advisor 조작 줄만 그리고, 단계·게이지 막대는 아래 task-progress-band 몫
+    // VS Code 확장 채팅 패널은 mod 화면을 그리지 않음 (VS Code 내장 터미널의 claude 는 usage-band)
+    const isDesk = e.surface === 'desktop'
+    if ((e.surface !== 'terminal' && !isDesk) || e.props.hasSurvey) return next(e)
+    if (!isDesk && !ROWS.some(r => s[r.key]) && !m.name) return next(e)
     // 추론 단계 위치 (1~5), 문자열 아닌 숫자 effort 면 -1
     const lvl = typeof m.effort === 'string' ? EFFORTS.indexOf(m.effort as (typeof EFFORTS)[number]) : -1
 
@@ -444,21 +452,9 @@ export const register: Register = (on, options) => {
       </Box>,
     ]
 
-    return (
-      // 오른쪽 여백 없이 붙여 버튼이 엔진의 [-] 바로 옆에 오게
-      <Box flexDirection="column" paddingLeft={1}>
-        {/* 위 스피너·팁 줄과 분리하는 구분선 */}
-        {/* 왼쪽 끝 버튼: [×] 단계 목록 비우기(/steps-clear) · [‣] 옆 패널 열기·닫기(/progress-toggle), 그 뒤로 구분선. 엔진의 [-] 는 맨 오른쪽 5칸 고정 */}
-        <Box flexDirection="row">
-          <Button plain label="[×]" onPress={() => void $.command.run({ command: 'steps-clear' }).catch(() => undefined)} />
-          <Text> </Text>
-          <Button plain label="[‣]" onPress={() => void $.command.run({ command: 'progress-toggle' }).catch(() => undefined)} />
-          <Text> </Text>
-          <Text dimColor>{'─'.repeat(Math.max(10, e.props.bodyColumns - 1 - 8))}</Text>
-        </Box>
-        {/* 아래 입력창 앞 엔진 여백(1줄)과 맞추는 빈 줄 */}
-        <Text> </Text>
-        {tasks.length > 0 && (
+    // 단계 줄(터미널·데스크톱 공용)
+    const stepsRow = (
+tasks.length > 0 && (
           // 가로 1줄, ' । ' 로 구분: 완료 ✔ 흐리게 · 진행 중 ◐ 청록 굵게 · 대기 ◌
           // 각 항목 아래 줄: 소요시간(완료 = 걸린 시간, 진행 중 = 지금까지), 개수 아래: 전체 소요시간
           <Box flexDirection="row" marginBottom={1}>
@@ -489,7 +485,157 @@ export const register: Register = (on, options) => {
               <Text dimColor>{stepTotal === undefined ? ' ' : `  총 ${dur(stepTotal)}`}</Text>
             </Box>
           </Box>
-        )}
+        )
+    )
+
+    // 터미널·데스크톱 공용 조각: 모드 줄 · Model/Effort/Advisor 선택 줄 · Effort 칸
+    // 데스크톱은 모드 줄 바로 아래에 Model 줄을 붙임 (빈 줄 없음)
+    const modesRow = (
+        <Box flexDirection="row" flexWrap="wrap" marginBottom={isDesk ? 0 : 1}>
+          {([
+            ['ponytail', 'Ponytail', md.ponytail, '#87af87', [135, 175, 135], [95, 175, 95]],
+            ['caveman', 'Caveman', md.caveman, '#d7875f', [215, 135, 95], [215, 95, 0]],
+          ] as const).flatMap(([key, name, mode, dot, from, to], k) => {
+            const lv = mode === undefined ? -1 : levelOf(mode)
+            return [
+              ...(k > 0 ? [<Text key={`ml${k}`} dimColor>{' । '}</Text>] : []),
+              <Box key={name} flexDirection="row">
+                <Text color={dot}>● </Text>
+                {/* 이름을 누르면 다음 강도로 (OFF → LITE → FULL → ULTRA → OFF) */}
+                <Button plain key={`mode-${key}`} label={name} onPress={() => void cycle(key).catch(() => undefined)} />
+                <Text> </Text>
+                {mode === undefined ? <Text dimColor>OFF </Text> : <Text bold color={dot}>ON </Text>}
+                {mode !== undefined && lv < 0 ? (
+                  <Text bold>{mode.toUpperCase()}</Text>
+                ) : (
+                  <Box flexDirection="row">
+                    {LEVELS.map((_, i) => (
+                      <Text key={`m${i}`} color={i <= lv ? mix(from, to, i / 2) : undefined} dimColor={i > lv}>
+                        {i <= lv ? '■' : '□'}
+                      </Text>
+                    ))}
+                    {mode !== undefined && <Text bold>{` ${mode.toUpperCase()}`}</Text>}
+                    {mode !== undefined && <Text dimColor>{` (${lv + 1}/${LEVELS.length})`}</Text>}
+                  </Box>
+                )}
+              </Box>,
+            ]
+          })}
+          <Text dimColor>{' । '}</Text>
+          {/* Humanize: ON/OFF + 윤문 강도 칸, 이름 누르면 OFF → 보수 → 기본 → 적극 → OFF (CLI 표시는 off·low·mid·high) */}
+          <Text color="#5fafd7">● </Text>
+          <Button
+            plain
+            key="mode-humanize"
+            label="Humanize"
+            onPress={() => {
+              const to = nextHumanize(md.humanize)
+              void setHumanize($, to)
+                .then(() => $.ui.toast(`Humanize 검수 → ${to ? `강도 ${isDesk ? to : HZ_CLI[to] ?? to}` : isDesk ? 'OFF' : 'off'} · 다음 입력부터 적용`))
+                .catch(() => undefined)
+            }}
+          />
+          <Text> </Text>
+          {md.humanize === undefined ? <Text dimColor>{isDesk ? 'OFF ' : 'off '}</Text> : <Text bold color="#5fafd7">ON </Text>}
+          {HZ_LEVELS.map((_, i) => {
+            const lv = md.humanize === undefined ? -1 : HZ_LEVELS.indexOf(md.humanize as (typeof HZ_LEVELS)[number])
+            return (
+              <Text key={`h${i}`} color={i <= lv ? mix([95, 175, 215], [37, 99, 235], i / 2) : undefined} dimColor={i > lv}>
+                {i <= lv ? '■' : '□'}
+              </Text>
+            )
+          })}
+          {md.humanize !== undefined && <Text bold>{` ${isDesk ? md.humanize : HZ_CLI[md.humanize] ?? md.humanize}`}</Text>}
+          {md.humanize !== undefined && (
+            <Text dimColor>{` (${HZ_LEVELS.indexOf(md.humanize as (typeof HZ_LEVELS)[number]) + 1}/${HZ_LEVELS.length})`}</Text>
+          )}
+        </Box>
+    )
+    const pickerRow = pk && (
+          // 선택 줄: 지금 값은 굵게, 누르면 바로 /model·/effort 실행. [×] 닫기
+          <Box flexDirection="row" marginBottom={1}>
+            <Text dimColor>{`${pk[0]!.toUpperCase() + pk.slice(1)}:  `}</Text>
+            {(pk === 'model'
+              ? MODELS.map(o => ({ value: o.alias, label: o.label, isNow: m.name === o.label }))
+              : pk === 'advisor'
+                ? ADVISORS.map(o => ({ value: o.alias, label: o.label, isNow: (m.advisor ?? 'off') === o.alias }))
+                : EFFORTS.map(o => ({ value: o, label: o.toUpperCase(), isNow: m.effort === o }))
+            ).flatMap((o, i) => [
+              ...(i > 0 ? [<Text key={`ps${i}`}> </Text>] : []),
+              <Button key={`p-${o.value}`} plain onPress={() => void pick($, pk, o.value, o.label).catch(() => undefined)}>
+                <Text bold={o.isNow} color={o.isNow ? '#d97757' : undefined}>{`[${o.label}]`}</Text>
+              </Button>,
+            ])}
+            <Text>  </Text>
+            <Button plain key="p-close" label="[×]" onPress={() => void update($, picker, () => null).catch(() => undefined)} />
+          </Box>
+        )
+    const effortView = m.effort === undefined ? (
+                <Text dimColor>-</Text>
+              ) : lvl < 0 ? (
+                <Text bold>{String(m.effort)}</Text>
+              ) : (
+                // Fragment 는 세로로 쌓여 깨짐 → 가로 Box 로 묶음
+                <Box flexDirection="row">
+                  {EFFORTS.map((_, i) => (
+                    <Text key={`e${i}`} color={i <= lvl ? mix([79, 70, 229], [168, 85, 247], i / 4) : undefined} dimColor={i > lvl}>
+                      {i <= lvl ? '■' : '□'}
+                    </Text>
+                  ))}
+                  <Text bold>{` ${EFFORTS[lvl]!.toUpperCase()}`}</Text>
+                  <Text dimColor>{` (${lvl + 1}/${EFFORTS.length})`}</Text>
+                </Box>
+              )
+
+    if (isDesk) {
+      // 데스크톱: 조작 줄만 그리고 아래(task-progress-band 의 단계·막대)를 이어 붙임
+      const below = await next(e)
+      return (
+        <Box flexDirection="column" paddingX={1}>
+          {/* 단계 줄 + 오른쪽 끝 버튼: ❎ 단계 비우기 · ▶️ 진행 창 열기·닫기 */}
+          <Box flexDirection="row" alignItems="flex-start">
+            <Box flexGrow={1} flexShrink={1}>
+              {stepsRow || <Text dimColor>단계 없음</Text>}
+            </Box>
+            <Box flexDirection="row" flexShrink={0}>
+              <Button key="steps-clear" plain label="❎" onPress={() => void $.command.run({ command: 'steps-clear' }).catch(() => undefined)} />
+              <Button key="progress" plain label="▶️" onPress={() => void $.command.run({ command: 'progress-toggle' }).catch(() => undefined)} />
+            </Box>
+          </Box>
+          {modesRow}
+          {pickerRow}
+          {/* Model 줄: 아래 task-progress-band 의 컨텍스트 줄 바로 위 (빈 줄 없이) */}
+          <Box flexDirection="row" flexWrap="wrap" alignItems="center" gap={1}>
+            <Text color="#d97757">●</Text>
+            <Button plain key="pick-model" label="Model" onPress={() => toggle('model')} />
+            <Text bold>{m.name ?? '-'}</Text>
+            <Text dimColor>{' । '}</Text>
+            <Button plain key="pick-effort" label="Effort" onPress={() => toggle('effort')} />
+            {effortView}
+            <Text dimColor>{' । '}</Text>
+            <Button plain key="pick-advisor" label="Advisor" onPress={() => toggle('advisor')} />
+            {advisorName ? <Text bold color="#d97757">{advisorName}</Text> : <Text dimColor>off</Text>}
+          </Box>
+          {below}
+        </Box>
+      )
+    }
+
+    return (
+      // 오른쪽 여백 없이 붙여 버튼이 엔진의 [-] 바로 옆에 오게
+      <Box flexDirection="column" paddingLeft={1}>
+        {/* 위 스피너·팁 줄과 분리하는 구분선 */}
+        {/* 왼쪽 끝 버튼: [×] 단계 목록 비우기(/steps-clear) · [‣] 옆 패널 열기·닫기(/progress-toggle), 그 뒤로 구분선. 엔진의 [-] 는 맨 오른쪽 5칸 고정 */}
+        <Box flexDirection="row">
+          <Button plain label="[×]" onPress={() => void $.command.run({ command: 'steps-clear' }).catch(() => undefined)} />
+          <Text> </Text>
+          <Button plain label="[‣]" onPress={() => void $.command.run({ command: 'progress-toggle' }).catch(() => undefined)} />
+          <Text> </Text>
+          <Text dimColor>{'─'.repeat(Math.max(10, e.props.bodyColumns - 1 - 8))}</Text>
+        </Box>
+        {/* 아래 입력창 앞 엔진 여백(1줄)과 맞추는 빈 줄 */}
+        <Text> </Text>
+        {stepsRow}
         {/* 펼친 서브에이전트 목록: 이름 누르면 hc 는 attach 명령 복사·Agent 는 그 화면, ✕ 는 hc 종료 */}
         {isSubsOpen && (
           // 단계 줄과 빈 줄 1칸 띄우고 제목 + 목록
@@ -532,84 +678,8 @@ export const register: Register = (on, options) => {
           </Box>
         )}
         {/* 모드 줄(단계 줄과 Model 줄 사이, 위아래 빈 줄 1칸 — 모델 선택 줄이 열릴 때 덜 붙어 보이게): 단계 줄처럼 가로 1줄, ' । ' 로 구분. ON/OFF + 강도 칸 (Effort 와 같은 모양) */}
-        <Box flexDirection="row" marginBottom={1}>
-          {([
-            ['ponytail', 'Ponytail', md.ponytail, '#87af87', [135, 175, 135], [95, 175, 95]],
-            ['caveman', 'Caveman', md.caveman, '#d7875f', [215, 135, 95], [215, 95, 0]],
-          ] as const).flatMap(([key, name, mode, dot, from, to], k) => {
-            const lv = mode === undefined ? -1 : levelOf(mode)
-            return [
-              ...(k > 0 ? [<Text key={`ml${k}`} dimColor>{' । '}</Text>] : []),
-              <Box key={name} flexDirection="row">
-                <Text color={dot}>● </Text>
-                {/* 이름을 누르면 다음 강도로 (OFF → LITE → FULL → ULTRA → OFF) */}
-                <Button plain key={`mode-${key}`} label={name} onPress={() => void cycle(key).catch(() => undefined)} />
-                <Text> </Text>
-                {mode === undefined ? <Text dimColor>OFF </Text> : <Text bold color={dot}>ON </Text>}
-                {mode !== undefined && lv < 0 ? (
-                  <Text bold>{mode.toUpperCase()}</Text>
-                ) : (
-                  <Box flexDirection="row">
-                    {LEVELS.map((_, i) => (
-                      <Text key={`m${i}`} color={i <= lv ? mix(from, to, i / 2) : undefined} dimColor={i > lv}>
-                        {i <= lv ? '■' : '□'}
-                      </Text>
-                    ))}
-                    {mode !== undefined && <Text bold>{` ${mode.toUpperCase()}`}</Text>}
-                    {mode !== undefined && <Text dimColor>{` (${lv + 1}/${LEVELS.length})`}</Text>}
-                  </Box>
-                )}
-              </Box>,
-            ]
-          })}
-          <Text dimColor>{' । '}</Text>
-          {/* Humanize: ON/OFF + 윤문 강도 칸, 이름 누르면 OFF → 보수 → 기본 → 적극 → OFF */}
-          <Text color="#5fafd7">● </Text>
-          <Button
-            plain
-            key="mode-humanize"
-            label="Humanize"
-            onPress={() => {
-              const to = nextHumanize(md.humanize)
-              void setHumanize($, to)
-                .then(() => $.ui.toast(`Humanize 검수 → ${to ? `강도 ${to}` : 'OFF'} · 다음 입력부터 적용`))
-                .catch(() => undefined)
-            }}
-          />
-          <Text> </Text>
-          {md.humanize === undefined ? <Text dimColor>OFF </Text> : <Text bold color="#5fafd7">ON </Text>}
-          {HZ_LEVELS.map((_, i) => {
-            const lv = md.humanize === undefined ? -1 : HZ_LEVELS.indexOf(md.humanize as (typeof HZ_LEVELS)[number])
-            return (
-              <Text key={`h${i}`} color={i <= lv ? mix([95, 175, 215], [37, 99, 235], i / 2) : undefined} dimColor={i > lv}>
-                {i <= lv ? '■' : '□'}
-              </Text>
-            )
-          })}
-          {md.humanize !== undefined && <Text bold>{` ${md.humanize}`}</Text>}
-          {md.humanize !== undefined && (
-            <Text dimColor>{` (${HZ_LEVELS.indexOf(md.humanize as (typeof HZ_LEVELS)[number]) + 1}/${HZ_LEVELS.length})`}</Text>
-          )}
-        </Box>
-        {pk && (
-          // 선택 줄: 지금 값은 굵게, 누르면 바로 /model·/effort 실행. [×] 닫기
-          <Box flexDirection="row" marginBottom={1}>
-            <Text dimColor>{`${pk[0]!.toUpperCase() + pk.slice(1)}:  `}</Text>
-            {(pk === 'model'
-              ? MODELS.map(o => ({ value: o.alias, label: o.label, isNow: m.name === o.label }))
-              : pk === 'advisor'
-                ? ADVISORS.map(o => ({ value: o.alias, label: o.label, isNow: (m.advisor ?? 'off') === o.alias }))
-                : EFFORTS.map(o => ({ value: o, label: o.toUpperCase(), isNow: m.effort === o }))
-            ).flatMap((o, i) => [
-              ...(i > 0 ? [<Text key={`ps${i}`}> </Text>] : []),
-              <Button key={`p-${o.value}`} plain onPress={() => void pick($, pk, o.value, o.label).catch(() => undefined)}>
-                <Text bold={o.isNow} color={o.isNow ? '#d97757' : undefined}>{`[${o.label}]`}</Text>
-              </Button>,
-            ])}
-            <Text>  </Text>
-            <Button plain key="p-close" label="[×]" onPress={() => void update($, picker, () => null).catch(() => undefined)} />
-          </Box>
-        )}
+        {modesRow}
+        {pickerRow}
         <Box flexDirection="row">
           <Box flexDirection="column">
             {/* 모델 · 추론 단계 줄 */}
@@ -624,22 +694,7 @@ export const register: Register = (on, options) => {
               </Box>
               <Button plain key="pick-effort" label="Effort" onPress={() => toggle('effort')} />
               <Text> </Text>
-              {m.effort === undefined ? (
-                <Text dimColor>-</Text>
-              ) : lvl < 0 ? (
-                <Text bold>{String(m.effort)}</Text>
-              ) : (
-                // Fragment 는 세로로 쌓여 깨짐 → 가로 Box 로 묶음
-                <Box flexDirection="row">
-                  {EFFORTS.map((_, i) => (
-                    <Text key={`e${i}`} color={i <= lvl ? mix([79, 70, 229], [168, 85, 247], i / 4) : undefined} dimColor={i > lvl}>
-                      {i <= lvl ? '■' : '□'}
-                    </Text>
-                  ))}
-                  <Text bold>{` ${EFFORTS[lvl]!.toUpperCase()}`}</Text>
-                  <Text dimColor>{` (${lvl + 1}/${EFFORTS.length})`}</Text>
-                </Box>
-              )}
+              {effortView}
             </Box>
             {ROWS.map(row => {
               const g = s[row.key]
