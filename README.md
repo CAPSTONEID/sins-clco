@@ -23,7 +23,7 @@
 
 | 명령어 | 설명 |
 |--------|------|
-| `/sins-card-news-creator` | 인스타그램 카드뉴스의 11필드 카드 JSON TXT·캡션 TXT·이미지 프롬프트 TXT 제작. |
+| `/sins-card-news-creator` | 인스타그램 카드뉴스의 11필드 카드 JSON TXT·캡션 TXT·이미지 프롬프트 TXT 제작, 힉스필드 이미지 자동 생성, 1080×1350 완성 카드 PNG 렌더(매번 랜덤 컬러). |
 | `/sins-marketing-team` | 마케팅 전략 팀 구성 및 실행. |
 | `/sins-wiki-pass` | 내용을 Notion 위키 DB(LLM Wiki Index)에 정리해 저장. |
 | `/sins-higgsfield` | 힉스필드 MCP로 이미지·영상을 선택 카드 따라 단계별 생성. |
