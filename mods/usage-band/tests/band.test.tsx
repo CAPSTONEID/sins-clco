@@ -112,7 +112,7 @@ test('Model 이름 클릭 → 선택 줄 → 고르면 /model 실행·표시 갱
   expect(await ui.find({ type: 'Text', text: 'is resting' })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: 'Render bar' })).toBeDefined()
   await ui.press({ key: 'pick-advisor' })
-  expect(await ui.find({ type: 'Text', text: '[Fable 5.1]' })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: '[Fable 5.2]' })).toBeDefined()
   await ui.press({ key: 'p-off' })
   expect(ran).toContain('advisor off')
   expect(await ui.find({ type: 'Text', text: 'off' })).toBeDefined()

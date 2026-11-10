@@ -111,7 +111,7 @@ export const taskSubs = <A extends { id: string }>(cur: RunSubs | null, past: re
 
 // 선택지: /model 별칭 → 표시 이름 (별칭이라 새 버전이 나와도 최신으로 감)
 export const MODELS = [
-  { alias: 'fable', label: 'Fable 5.1' },
+  { alias: 'fable', label: 'Fable 5.2' },
   { alias: 'opus', label: 'Opus 5.5' },
   { alias: 'sonnet', label: 'Sonnet 5.5' },
   { alias: 'haiku', label: 'Haiku 5.5' },
@@ -129,7 +129,7 @@ async function pick($: EngineInterface, kind: 'model' | 'effort' | 'advisor', va
 
 // 어드바이저 선택지 (/advisor <모델>|off) — 더 강한 모델만
 export const ADVISORS = [
-  { alias: 'fable', label: 'Fable 5.1' },
+  { alias: 'fable', label: 'Fable 5.2' },
   { alias: 'opus', label: 'Opus 5.5' },
   { alias: 'off', label: 'OFF' },
 ] as const
