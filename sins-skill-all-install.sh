@@ -382,6 +382,12 @@ install_external_skills() {
   stageshow_dir="$(clone_external_repo stageshow https://github.com/benjitaylor/skills.git)"
   copy_dir_clean "$stageshow_dir/stageshow" "$SKILL_DIR/stageshow"
 
+  # motionmaxxing — Claude / Codex / Grok 공용. AI 티 나는 영상을 모션 디자이너급으로 만드는 모션그래픽 스킬(Apache-2.0)
+  # 저장소 루트가 곧 스킬 폴더. .git·docs/media(데모 영상 약 19MB)는 빼고 복사한다. Node 22+·ffmpeg·Chrome 필요.
+  motionmaxxing_dir="$(clone_external_repo motionmaxxing https://github.com/Tejashmakwana/motionmaxxing.git)"
+  copy_dir_clean "$motionmaxxing_dir" "$SKILL_DIR/motionmaxxing"
+  rm -rf "$SKILL_DIR/motionmaxxing/.git" "$SKILL_DIR/motionmaxxing/docs/media"
+
   gstack_dir="$(clone_external_repo gstack https://github.com/garrytan/gstack.git)"
   install_gstack "$gstack_dir"
 
