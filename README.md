@@ -42,7 +42,7 @@
 전체 설치 때 SINS 스킬과 함께 설치됩니다. Hermes는 자체 번들이 있어 건너뜁니다.
 
 <details>
-<summary>외부 스킬 목록 (24개) 펼치기</summary>
+<summary>외부 스킬 목록 (26개) 펼치기</summary>
 
 | 이름 | 대상 | 출처 |
 |------|------|------|
@@ -52,6 +52,8 @@
 | Handoff | Claude 전용 | [mattpocock/skills](https://github.com/mattpocock/skills) |
 | Harness | Claude 전용 | [revfactory/harness](https://github.com/revfactory/harness) |
 | UI/UX Pro Max | Claude 전용 | [nextlevelbuilder/ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) |
+| Hallmark | Claude 전용 | [Nutlope/hallmark](https://github.com/Nutlope/hallmark) |
+| Impeccable | Claude 전용 | [pbakaus/impeccable](https://github.com/pbakaus/impeccable) |
 | HyperFrames | Claude / Codex / Grok | [heygen-com/hyperframes](https://github.com/heygen-com/hyperframes) |
 | Watch (claude-video) | Claude / Codex / Grok | [bradautomates/claude-video](https://github.com/bradautomates/claude-video) |
 | Clone Website | Claude / Codex / Grok | [JCodesMore/ai-website-cloner-template](https://github.com/JCodesMore/ai-website-cloner-template) |

@@ -271,6 +271,15 @@ install_external_skills() {
     uiux_dir="$(clone_external_repo ui-ux-pro-max https://github.com/nextlevelbuilder/ui-ux-pro-max-skill.git)"
     copy_uiux_skill "$uiux_dir"
 
+    # Hallmark — Claude 전용 디자인 스킬(MIT). 저장소의 skills/hallmark 를 그대로 복사하고 설치 스크립트·훅은 실행하지 않는다.
+    hallmark_dir="$(clone_external_repo hallmark https://github.com/Nutlope/hallmark.git)"
+    copy_dir_clean "$hallmark_dir/skills/hallmark" "$SKILL_DIR/hallmark"
+
+    # Impeccable — Claude 전용 프론트엔드 디자인 스킬(Apache-2.0). 수동 복사라 디자인 훅·서브에이전트는 빠진다.
+    # 훅까지 쓰려면 프로젝트 루트에서 `npx impeccable install` 을 따로 실행한다.
+    impeccable_dir="$(clone_external_repo impeccable https://github.com/pbakaus/impeccable.git)"
+    copy_dir_clean "$impeccable_dir/.claude/skills/impeccable" "$SKILL_DIR/impeccable"
+
     # Humanize Korean — AI 한글 윤문. Claude는 스킬 4개 + 런타임 서브에이전트 4개(upstream 기본 설치 범위)
     # 기존 ln -s 설치본이 있으면 링크만 제거하고 실체로 복사한다.
     hk_dir="$(clone_external_repo im-not-ai https://github.com/epoko77-ai/im-not-ai.git)"
