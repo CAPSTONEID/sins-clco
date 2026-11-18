@@ -9,7 +9,7 @@ import { argOf, ARROW_ROWS, arrowRows, cardBar, DONE, dots, effortBar, FAIL, fam
 import { cardSvg, chipsSvg, linkSvg, railSvg, rowSvg } from './neon'
 import type { Row } from './neon'
 import { planRollback, shortId, SNAP_MAX } from './rollback'
-import { BAR, clip, dur, fallback, mix, shortModel } from './run'
+import { BAR, clip, dur, fallback, mix, shortModel, stripReminders } from './run'
 
 const PANE = 'progress'
 const TITLE = '진행 상황'
@@ -400,7 +400,7 @@ export const register: Register = on => {
     const prev = await read($, run)
     if (prev && !prev.endedAt && prev.tools > 0)
       await update($, runs, list => [{ ...prev, endedAt: now, label: prev.label ?? `${fallback(prev.prompt)}(중단)` }, ...list].slice(0, HISTORY_MAX))
-    await update($, run, () => ({ id: e.turnId, rid: shortId(e.turnId), files: [], prompt: e.text, startedAt: now, now, tools: 0, lastTool: '', tasks: [] }))
+    await update($, run, () => ({ id: e.turnId, rid: shortId(e.turnId), files: [], prompt: stripReminders(e.text), startedAt: now, now, tools: 0, lastTool: '', tasks: [] }))
     tick = $.clock.every(1000, () => {
       void $.clock.now().then(t => update($, run, r => (r && !r.endedAt ? { ...r, now: t } : r)))
     })

@@ -1,5 +1,6 @@
 export type Gauge = { percent: number; detail: string; resetsAt?: string }
-export type Snapshot = { context?: Gauge; fiveHour?: Gauge; sevenDay?: Gauge }
+// isStale: 이번 세션 응답 전이라 지난 세션이 저장한 한도 값으로 그리는 중
+export type Snapshot = { context?: Gauge; fiveHour?: Gauge; sevenDay?: Gauge; isStale?: boolean }
 // advisor: 어드바이저 모델 별칭(fable·opus), 없으면 꺼짐
 export type ModelInfo = { name?: string; effort?: string | number; advisor?: string }
 // 모드 배지: 값 = 강도(full·lite·ultra 등), undefined = 꺼짐

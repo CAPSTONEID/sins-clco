@@ -44,6 +44,9 @@ const AUTO: [RegExp, string][] = [
   [/^<side-sessions-event\b/, '다른 세션 결과 처리'],
 ]
 
+// 데스크톱 앱이 프롬프트 앞에 붙이는 <system-reminder> 블록을 지워 사용자 글만 남김
+export const stripReminders = (text: string) => text.replace(/<system-reminder>[\s\S]*?<\/system-reminder>/g, '').trim()
+
 // 요약 전 임시 설명: 프롬프트 첫 줄 (자동 메시지면 정해 둔 이름)
 export const fallback = (text: string) => {
   const t = text.trim()

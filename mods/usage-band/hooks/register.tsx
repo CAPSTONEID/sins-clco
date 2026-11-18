@@ -263,6 +263,15 @@ const toSnap = (context: SessionContextUsage, limits: SessionRateLimit[]): Snaps
   }
 }
 
+// 엔진이 한도 값을 비워 보내면(첫 응답 전 등) 이전 한도 막대를 지우지 않고 컨텍스트만 갱신
+const keepLimits = (prev: Snapshot, context: SessionContextUsage, limits: SessionRateLimit[]): Snapshot =>
+  limits.length ? toSnap(context, limits) : { ...prev, context: toSnap(context, []).context }
+
+// 데스크톱 게이지 색: 줄마다 그라디언트, 임계치를 넘으면 주황·빨강
+const DESK_GRAD = { context: ['#06b6d4', '#3b82f6'], fiveHour: ['#3b82f6', '#6366f1'], sevenDay: ['#6366f1', '#a855f7'] } as const
+const WARN = ['#f59e0b', '#f97316'] as const
+const DANGER = ['#f97316', '#ef4444'] as const
+
 // ponytail: task-progress-band 의 게이지 막대와 같은 함수·크기. 플러그인끼리 import 못 해 복사함 (바꿀 땐 둘 다)
 // 데스크톱용 둥근 막대: 반투명 트랙이라 라이트·다크 테마 모두에서 보인다
 // 채운 구간 = 가로 그라디언트 + 위쪽 광택 + 점무늬 질감, 끝에 은은한 빛번짐
@@ -323,7 +332,9 @@ export const register: Register = (on, options) => {
     const saved = await $.store.get('beside')
     await update($, beside, () => (typeof saved === 'boolean' ? saved : options.progressBeside !== false))
     const u = await $.session.usage()
-    await update($, snap, () => toSnap(u.context, u.rateLimits))
+    // 첫 응답 전에는 엔진 한도 값이 비어 있다: 지난 세션이 저장한 값으로 막대를 바로 띄우고 '이전 값' 표시
+    const lastLimits = u.rateLimits.length ? undefined : ((await $.store.get('limits').catch(() => undefined)) as SessionRateLimit[] | undefined)
+    await update($, snap, () => ({ ...toSnap(u.context, lastLimits ?? u.rateLimits), ...(lastLimits?.length && { isStale: true }) }))
     const id = await $.session.model()
     const adv = await readAdvisor($)
     await update($, model, m => ({ ...m, name: prettyModel(id), advisor: adv }))
@@ -335,7 +346,7 @@ export const register: Register = (on, options) => {
     // ponytail: 한도 값은 이 세션의 API 응답 기준, 다른 세션(하이퍼프레임 등) 사용분은 이 세션이 다음 요청을 보내야 반영
     $.clock.every(60_000, async () => {
       const u = await $.session.usage()
-      await update($, snap, () => toSnap(u.context, u.rateLimits))
+      await update($, snap, x => keepLimits(x, u.context, u.rateLimits))
       // 데스크톱 하단 모델 선택처럼 턴 없이 바뀐 모델도 1분 안에 반영
       const name = prettyModel(await $.session.model())
       await update($, model, m => (m.name === name ? m : { ...m, name }))
@@ -392,14 +403,16 @@ export const register: Register = (on, options) => {
 
   // 턴 종료·한도 변동 시 엔진이 밀어주는 값으로 갱신
   on('session.measure', async ($, e, next) => {
-    await update($, snap, () => toSnap(e.context, e.rateLimits))
+    await update($, snap, x => keepLimits(x, e.context, e.rateLimits))
+    // 한도는 계정 단위라 다음 세션 시작 때 보여줄 수 있게 저장 (저장 실패는 표시에 영향 없음)
+    if (e.rateLimits.length) await $.store.set('limits', e.rateLimits).catch(() => undefined)
     return next(e)
   })
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     const s = await read($, snap)
     const m = await read($, model)
-    // 터미널: 전체 밴드. 데스크톱 앱: 모드·Model·Effort·Advisor 조작 줄만 그리고, 단계·게이지 막대는 아래 task-progress-band 몫
+    // 터미널·데스크톱: 전체 밴드. task-progress-band 는 데스크톱 Tasks 줄만
     // VS Code 확장 채팅 패널은 mod 화면을 그리지 않음 (VS Code 내장 터미널의 claude 는 usage-band)
     const isDesk = e.surface === 'desktop'
     if ((e.surface !== 'terminal' && !isDesk) || e.props.hasSurvey) return next(e)
@@ -698,7 +711,7 @@ tasks.length > 0 && (
               )
 
     if (isDesk) {
-      // 데스크톱: 조작 줄만 그리고 아래(task-progress-band 의 단계·막대)를 이어 붙임
+      // 데스크톱: 조작 줄 + 게이지를 그리고 아래 밴드를 이어 붙임
       const below = await next(e)
       return (
         <Box flexDirection="column" paddingX={1}>
@@ -722,7 +735,32 @@ tasks.length > 0 && (
                 <Button plain key="pick-effort" label="Effort" onPress={() => toggle('effort')} />
                 {effortView}
               </Box>
-              {below}
+              {/* 게이지 3줄: Model 과 합쳐 옆 칸 4줄과 높이가 같음. 플러그인 순서와 무관하게 여기서 그림 */}
+              {ROWS.map(row => {
+                const g = s[row.key]
+                const isCtx = row.key === 'context'
+                // 초기화 시각이 지났으면 그 창은 0%에서 다시 시작한 것
+                const isReset = !isCtx && g?.resetsAt !== undefined && Date.parse(g.resetsAt) <= now
+                const pct = !g || isReset ? 0 : g.percent
+                const [warn, danger] = isCtx ? [70, 85] : [75, 90]
+                const grad = pct >= danger ? DANGER : pct >= warn ? WARN : DESK_GRAD[row.key]
+                const value = g ? `${Math.round(pct)}%` : '—'
+                const note = !g ? '대기 중' : isCtx ? g.detail : (isReset ? '초기화됨' : until(g.resetsAt, now)) + (s.isStale ? ' · 이전 값' : '')
+                return (
+                  <Box key={row.key} flexDirection="row" alignItems="center" gap={1}>
+                    {/* ● 은 색 글자, 라벨은 동작 없는 버튼: Model 버튼과 같은 여백이라 글자 시작점이 맞음 */}
+                    <Box width={12} flexShrink={0} flexDirection="row" alignItems="center">
+                      <Text color={grad[0]}>●</Text>
+                      <Button plain key={`label-${row.key}`} label={row.label} onPress={() => undefined} />
+                    </Box>
+                    {Svg && <Svg source={barSvg(pct, grad, 4)} width={BAR_W} height={BAR_H} alt={`${row.label} ${value}`} />}
+                    <Box width={5} flexShrink={0} justifyContent="flex-end">
+                      <Text bold>{value}</Text>
+                    </Box>
+                    <Text dimColor wrap="truncate">{note}</Text>
+                  </Box>
+                )
+              })}
             </Box>
             {/* 옆 칸: /usage-band off 로 끔 */}
             {isBeside && (
@@ -739,6 +777,8 @@ tasks.length > 0 && (
               </Box>
             )}
           </Box>
+          {/* 아래 밴드(task-progress-band 의 Tasks 줄 등) */}
+          {below}
         </Box>
       )
     }

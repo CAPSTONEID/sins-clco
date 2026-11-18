@@ -1,7 +1,6 @@
 import { expect, mock, test } from 'claude-code/testing'
 
 const PROPS = { hasSurvey: false, isWorking: false, maxRows: 10, bodyColumns: 100 } as never
-const HOUR = 3_600_000
 
 for (const surface of ['desktop', 'vscode'] as const) {
   test(`tasks row counts and turns Done at 100% (${surface})`, async ($, on) => {
@@ -69,84 +68,24 @@ for (const surface of ['desktop', 'vscode'] as const) {
     expect(await drawn()).toContain('0/1 완료')
   })
 
-  test(`usage rows show 5h and 7d percent with time to reset (${surface})`, async ($, on) => {
-    // 엔진 몫(아래 밴드) 대역
-    on('ui.render', { component: 'AbovePrompt' }, () => ({ type: 'Box', children: [] }) as never)
-    const t = Date.UTC(2026, 9, 6, 12)
-    mock.clock(on, { now: t })
-    on('session.measure', (_$, e) => ({ changed: e.changed }))
-    await $.session.measure({
-      context: { tokens: 84_000, window: 200_000, percent: 42 },
-      rateLimits: [
-        { kind: 'five_hour', percentUsed: 23.5, resetsAt: new Date(t + 2 * HOUR + 13 * 60_000 + 5_000).toISOString() },
-        { kind: 'seven_day', percentUsed: 91, resetsAt: new Date(t + 3 * 24 * HOUR + 4 * HOUR + 5_000).toISOString() },
-      ],
-      changed: ['rateLimits'],
-    })
-
-    const drawn = JSON.stringify(
-      await (await $.ui.mount({ plugin: 'task-progress-band', surface, component: 'AbovePrompt', props: PROPS })).drawn(),
-    )
-    expect(drawn).toContain('5시간 한도')
-    expect(drawn).toContain('24%')
-    expect(drawn).toContain('2시간 13분 후 초기화')
-    expect(drawn).toContain('7일 한도')
-    expect(drawn).toContain('3일 4시간 후 초기화')
-    expect(drawn).toContain('컨텍스트')
-    expect(drawn).toContain('42%')
-    expect(drawn).toContain('84K / 200K 토큰')
-    // 그라디언트: 컨텍스트 줄 시작색, 91%인 7일 줄은 빨강 쪽 그라디언트
-    expect(drawn).toContain('#06b6d4')
-    expect(drawn).toContain('#ef4444')
-    if (surface === 'desktop') expect(drawn).toContain('linearGradient')
-    expect(drawn).not.toContain('Tasks')
-  })
-
-  test(`rows show right at session start from last session's values (${surface})`, async ($, on) => {
-    // 엔진 몫(아래 밴드) 대역
-    on('ui.render', { component: 'AbovePrompt' }, () => ({ type: 'Box', children: [] }) as never)
-    const t = Date.UTC(2026, 9, 6, 12)
-    mock.clock(on, { now: t })
-    // 지난 세션이 저장한 값: 5시간 창은 아직 진행 중, 7일 창은 이미 초기화 시각이 지남
-    mock.store(on, {
-      limits: [
-        { kind: 'five_hour', percentUsed: 40, resetsAt: new Date(t + HOUR + 5_000).toISOString() },
-        { kind: 'seven_day', percentUsed: 55, resetsAt: new Date(t - HOUR).toISOString() },
-      ],
-    })
-    // 첫 응답 전: 엔진은 창 크기만 알고 사용량은 비어 있다
-    on('session.usage', () => ({ value: { startedAt: t, context: { window: 200_000 }, rateLimits: [] } }) as never)
-    on('session.start', (_$, e) => ({ cwd: e.cwd }))
-
-    await $.session.start({ cwd: '/tmp', surface, isInteractive: true } as never)
-
-    const drawn = JSON.stringify(
-      await (await $.ui.mount({ plugin: 'task-progress-band', surface, component: 'AbovePrompt', props: PROPS })).drawn(),
-    )
-    expect(drawn).toContain('컨텍스트')
-    expect(drawn).toContain('— / 200K 토큰')
-    expect(drawn).toContain('40%')
-    expect(drawn).toContain('1시간 0분 후 초기화 · 이전 값')
-    expect(drawn).toContain('초기화됨 · 이전 값')
-    expect(drawn).not.toContain('55%')
-  })
-
-  test(`model row is left to usage-band and the band beneath is kept (${surface})`, async ($, on) => {
-    mock.clock(on, { now: 0 })
-    on('session.usage', () => ({ value: { startedAt: 0, context: { window: 200_000 }, rateLimits: [] } }) as never)
-    on('session.model', () => ({ value: 'claude-opus-5-5' }) as never)
-    on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  test(`gauges and model row are left to usage-band and the band beneath is kept (${surface})`, async ($, on) => {
     on('ui.render', { component: 'AbovePrompt' }, () => ({ type: 'Text', children: ['beneath'] }) as never)
-    await $.session.start({ cwd: '/tmp', surface, isInteractive: true } as never)
-
-    const drawn = JSON.stringify(
+    on('tool.call', { tool: 'TaskCreate' }, () => ({ result: { task: { id: '1', subject: 's' } } }) as never)
+    on('session.measure', (_$, e) => ({ changed: e.changed }))
+    await $.session.measure({ context: { tokens: 84_000, window: 200_000, percent: 42 }, rateLimits: [{ kind: 'five_hour', percentUsed: 10 }], changed: ['context', 'rateLimits'] })
+    const drawn = async () => JSON.stringify(
       await (await $.ui.mount({ plugin: 'task-progress-band', surface, component: 'AbovePrompt', props: PROPS })).drawn(),
     )
-    expect(drawn).toContain('beneath')
-    expect(drawn).toContain('컨텍스트')
-    expect(drawn).not.toContain('Opus 5.5')
-    // 아래 밴드가 단계·막대보다 위
-    expect(drawn.indexOf('beneath')).toBeLessThan(drawn.indexOf('컨텍스트'))
+    // 작업이 없으면 그리지 않고 넘김
+    expect(await drawn()).not.toContain('컨텍스트')
+    await $.tool.call({ tool: 'TaskCreate', subject: 'a', description: 'a' })
+    const d = await drawn()
+    expect(d).toContain('beneath')
+    expect(d).toContain('0/1 완료')
+    expect(d).not.toContain('컨텍스트')
+    expect(d).not.toContain('5시간 한도')
+    // 아래 밴드 자리(engine ref)가 Tasks 줄보다 위
+    expect(d.indexOf('"type":"engine"')).toBeLessThan(d.indexOf('0/1 완료'))
   })
 }
 

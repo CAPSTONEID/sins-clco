@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 import { age, hcTitleStatus, mergeSeen, newSubs, parseAgents, parseHc, splitHidden, toggle } from '../hooks/agents'
-import { clip, fallback, mix, shortModel, TITLE_MAX } from '../hooks/run'
+import { clip, fallback, mix, shortModel, stripReminders, TITLE_MAX } from '../hooks/run'
 
 test('claude agents --json 출력을 패널 행으로 변환', async () => {
   // 실제 출력 형태: 이 세션(working), 끝난 세션(done), 이름 없는 막힌 세션(blocked)
@@ -76,6 +76,11 @@ test('자동 메시지로 시작한 턴은 태그 대신 정해 둔 제목', asy
   expect(fallback('<agent-message from="a1">\n[Subagent hand-back] ...')).toBe('서브에이전트 보고 처리')
   expect(fallback('  <task-notification>\n<task-id>x</task-id>')).toBe('백그라운드 작업 알림 처리')
   expect(fallback('그냥 요청')).toBe('그냥 요청')
+})
+
+test('앞에 붙은 system-reminder 블록은 지우고 사용자 글만 남김', async () => {
+  expect(stripReminders('<system-reminder>\nctx\n</system-reminder><system-reminder>b</system-reminder>\n내 모드 깨졌다.')).toBe('내 모드 깨졌다.')
+  expect(stripReminders('그냥 요청')).toBe('그냥 요청')
 })
 
 test('hc ls 출력에서 이 터미널이 띄운 서브에이전트만 상태와 함께 고름', async () => {
