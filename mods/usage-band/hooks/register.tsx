@@ -9,6 +9,8 @@ const run = atom({ plugin: 'progress-pane', key: 'run' } as const, null)
 const runs = atom({ plugin: 'progress-pane', key: 'runs' } as const, [])
 // 단계 줄을 누르면 그 아래에 이 작업의 서브에이전트 목록 펼침
 const subsOpen = atom({ plugin: 'usage-band', key: 'subsOpen' } as const, false)
+// Ponytail save 줄 펼침 ([P] 버튼), 기본 숨김
+const ptOpen = atom({ plugin: 'usage-band', key: 'ptOpen' } as const, false)
 const jobs = atom({ plugin: 'progress-pane', key: 'jobs' } as const, [])
 // 옆 칸 표시 여부: 옵션 기본값 위에 /usage-band 로 정한 값($.store)이 우선
 const beside = atom({ plugin: 'usage-band', key: 'beside' } as const, true)
@@ -331,6 +333,9 @@ export const register: Register = (on, options) => {
     // 저장된 값(/usage-band) > userConfig progressBeside > 기본 켜짐
     const saved = await $.store.get('beside')
     await update($, beside, () => (typeof saved === 'boolean' ? saved : options.progressBeside !== false))
+    // [P] Ponytail save 줄 펼침: 지난 세션 값, 없으면 숨김
+    const ptSaved = await $.store.get('ptOpen')
+    await update($, ptOpen, () => ptSaved === true)
     const u = await $.session.usage()
     // 첫 응답 전에는 엔진 한도 값이 비어 있다: 지난 세션이 저장한 값으로 막대를 바로 띄우고 '이전 값' 표시
     const lastLimits = u.rateLimits.length ? undefined : ((await $.store.get('limits').catch(() => undefined)) as SessionRateLimit[] | undefined)
@@ -409,6 +414,15 @@ export const register: Register = (on, options) => {
     return next(e)
   })
 
+  // 터미널: ponytail 자체 줄 숨김 (같은 정보를 Model 위 'Ponytail save' 줄로 표시). usage-band 줄이 없으면 그대로 둠
+  on('ui.render', { component: 'AbovePromptList' }, async ($, e, next) =>
+    next(
+      e.surface === 'terminal' && e.props.rows.some(r => r.plugin === 'usage-band')
+        ? { ...e, props: { ...e.props, rows: e.props.rows.filter(r => r.plugin !== 'ponytail') } }
+        : e,
+    ),
+  )
+
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     const s = await read($, snap)
     const m = await read($, model)
@@ -423,6 +437,10 @@ export const register: Register = (on, options) => {
     const now = await $.clock.now()
     const md = await read($, modes)
     const pk = await read($, picker)
+    // ponytail 플러그인 밴드 상태 (다른 플러그인 값은 읽기만 가능)
+    const { value: pb } = await $.state.get({ plugin: 'ponytail', key: 'band' } as const)
+    const ptLast = pb?.turnCosts?.[pb.turnCosts.length - 1]
+    const isPtOpen = await read($, ptOpen)
     const toggle = (k: 'model' | 'effort' | 'advisor') => void update($, picker, x => (x === k ? null : k)).catch(() => undefined)
     // 이름 클릭: 표시 갱신 → ponytail 은 모드 파일도 고침 → 다음 입력에 모델 안내
     const cycle = async (which: 'ponytail' | 'caveman') => {
@@ -787,13 +805,24 @@ tasks.length > 0 && (
       // 오른쪽 여백 없이 붙여 버튼이 엔진의 [-] 바로 옆에 오게
       <Box flexDirection="column" paddingLeft={1}>
         {/* 위 스피너·팁 줄과 분리하는 구분선 */}
-        {/* 왼쪽 끝 버튼: [×] 단계 목록 비우기(/steps-clear) · [‣] 옆 패널 열기·닫기(/progress-toggle), 그 뒤로 구분선. 엔진의 [-] 는 맨 오른쪽 5칸 고정 */}
+        {/* 왼쪽 끝 버튼: [×] 단계 목록 비우기(/steps-clear) · [‣] 옆 패널 열기·닫기(/progress-toggle) · [P] Ponytail save 줄 숨기기·보이기, 그 뒤로 구분선. 엔진의 [-] 는 맨 오른쪽 5칸 고정 */}
         <Box flexDirection="row">
           <Button plain label="[×]" onPress={() => void $.command.run({ command: 'steps-clear' }).catch(() => undefined)} />
           <Text> </Text>
           <Button plain label="[‣]" onPress={() => void $.command.run({ command: 'progress-toggle' }).catch(() => undefined)} />
           <Text> </Text>
-          <Text dimColor>{'─'.repeat(Math.max(10, e.props.bodyColumns - 1 - 8))}</Text>
+          {/* [P]: Ponytail save 줄 숨기기·보이기 */}
+          <Button
+            plain
+            label="[P]"
+            onPress={() =>
+              void update($, ptOpen, x => !x)
+                .then(async () => $.store.set('ptOpen', await read($, ptOpen)))
+                .catch(() => undefined)
+            }
+          />
+          <Text> </Text>
+          <Text dimColor>{'─'.repeat(Math.max(10, e.props.bodyColumns - 1 - 12))}</Text>
         </Box>
         {/* 아래 입력창 앞 엔진 여백(1줄)과 맞추는 빈 줄 */}
         <Text> </Text>
@@ -842,6 +871,19 @@ tasks.length > 0 && (
         {/* 모드 줄(단계 줄과 Model 줄 사이, 위아래 빈 줄 1칸 — 모델 선택 줄이 열릴 때 덜 붙어 보이게): 단계 줄처럼 가로 1줄, ' । ' 로 구분. ON/OFF + 강도 칸 (Effort 와 같은 모양) */}
         {modesRow}
         {pickerRow}
+        {/* Ponytail save 줄: ponytail 플러그인 상태(단계 · 누적 비용 · 직전 턴 비용 · 작업 시간). ponytail 자체 줄은 AbovePromptList 에서 숨김 */}
+        {pb && isPtOpen && (
+          <Box flexDirection="row">
+            <Text color="#87af87">● </Text>
+            <Text>Ponytail save</Text>
+            <Text dimColor>{' । '}</Text>
+            <Text bold={pb.level !== 'off'} dimColor={pb.level === 'off'}>{pb.level ?? 'off'}</Text>
+            <Text dimColor>{' । '}</Text>
+            <Text>{`$${(pb.spent ?? 0).toFixed(2)}`}</Text>
+            {ptLast !== undefined && <Text dimColor>{` । last $${ptLast.toFixed(2)}`}</Text>}
+            <Text dimColor>{` । ${dur(pb.busyMs ?? 0)}`}</Text>
+          </Box>
+        )}
         <Box flexDirection="row">
           <Box flexDirection="column">
             {/* 모델 · 추론 단계 줄 */}

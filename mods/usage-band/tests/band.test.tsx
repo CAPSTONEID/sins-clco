@@ -25,7 +25,7 @@ test('세 게이지가 터미널에 그려진다', async ($, on) => {
   await ui.unmount()
 })
 
-test('맨 위에 구분선이 있다 (왼쪽 여백 1칸 + 왼쪽 [×] [‣] 버튼 자리 8칸 제외)', async ($, on) => {
+test('맨 위에 구분선이 있다 (왼쪽 여백 1칸 + 왼쪽 [×] [‣] [P] 버튼 자리 12칸 제외)', async ($, on) => {
   on('session.measure', (_, e) => ({ changed: e.changed }))
   mock.clock(on)
   await $.session.measure({
@@ -39,7 +39,7 @@ test('맨 위에 구분선이 있다 (왼쪽 여백 1칸 + 왼쪽 [×] [‣] 버
     component: 'AbovePrompt',
     props: { hasSurvey: false, isWorking: false, maxRows: 10, bodyColumns: 40 } as never,
   })
-  expect(await ui.find({ type: 'Text', text: /^─{31}$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^─{27}$/ })).toBeDefined()
   await ui.unmount()
 })
 
@@ -157,5 +157,27 @@ test('데스크톱: Humanize·Caveman 이름 클릭과 Model 선택이 동작한
   await ui.press({ key: 'pick-model' })
   await ui.press({ key: 'p-opus' })
   expect(ran).toContain('model opus')
+  await ui.unmount()
+})
+
+test('[P] 버튼: 맨 위 줄에 있고 누를 수 있다', async ($, on) => {
+  on('session.measure', (_, e) => ({ changed: e.changed }))
+  mock.clock(on)
+  await $.session.measure({
+    context: { tokens: 1000, window: 1_000_000, percent: 1 },
+    rateLimits: [],
+    changed: ['context'],
+  })
+  const ui = await $.ui.mount({
+    plugin: 'usage-band',
+    surface: 'terminal',
+    component: 'AbovePrompt',
+    props: { hasSurvey: false, isWorking: false, maxRows: 10, bodyColumns: 120 } as never,
+  })
+  // ponytail 상태가 없는 테스트 환경이라 줄 자체는 그리지 않음: 버튼이 있고 눌러도 깨지지 않는지만 확인
+  expect(await ui.find({ key: '[P]' })).toBeDefined()
+  expect(await ui.find({ text: 'Ponytail save' })).toBeUndefined()
+  await ui.press({ key: '[P]' })
+  expect(await ui.find({ key: '[P]' })).toBeDefined()
   await ui.unmount()
 })
